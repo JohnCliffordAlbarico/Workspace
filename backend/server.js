@@ -11,8 +11,17 @@ dotenv.config()
 
 const app = express()
 
+// CORS configuration
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? [process.env.FRONTEND_URL_PROD]
+  : [process.env.FRONTEND_URL_DEV]
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}))
+
 // Middleware
-app.use(cors())
 app.use(express.json())
 app.use(apiLimiter)
 
