@@ -5,11 +5,6 @@ export const useTaskActions = (setTasks) => {
   const [loading, setLoading] = useState(false)
 
   const toggleTask = async (taskId, currentStatus, skipConfirmation = false) => {
-    // If marking as completed and not skipping confirmation, return false to trigger confirmation
-    if (currentStatus !== 'completed' && !skipConfirmation) {
-      return false
-    }
-
     setLoading(true)
     try {
       const newStatus = currentStatus === 'completed' ? 'pending' : 'completed'

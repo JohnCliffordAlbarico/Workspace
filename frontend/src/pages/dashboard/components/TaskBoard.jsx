@@ -2,15 +2,21 @@ import { useState } from 'react'
 import TaskColumn from './TaskColumn'
 import EmptyState from './EmptyState'
 import TaskModal from '../modal/TaskModal'
+import TaskDetailModal from '../modal/TaskDetailModal'
 
 const TaskBoard = ({ tasks, setTasks, workspace }) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedTask, setSelectedTask] = useState(null)
 
   const tasksByPriority = {
     critical: tasks.filter(t => t.priority === 'critical'),
     high: tasks.filter(t => t.priority === 'high'),
     medium: tasks.filter(t => t.priority === 'medium'),
     low: tasks.filter(t => t.priority === 'low')
+  }
+
+  const handleTaskClick = (task) => {
+    setSelectedTask(task)
   }
 
   return (
@@ -62,6 +68,15 @@ const TaskBoard = ({ tasks, setTasks, workspace }) => {
         tasks={tasks}
       />
 
+      {/* Task Detail Modal */}
+      <TaskDetailModal
+        isOpen={!!selectedTask}
+        onClose={() => setSelectedTask(null)}
+        task={selectedTask}
+        setTasks={setTasks}
+        allTasks={tasks}
+      />
+
       {/* Task Columns */}
       {tasks.length === 0 ? (
         <EmptyState />
@@ -72,24 +87,28 @@ const TaskBoard = ({ tasks, setTasks, workspace }) => {
             color="#ff4757"
             tasks={tasksByPriority.critical}
             setTasks={setTasks}
+            onTaskClick={handleTaskClick}
           />
           <TaskColumn
             title="High Priority"
             color="#ffa502"
             tasks={tasksByPriority.high}
             setTasks={setTasks}
+            onTaskClick={handleTaskClick}
           />
           <TaskColumn
             title="Medium"
             color="#7bed9f"
             tasks={tasksByPriority.medium}
             setTasks={setTasks}
+            onTaskClick={handleTaskClick}
           />
           <TaskColumn
             title="Low Priority"
             color="#70a1ff"
             tasks={tasksByPriority.low}
             setTasks={setTasks}
+            onTaskClick={handleTaskClick}
           />
         </div>
       )}

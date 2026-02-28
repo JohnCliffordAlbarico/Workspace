@@ -1,40 +1,24 @@
 import { useState } from 'react'
 import { useTaskActions } from '../hooks/useTaskActions'
-import ConfirmationModal from '../modal/ConfirmationModal'
 
-const TaskItem = ({ task, color, setTasks }) => {
+const TaskItem = ({ task, color, setTasks, onTaskClick }) => {
   const [showDelete, setShowDelete] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [showCompleteConfirm, setShowCompleteConfirm] = useState(false)
-  const { toggleTask, deleteTask, loading } = useTaskActions(setTasks)
+  const { toggleTask, loading } = useTaskActions(setTasks)
 
-  const handleToggle = async () => {
-    const needsConfirmation = await toggleTask(task.id, task.status)
-    if (needsConfirmation === false) {
-      // Show confirmation modal for completion
-      setShowCompleteConfirm(true)
-    }
-  }
-
-  const handleConfirmComplete = async () => {
+  const handleToggle = async (e) => {
+    e.stopPropagation() // Prevent opening modal when clicking checkbox
     await toggleTask(task.id, task.status, true)
-    setShowCompleteConfirm(false)
   }
 
-  const handleDelete = async () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true)
-      setTimeout(() => setConfirmDelete(false), 3000)
-      return
-    }
-    await deleteTask(task.id)
+  const handleCardClick = () => {
+    onTaskClick(task)
   }
 
   const isCompleted = task.status === 'completed'
 
   return (
     <div
-      className="rounded-xl p-4 transition-all duration-300"
+      className="rounded-xl p-4 transition-all duration-300 cursor-pointer"
       style={{
         background: `${color}26`,
         border: `1px solid ${color}66`,
@@ -42,6 +26,7 @@ const TaskItem = ({ task, color, setTasks }) => {
       }}
       onMouseEnter={() => setShowDelete(true)}
       onMouseLeave={() => setShowDelete(false)}
+      onClick={handleCardClick}
     >
       <style>{`
         @keyframes slideIn {
@@ -71,30 +56,16 @@ const TaskItem = ({ task, color, setTasks }) => {
           {task.title}
         </span>
 
-        <button
-          onClick={handleDelete}
-          disabled={loading}
-          className="text-lg transition-opacity duration-200"
+        <span 
+          className="text-sm transition-opacity duration-200"
           style={{
-            color,
-            opacity: showDelete || confirmDelete ? 1 : 0
+            color: '#a89080',
+            opacity: showDelete ? 1 : 0
           }}
-          title={confirmDelete ? 'Click again to confirm' : 'Delete task'}
         >
-          {confirmDelete ? '🗑️' : '✕'}
-        </button>
+          👁️
+        </span>
       </div>
-
-      {/* Completion Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showCompleteConfirm}
-        onConfirm={handleConfirmComplete}
-        onCancel={() => setShowCompleteConfirm(false)}
-        title="✅ Complete Task?"
-        message={`Are you sure you want to mark "${task.title}" as completed?`}
-        confirmText="Yes, Complete"
-        cancelText="Not Yet"
-      />
     </div>
   )
 }

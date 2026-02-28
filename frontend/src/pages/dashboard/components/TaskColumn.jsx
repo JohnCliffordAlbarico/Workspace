@@ -1,6 +1,6 @@
 import TaskItem from './TaskItem'
 
-const TaskColumn = ({ title, color, tasks, setTasks }) => {
+const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick }) => {
   const incompleteTasks = tasks.filter(t => t.status !== 'completed')
 
   return (
@@ -32,7 +32,13 @@ const TaskColumn = ({ title, color, tasks, setTasks }) => {
 
       <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
         {tasks.map((task) => (
-          <TaskItem key={task.id} task={task} color={color} setTasks={setTasks} />
+          <TaskItem 
+            key={task.id} 
+            task={task} 
+            color={color} 
+            setTasks={setTasks}
+            onTaskClick={onTaskClick}
+          />
         ))}
       </div>
     </section>
