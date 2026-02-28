@@ -50,6 +50,8 @@ export const register = async (req, res) => {
   try {
     const { email, password } = req.body
 
+    console.log('Register attempt:', { email, passwordLength: password?.length })
+
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' })
     }
@@ -65,7 +67,12 @@ export const register = async (req, res) => {
     })
 
     if (error) {
+      console.error('Supabase signup error:', error)
       return res.status(400).json({ error: error.message })
+    }
+
+    if (!data.user) {
+      return res.status(400).json({ error: 'User creation failed' })
     }
 
     // Create user profile in users table
@@ -79,7 +86,10 @@ export const register = async (req, res) => {
 
     if (profileError) {
       console.error('Profile creation error:', profileError)
+      // Don't fail the registration if profile creation fails
     }
+
+    console.log('Registration successful:', data.user.email)
 
     res.status(201).json({
       message: 'Registration successful',
@@ -89,6 +99,7 @@ export const register = async (req, res) => {
       }
     })
   } catch (error) {
+    console.error('Registration error:', error)
     res.status(500).json({ error: error.message })
   }
 }
