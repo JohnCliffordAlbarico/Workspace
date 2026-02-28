@@ -1,10 +1,8 @@
-import { useState } from 'react'
 import AddTaskForm from './AddTaskForm'
 import TaskColumn from './TaskColumn'
 import EmptyState from './EmptyState'
 
-const TaskBoard = ({ tasks, setTasks }) => {
-  const [workspaceId] = useState('default-workspace') // TODO: Get from context/props
+const TaskBoard = ({ tasks, setTasks, workspace }) => {
 
   const tasksByPriority = {
     critical: tasks.filter(t => t.priority === 'critical'),
@@ -33,7 +31,7 @@ const TaskBoard = ({ tasks, setTasks }) => {
       </header>
 
       {/* Add Task Form */}
-      <AddTaskForm workspaceId={workspaceId} setTasks={setTasks} />
+      <AddTaskForm workspaceId={workspace.id} setTasks={setTasks} />
 
       {/* Task Columns */}
       {tasks.length === 0 ? (

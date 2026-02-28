@@ -7,6 +7,11 @@ export const useTasks = (workspaceId) => {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    if (!workspaceId) {
+      setLoading(false)
+      return
+    }
+
     const fetchTasks = async () => {
       try {
         const response = await api.get('/tasks', {
