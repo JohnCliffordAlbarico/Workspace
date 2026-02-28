@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useTaskActions } from '../hooks/useTaskActions'
+import ConfirmationModal from '../modal/ConfirmationModal'
 import api from '../../../config/api'
 
 const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [showSubtaskForm, setShowSubtaskForm] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [subtaskTitle, setSubtaskTitle] = useState('')
   const [subtasks, setSubtasks] = useState([])
   const [loadingSubtasks, setLoadingSubtasks] = useState(false)
@@ -115,8 +117,12 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
   }
 
   const handleDelete = async () => {
-    if (!window.confirm(`Delete "${task.title}" and all its subtasks?`)) return
+    setShowDeleteConfirm(true)
+  }
+
+  const handleConfirmDelete = async () => {
     await deleteTask(task.id)
+    setShowDeleteConfirm(false)
     onClose()
   }
 
@@ -526,6 +532,17 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        title="🗑️ Delete Task?"
+        message={`Are you sure you want to delete "${task?.title}"? This will also delete all subtasks. This action cannot be undone.`}
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+      />
     </div>
   )
 }

@@ -7,8 +7,9 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
     description: '',
     priority: 'medium',
     status: 'pending',
-    due_date: '',
-    goal_time_minutes: '',
+    days_until_due: '',
+    goal_hours: '',
+    goal_minutes: '',
     parent_task_id: ''
   })
 
@@ -22,8 +23,9 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
         description: '',
         priority: 'medium',
         status: 'pending',
-        due_date: '',
-        goal_time_minutes: '',
+        days_until_due: '',
+        goal_hours: '',
+        goal_minutes: '',
         parent_task_id: ''
       })
     }
@@ -41,14 +43,31 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
       return
     }
 
+    // Calculate due_date from days_until_due
+    let due_date = null
+    if (formData.days_until_due && parseInt(formData.days_until_due) > 0) {
+      const daysToAdd = parseInt(formData.days_until_due)
+      const dueDate = new Date()
+      dueDate.setDate(dueDate.getDate() + daysToAdd)
+      due_date = dueDate.toISOString()
+    }
+
+    // Calculate goal_time_minutes from hours and minutes
+    let goal_time_minutes = null
+    const hours = parseInt(formData.goal_hours) || 0
+    const minutes = parseInt(formData.goal_minutes) || 0
+    if (hours > 0 || minutes > 0) {
+      goal_time_minutes = (hours * 60) + minutes
+    }
+
     const taskData = {
       workspace_id: workspaceId,
       title: formData.title,
       description: formData.description || null,
       priority: formData.priority,
       status: formData.status,
-      due_date: formData.due_date || null,
-      goal_time_minutes: formData.goal_time_minutes ? parseInt(formData.goal_time_minutes) : null,
+      due_date: due_date,
+      goal_time_minutes: goal_time_minutes,
       parent_task_id: formData.parent_task_id || null
     }
 
@@ -221,26 +240,27 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
             </div>
           </div>
 
-          {/* Due Date and Goal Time Row */}
+          {/* Days Until Due and Goal Time Row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label 
                 className="block mb-2 text-sm font-semibold"
                 style={{ color: '#f5e6d3' }}
               >
-                Due Date
+                Days Until Due
               </label>
               <input
-                type="date"
-                name="due_date"
-                value={formData.due_date}
+                type="number"
+                name="days_until_due"
+                value={formData.days_until_due}
                 onChange={handleChange}
+                placeholder="e.g., 7 (for 7 days from now)"
+                min="0"
                 className="w-full px-4 py-3 rounded-xl text-base outline-none"
                 style={{
                   background: 'rgba(0,0,0,0.4)',
                   border: '1px solid rgba(200, 80, 80, 0.3)',
-                  color: '#f5e6d3',
-                  colorScheme: 'dark'
+                  color: '#f5e6d3'
                 }}
               />
             </div>
@@ -250,22 +270,51 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
                 className="block mb-2 text-sm font-semibold"
                 style={{ color: '#f5e6d3' }}
               >
-                Goal Time (minutes)
+                Goal Time
               </label>
-              <input
-                type="number"
-                name="goal_time_minutes"
-                value={formData.goal_time_minutes}
-                onChange={handleChange}
-                placeholder="e.g., 60"
-                min="0"
-                className="w-full px-4 py-3 rounded-xl text-base outline-none"
-                style={{
-                  background: 'rgba(0,0,0,0.4)',
-                  border: '1px solid rgba(200, 80, 80, 0.3)',
-                  color: '#f5e6d3'
-                }}
-              />
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  name="goal_hours"
+                  value={formData.goal_hours}
+                  onChange={handleChange}
+                  placeholder="Hours"
+                  min="0"
+                  className="flex-1 px-4 py-3 rounded-xl text-base outline-none"
+                  style={{
+                    background: 'rgba(0,0,0,0.4)',
+                    border: '1px solid rgba(200, 80, 80, 0.3)',
+                    color: '#f5e6d3'
+                  }}
+                />
+                <span 
+                  className="flex items-center px-2 text-sm"
+                  style={{ color: '#a89080' }}
+                >
+                  h
+                </span>
+                <input
+                  type="number"
+                  name="goal_minutes"
+                  value={formData.goal_minutes}
+                  onChange={handleChange}
+                  placeholder="Minutes"
+                  min="0"
+                  max="59"
+                  className="flex-1 px-4 py-3 rounded-xl text-base outline-none"
+                  style={{
+                    background: 'rgba(0,0,0,0.4)',
+                    border: '1px solid rgba(200, 80, 80, 0.3)',
+                    color: '#f5e6d3'
+                  }}
+                />
+                <span 
+                  className="flex items-center px-2 text-sm"
+                  style={{ color: '#a89080' }}
+                >
+                  m
+                </span>
+              </div>
             </div>
           </div>
 

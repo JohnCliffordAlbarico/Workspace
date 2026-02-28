@@ -114,7 +114,7 @@ const Sidebar = ({ tasks, view, setView }) => {
                 : '1px solid rgba(200, 80, 80, 0.2)'
             }}
           >
-            📋 Active
+            🔥 Active
           </button>
           <button
             onClick={() => setView('completed')}
@@ -129,7 +129,7 @@ const Sidebar = ({ tasks, view, setView }) => {
                 : '1px solid rgba(200, 80, 80, 0.2)'
             }}
           >
-            ✅ Completed
+            👻 Completed
           </button>
         </div>
       </div>
