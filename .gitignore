@@ -5,3 +5,4 @@ dist/
 build/
 **/doc/
 **/design_code/
+**/test/

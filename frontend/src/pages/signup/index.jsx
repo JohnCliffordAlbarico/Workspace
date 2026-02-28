@@ -1,8 +1,19 @@
-import { LogIn, Mail, Lock } from 'lucide-react'
-import { useLogin } from './hooks/useLogin'
+import { UserPlus, Mail, Lock } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { useSignup } from './hooks/useSignup'
 
-const Login = () => {
-  const { email, setEmail, password, setPassword, error, loading, handleLogin } = useLogin()
+const Signup = () => {
+  const { 
+    email, 
+    setEmail, 
+    password, 
+    setPassword, 
+    confirmPassword, 
+    setConfirmPassword, 
+    error, 
+    loading, 
+    handleSignup 
+  } = useSignup()
 
   return (
     <div 
@@ -134,14 +145,14 @@ const Login = () => {
               textShadow: '0 2px 15px rgba(200, 80, 80, 0.5)'
             }}
           >
-            Yuuko's Workspace
+            Join Yuuko's Workspace
           </h1>
           <p style={{ color: '#ffd4d4' }}>
-            Where productivity meets elegance
+            Create your account and start organizing
           </p>
         </div>
 
-        {/* Login Form */}
+        {/* Signup Form */}
         <div 
           className="rounded-2xl p-8"
           style={{
@@ -150,7 +161,7 @@ const Login = () => {
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
           }}
         >
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleSignup} className="space-y-6">
             {/* Email Input */}
             <div>
               <label 
@@ -225,6 +236,47 @@ const Login = () => {
                   }}
                 />
               </div>
+              <p className="mt-1 text-xs" style={{ color: '#8b2942' }}>
+                Must be at least 6 characters
+              </p>
+            </div>
+
+            {/* Confirm Password Input */}
+            <div>
+              <label 
+                htmlFor="confirmPassword" 
+                className="block text-sm font-medium mb-2"
+                style={{ color: '#8b2942' }}
+              >
+                Confirm Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5" style={{ color: '#c85050' }} />
+                </div>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="block w-full pl-12 pr-4 py-3 rounded-xl text-base outline-none transition-all duration-300"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    border: '2px solid rgba(200, 80, 80, 0.3)',
+                    color: '#2d0f0f'
+                  }}
+                  placeholder="••••••••"
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#c85050'
+                    e.target.style.boxShadow = '0 0 15px rgba(200, 80, 80, 0.3)'
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'rgba(200, 80, 80, 0.3)'
+                    e.target.style.boxShadow = 'none'
+                  }}
+                />
+              </div>
             </div>
 
             {/* Error Message */}
@@ -266,39 +318,28 @@ const Login = () => {
               {loading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Entering...
+                  Creating Account...
                 </>
               ) : (
                 <>
-                  <LogIn className="w-5 h-5" />
-                  Enter Workspace
+                  <UserPlus className="w-5 h-5" />
+                  Create Account
                 </>
               )}
             </button>
           </form>
 
           {/* Footer Links */}
-          <div className="mt-6 text-center text-sm">
-            <a 
-              href="#" 
-              className="font-medium transition-colors duration-200"
-              style={{ color: '#c85050' }}
-              onMouseOver={(e) => e.target.style.color = '#8b2942'}
-              onMouseOut={(e) => e.target.style.color = '#c85050'}
-            >
-              Forgot password?
-            </a>
-          </div>
-          <div className="mt-4 text-center text-sm" style={{ color: '#8b2942' }}>
-            New to Yuuko's Workspace?{' '}
+          <div className="mt-6 text-center text-sm" style={{ color: '#8b2942' }}>
+            Already have an account?{' '}
             <Link 
-              to="/signup"
+              to="/"
               className="font-medium transition-colors duration-200"
               style={{ color: '#c85050' }}
               onMouseOver={(e) => e.target.style.color = '#8b2942'}
               onMouseOut={(e) => e.target.style.color = '#c85050'}
             >
-              Join us
+              Sign in
             </Link>
           </div>
         </div>
@@ -309,7 +350,7 @@ const Login = () => {
             className="text-sm italic"
             style={{ color: '#ffd4d4' }}
           >
-            "Organize your tasks, elevate your productivity"
+            "Start your journey to organized productivity"
           </p>
         </div>
       </div>
@@ -317,4 +358,4 @@ const Login = () => {
   )
 }
 
-export default Login
+export default Signup
