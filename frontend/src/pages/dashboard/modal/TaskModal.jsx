@@ -272,48 +272,52 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
               >
                 Goal Time
               </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  name="goal_hours"
-                  value={formData.goal_hours}
-                  onChange={handleChange}
-                  placeholder="Hours"
-                  min="0"
-                  className="flex-1 px-4 py-3 rounded-xl text-base outline-none"
-                  style={{
-                    background: 'rgba(0,0,0,0.4)',
-                    border: '1px solid rgba(200, 80, 80, 0.3)',
-                    color: '#f5e6d3'
-                  }}
-                />
-                <span 
-                  className="flex items-center px-2 text-sm"
-                  style={{ color: '#a89080' }}
-                >
-                  h
-                </span>
-                <input
-                  type="number"
-                  name="goal_minutes"
-                  value={formData.goal_minutes}
-                  onChange={handleChange}
-                  placeholder="Minutes"
-                  min="0"
-                  max="59"
-                  className="flex-1 px-4 py-3 rounded-xl text-base outline-none"
-                  style={{
-                    background: 'rgba(0,0,0,0.4)',
-                    border: '1px solid rgba(200, 80, 80, 0.3)',
-                    color: '#f5e6d3'
-                  }}
-                />
-                <span 
-                  className="flex items-center px-2 text-sm"
-                  style={{ color: '#a89080' }}
-                >
-                  m
-                </span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    name="goal_hours"
+                    value={formData.goal_hours}
+                    onChange={handleChange}
+                    placeholder="Hours"
+                    min="0"
+                    className="flex-1 px-4 py-2 rounded-xl text-base outline-none"
+                    style={{
+                      background: 'rgba(0,0,0,0.4)',
+                      border: '1px solid rgba(200, 80, 80, 0.3)',
+                      color: '#f5e6d3'
+                    }}
+                  />
+                  <span 
+                    className="text-sm font-semibold"
+                    style={{ color: '#a89080', minWidth: '50px' }}
+                  >
+                    hours
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    name="goal_minutes"
+                    value={formData.goal_minutes}
+                    onChange={handleChange}
+                    placeholder="Minutes"
+                    min="0"
+                    max="59"
+                    className="flex-1 px-4 py-2 rounded-xl text-base outline-none"
+                    style={{
+                      background: 'rgba(0,0,0,0.4)',
+                      border: '1px solid rgba(200, 80, 80, 0.3)',
+                      color: '#f5e6d3'
+                    }}
+                  />
+                  <span 
+                    className="text-sm font-semibold"
+                    style={{ color: '#a89080', minWidth: '50px' }}
+                  >
+                    minutes
+                  </span>
+                </div>
               </div>
             </div>
           </div>
