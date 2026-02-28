@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import AddTaskForm from './AddTaskForm'
 import TaskColumn from './TaskColumn'
 import EmptyState from './EmptyState'
 import TaskModal from '../modal/TaskModal'
@@ -53,9 +52,6 @@ const TaskBoard = ({ tasks, setTasks, workspace }) => {
           ✨ New Task
         </button>
       </header>
-
-      {/* Add Task Form */}
-      <AddTaskForm workspaceId={workspace.id} setTasks={setTasks} />
 
       {/* Task Modal */}
       <TaskModal 

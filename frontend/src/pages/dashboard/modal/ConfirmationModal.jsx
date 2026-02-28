@@ -3,8 +3,11 @@ const ConfirmationModal = ({ isOpen, onConfirm, onCancel, title, message, confir
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0, 0, 0, 0.7)' }}
+      className="fixed inset-0 flex items-center justify-center p-4"
+      style={{ 
+        background: 'rgba(0, 0, 0, 0.7)',
+        zIndex: 9999
+      }}
       onClick={onCancel}
     >
       <div 
