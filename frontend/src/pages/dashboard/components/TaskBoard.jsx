@@ -1,8 +1,11 @@
+import { useState } from 'react'
 import AddTaskForm from './AddTaskForm'
 import TaskColumn from './TaskColumn'
 import EmptyState from './EmptyState'
+import TaskModal from '../modal/TaskModal'
 
 const TaskBoard = ({ tasks, setTasks, workspace }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const tasksByPriority = {
     critical: tasks.filter(t => t.priority === 'critical'),
@@ -14,24 +17,54 @@ const TaskBoard = ({ tasks, setTasks, workspace }) => {
   return (
     <main className="flex-1 p-8 overflow-auto z-10">
       {/* Header */}
-      <header className="mb-8">
-        <h1 
-          className="text-4xl font-bold mb-2"
+      <header className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 
+            className="text-4xl font-bold mb-2"
+            style={{
+              fontFamily: "'Cinzel', serif",
+              color: '#f5e6d3',
+              textShadow: '0 2px 10px rgba(200, 80, 80, 0.3)'
+            }}
+          >
+            🔥 Yuuko's Task Board
+          </h1>
+          <p style={{ color: '#a89080' }}>
+            Managing productivity with elegance
+          </p>
+        </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="px-6 py-3 rounded-xl text-base font-semibold transition-all duration-300"
           style={{
-            fontFamily: "'Cinzel', serif",
+            background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
             color: '#f5e6d3',
-            textShadow: '0 2px 10px rgba(200, 80, 80, 0.3)'
+            border: 'none'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)'
+            e.currentTarget.style.boxShadow = '0 6px 20px rgba(200, 80, 80, 0.4)'
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)'
+            e.currentTarget.style.boxShadow = 'none'
           }}
         >
-          🔥 Yuuko's Task Board
-        </h1>
-        <p style={{ color: '#a89080' }}>
-          Managing productivity with elegance
-        </p>
+          ✨ New Task
+        </button>
       </header>
 
       {/* Add Task Form */}
       <AddTaskForm workspaceId={workspace.id} setTasks={setTasks} />
+
+      {/* Task Modal */}
+      <TaskModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        workspaceId={workspace.id}
+        setTasks={setTasks}
+        tasks={tasks}
+      />
 
       {/* Task Columns */}
       {tasks.length === 0 ? (

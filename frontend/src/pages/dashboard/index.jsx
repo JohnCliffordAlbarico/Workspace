@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import Sidebar from './components/Sidebar'
 import TaskBoard from './components/TaskBoard'
 import FloatingButterflies from './components/FloatingButterflies'
