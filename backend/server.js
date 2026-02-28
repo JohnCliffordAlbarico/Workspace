@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import authRoutes from './src/routes/authRoutes.js'
 import userRoutes from './src/routes/userRoutes.js'
 import workspaceRoutes from './src/routes/workspaceRoutes.js'
 import taskRoutes from './src/routes/taskRoutes.js'
@@ -30,6 +31,7 @@ app.get('/', (req, res) => {
 })
 
 // Mount routes
+app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/workspaces', workspaceRoutes)
 app.use('/api/tasks', taskRoutes)

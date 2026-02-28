@@ -15,14 +15,14 @@ export const useLogin = () => {
     setLoading(true)
 
     try {
-      // TODO: Replace with your Supabase auth endpoint
       const response = await api.post('/auth/login', {
         email,
         password
       })
 
-      // Store token
+      // Store token and user info
       localStorage.setItem('token', response.data.token)
+      localStorage.setItem('user', JSON.stringify(response.data.user))
       
       // Navigate to dashboard
       navigate('/dashboard')
