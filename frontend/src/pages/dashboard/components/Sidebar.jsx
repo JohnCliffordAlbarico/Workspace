@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
 
-const Sidebar = ({ tasks }) => {
+const Sidebar = ({ tasks, view, setView }) => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
 
@@ -89,6 +89,48 @@ const Sidebar = ({ tasks }) => {
           <p className="text-sm italic text-center" style={{ color: '#d4a574' }}>
             "Organize your tasks, elevate your productivity"
           </p>
+        </div>
+      </div>
+
+      {/* View Toggle */}
+      <div 
+        className="rounded-xl p-4 mb-6"
+        style={{
+          background: 'rgba(45, 20, 25, 0.6)',
+          border: '1px solid rgba(200, 80, 80, 0.15)'
+        }}
+      >
+        <div className="flex gap-2">
+          <button
+            onClick={() => setView('active')}
+            className="flex-1 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-300"
+            style={{
+              background: view === 'active' 
+                ? 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)' 
+                : 'rgba(0,0,0,0.3)',
+              color: view === 'active' ? '#f5e6d3' : '#a89080',
+              border: view === 'active' 
+                ? '1px solid rgba(200, 80, 80, 0.5)' 
+                : '1px solid rgba(200, 80, 80, 0.2)'
+            }}
+          >
+            📋 Active
+          </button>
+          <button
+            onClick={() => setView('completed')}
+            className="flex-1 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-300"
+            style={{
+              background: view === 'completed' 
+                ? 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)' 
+                : 'rgba(0,0,0,0.3)',
+              color: view === 'completed' ? '#f5e6d3' : '#a89080',
+              border: view === 'completed' 
+                ? '1px solid rgba(200, 80, 80, 0.5)' 
+                : '1px solid rgba(200, 80, 80, 0.2)'
+            }}
+          >
+            ✅ Completed
+          </button>
         </div>
       </div>
 

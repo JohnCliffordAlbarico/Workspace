@@ -1,12 +1,22 @@
 import Sidebar from './components/Sidebar'
 import TaskBoard from './components/TaskBoard'
+import CompletedTasksView from './components/CompletedTasksView'
 import FloatingButterflies from './components/FloatingButterflies'
 import { useWorkspace } from '../../hooks/useWorkspace'
 import { useTasks } from './hooks/useTasks'
+import { useState, useMemo } from 'react'
 
 const Dashboard = () => {
   const { workspace, loading: workspaceLoading } = useWorkspace()
   const { tasks, setTasks, loading: tasksLoading } = useTasks(workspace?.id)
+  const [view, setView] = useState('active') // 'active' or 'completed'
+
+  const filteredTasks = useMemo(() => {
+    if (view === 'completed') {
+      return tasks.filter(t => t.status === 'completed')
+    }
+    return tasks.filter(t => t.status !== 'completed')
+  }, [tasks, view])
 
   if (workspaceLoading || tasksLoading) {
     return (
@@ -46,8 +56,12 @@ const Dashboard = () => {
       }}
     >
       <FloatingButterflies />
-      <Sidebar tasks={tasks} />
-      <TaskBoard tasks={tasks} setTasks={setTasks} workspace={workspace} />
+      <Sidebar tasks={tasks} view={view} setView={setView} />
+      {view === 'active' ? (
+        <TaskBoard tasks={filteredTasks} setTasks={setTasks} workspace={workspace} />
+      ) : (
+        <CompletedTasksView tasks={filteredTasks} setTasks={setTasks} />
+      )}
     </div>
   )
 }
