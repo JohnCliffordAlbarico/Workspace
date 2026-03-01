@@ -1,6 +1,6 @@
 import TaskItem from './TaskItem'
 
-const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick }) => {
+const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick, allTasks }) => {
   const incompleteTasks = tasks.filter(t => t.status !== 'completed')
 
   return (
@@ -38,6 +38,7 @@ const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick }) => {
             color={color} 
             setTasks={setTasks}
             onTaskClick={onTaskClick}
+            allTasks={allTasks}
           />
         ))}
       </div>

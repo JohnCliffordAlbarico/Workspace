@@ -30,6 +30,74 @@ export const useTaskActions = (setTasks) => {
     }
   }
 
+  const startTask = async (taskId) => {
+    setLoading(true)
+    try {
+      const updateData = {
+        status: 'in_progress',
+        started_at: new Date().toISOString()
+      }
+      
+      const response = await api.put(`/tasks/${taskId}`, updateData)
+      
+      setTasks(prev => 
+        prev.map(task => task.id === taskId ? response.data : task)
+      )
+      return true
+    } catch (error) {
+      console.error('Failed to start task:', error)
+      alert('Failed to start task. Please try again.')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const completeTask = async (taskId) => {
+    setLoading(true)
+    try {
+      const updateData = {
+        status: 'completed',
+        completed_at: new Date().toISOString()
+      }
+      
+      const response = await api.put(`/tasks/${taskId}`, updateData)
+      
+      setTasks(prev => 
+        prev.map(task => task.id === taskId ? response.data : task)
+      )
+      return true
+    } catch (error) {
+      console.error('Failed to complete task:', error)
+      alert('Failed to complete task. Please try again.')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const cancelTask = async (taskId) => {
+    setLoading(true)
+    try {
+      const updateData = {
+        status: 'cancelled'
+      }
+      
+      const response = await api.put(`/tasks/${taskId}`, updateData)
+      
+      setTasks(prev => 
+        prev.map(task => task.id === taskId ? response.data : task)
+      )
+      return true
+    } catch (error) {
+      console.error('Failed to cancel task:', error)
+      alert('Failed to cancel task. Please try again.')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const deleteTask = async (taskId) => {
     setLoading(true)
     try {

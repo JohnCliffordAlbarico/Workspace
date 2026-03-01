@@ -88,6 +88,7 @@ const TaskBoard = ({ tasks, setTasks, workspace }) => {
             tasks={tasksByPriority.critical}
             setTasks={setTasks}
             onTaskClick={handleTaskClick}
+            allTasks={tasks}
           />
           <TaskColumn
             title="High Priority"
@@ -95,6 +96,7 @@ const TaskBoard = ({ tasks, setTasks, workspace }) => {
             tasks={tasksByPriority.high}
             setTasks={setTasks}
             onTaskClick={handleTaskClick}
+            allTasks={tasks}
           />
           <TaskColumn
             title="Medium"
@@ -102,6 +104,7 @@ const TaskBoard = ({ tasks, setTasks, workspace }) => {
             tasks={tasksByPriority.medium}
             setTasks={setTasks}
             onTaskClick={handleTaskClick}
+            allTasks={tasks}
           />
           <TaskColumn
             title="Low Priority"
@@ -109,6 +112,7 @@ const TaskBoard = ({ tasks, setTasks, workspace }) => {
             tasks={tasksByPriority.low}
             setTasks={setTasks}
             onTaskClick={handleTaskClick}
+            allTasks={tasks}
           />
         </div>
       )}
