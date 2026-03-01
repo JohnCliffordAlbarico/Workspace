@@ -1,4 +1,4 @@
-import { supabasePublic as supabase } from '../config/supabase.js'
+import { supabasePublic as supabase, supabaseAdmin } from '../config/supabase.js'
 
 // Get current user profile
 export const getProfile = async (req, res) => {
@@ -82,7 +82,7 @@ export const uploadProfileImage = async (req, res) => {
         const filePath = pathParts.slice(pathParts.indexOf('images') + 1).join('/')
         
         if (filePath) {
-          await supabase.storage.from('images').remove([filePath])
+          await supabaseAdmin.storage.from('images').remove([filePath])
         }
       } catch (err) {
         console.error('Error deleting old image:', err)
@@ -92,8 +92,8 @@ export const uploadProfileImage = async (req, res) => {
     const fileExt = file.originalname.split('.').pop()
     const fileName = `profiles/${userId}/avatar-${Date.now()}.${fileExt}`
     
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    // Upload to Supabase Storage using admin client (bypasses RLS)
+    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from('images')
       .upload(fileName, file.buffer, {
         contentType: file.mimetype,
@@ -103,7 +103,7 @@ export const uploadProfileImage = async (req, res) => {
     if (uploadError) throw uploadError
     
     // Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    const { data: { publicUrl } } = supabaseAdmin.storage
       .from('images')
       .getPublicUrl(fileName)
     
@@ -143,7 +143,7 @@ export const deleteProfileImage = async (req, res) => {
         const filePath = pathParts.slice(pathParts.indexOf('images') + 1).join('/')
         
         if (filePath) {
-          await supabase.storage.from('images').remove([filePath])
+          await supabaseAdmin.storage.from('images').remove([filePath])
         }
       } catch (err) {
         console.error('Error deleting image from storage:', err)
