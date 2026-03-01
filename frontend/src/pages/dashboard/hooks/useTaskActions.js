@@ -111,5 +111,5 @@ export const useTaskActions = (setTasks) => {
     }
   }
 
-  return { toggleTask, deleteTask, loading }
+  return { toggleTask, startTask, completeTask, cancelTask, deleteTask, loading }
 }

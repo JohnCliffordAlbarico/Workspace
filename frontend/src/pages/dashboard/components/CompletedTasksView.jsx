@@ -85,7 +85,7 @@ const CompletedTasksView = ({ tasks, setTasks }) => {
           />
           <TaskColumn
             title="Medium"
-            color="#7bed9f"
+            color="#ffa502"
             tasks={tasksByPriority.medium}
             setTasks={setTasks}
             onTaskClick={handleTaskClick}

@@ -500,25 +500,9 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
                   ✏️ Edit
                 </button>
                 <button
-                  onClick={handleToggleComplete}
-                  disabled={loading}
-                  className="flex-1 px-6 py-3 rounded-xl font-semibold"
-                  style={{
-                    background: task.status === 'completed' 
-                      ? 'rgba(255, 193, 7, 0.2)' 
-                      : 'rgba(126, 237, 159, 0.2)',
-                    border: task.status === 'completed'
-                      ? '1px solid rgba(255, 193, 7, 0.3)'
-                      : '1px solid rgba(126, 237, 159, 0.3)',
-                    color: task.status === 'completed' ? '#ffc107' : '#7bed9f'
-                  }}
-                >
-                  {task.status === 'completed' ? '↩️ Reopen' : '✅ Complete'}
-                </button>
-                <button
                   onClick={handleDelete}
                   disabled={loading}
-                  className="px-6 py-3 rounded-xl font-semibold"
+                  className="flex-1 px-6 py-3 rounded-xl font-semibold"
                   style={{
                     background: 'rgba(255, 71, 87, 0.2)',
                     border: '1px solid rgba(255, 71, 87, 0.3)',

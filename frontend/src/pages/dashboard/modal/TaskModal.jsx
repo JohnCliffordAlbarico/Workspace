@@ -187,57 +187,30 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
             />
           </div>
 
-          {/* Priority and Status Row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label 
-                className="block mb-2 text-sm font-semibold"
-                style={{ color: '#f5e6d3' }}
-              >
-                Priority
-              </label>
-              <select
-                name="priority"
-                value={formData.priority}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl text-base outline-none cursor-pointer"
-                style={{
-                  background: 'rgba(0,0,0,0.4)',
-                  border: '1px solid rgba(200, 80, 80, 0.3)',
-                  color: '#f5e6d3'
-                }}
-              >
-                <option value="critical">🔴 Critical</option>
-                <option value="high">🟠 High</option>
-                <option value="medium">🟢 Medium</option>
-                <option value="low">🔵 Low</option>
-              </select>
-            </div>
-
-            <div>
-              <label 
-                className="block mb-2 text-sm font-semibold"
-                style={{ color: '#f5e6d3' }}
-              >
-                Status
-              </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl text-base outline-none cursor-pointer"
-                style={{
-                  background: 'rgba(0,0,0,0.4)',
-                  border: '1px solid rgba(200, 80, 80, 0.3)',
-                  color: '#f5e6d3'
-                }}
-              >
-                <option value="pending">⏳ Pending</option>
-                <option value="in_progress">🔄 In Progress</option>
-                <option value="completed">✅ Completed</option>
-                <option value="cancelled">❌ Cancelled</option>
-              </select>
-            </div>
+          {/* Priority */}
+          <div>
+            <label 
+              className="block mb-2 text-sm font-semibold"
+              style={{ color: '#f5e6d3' }}
+            >
+              Priority
+            </label>
+            <select
+              name="priority"
+              value={formData.priority}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-xl text-base outline-none cursor-pointer"
+              style={{
+                background: 'rgba(0,0,0,0.4)',
+                border: '1px solid rgba(200, 80, 80, 0.3)',
+                color: '#f5e6d3'
+              }}
+            >
+              <option value="critical">🔴 Critical</option>
+              <option value="high">🟠 High</option>
+              <option value="medium">🟢 Medium</option>
+              <option value="low">🔵 Low</option>
+            </select>
           </div>
 
           {/* Days Until Due and Goal Time Row */}
