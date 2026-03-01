@@ -1,16 +1,9 @@
 import { useState } from 'react'
 import { useTaskActions } from '../hooks/useTaskActions'
-import { useTaskTimer } from '../hooks/useTaskTimer'
 
 const TaskItem = ({ task, color, setTasks, onTaskClick, allTasks }) => {
-  const [showDelete, setShowDelete] = useState(false)
-  const { toggleTask, startTask, completeTask, cancelTask, loading } = useTaskActions(setTasks)
-  const duration = useTaskTimer(task.started_at)
-
-  const handleToggle = async (e) => {
-    e.stopPropagation() // Prevent opening modal when clicking checkbox
-    await toggleTask(task.id, task.status, true)
-  }
+  const [showIcon, setShowIcon] = useState(false)
+  const { startTask, loading } = useTaskActions(setTasks)
 
   const handleStart = async (e) => {
     e.stopPropagation()
@@ -25,22 +18,11 @@ const TaskItem = ({ task, color, setTasks, onTaskClick, allTasks }) => {
     await startTask(task.id)
   }
 
-  const handleComplete = async (e) => {
-    e.stopPropagation()
-    await completeTask(task.id)
-  }
-
-  const handleCancel = async (e) => {
-    e.stopPropagation()
-    await cancelTask(task.id)
-  }
-
   const handleCardClick = () => {
     onTaskClick(task)
   }
 
   const isCompleted = task.status === 'completed'
-  const isInProgress = task.status === 'in_progress'
   const isPending = task.status === 'pending'
 
   return (
@@ -51,8 +33,8 @@ const TaskItem = ({ task, color, setTasks, onTaskClick, allTasks }) => {
         border: `1px solid ${color}66`,
         animation: 'slideIn 0.3s ease-out forwards'
       }}
-      onMouseEnter={() => setShowDelete(true)}
-      onMouseLeave={() => setShowDelete(false)}
+      onMouseEnter={() => setShowIcon(true)}
+      onMouseLeave={() => setShowIcon(false)}
       onClick={handleCardClick}
     >
       <style>{`
@@ -60,117 +42,45 @@ const TaskItem = ({ task, color, setTasks, onTaskClick, allTasks }) => {
           from { opacity: 0; transform: translateX(-20px); }
           to { opacity: 1; transform: translateX(0); }
         }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
       `}</style>
 
-      {/* In Progress Badge */}
-      {isInProgress && (
-        <div className="mb-2 flex items-center justify-between">
-          <div 
-            className="px-3 py-1 rounded-lg text-xs font-semibold inline-block"
+      <div className="flex items-start gap-3">
+        {/* Start Button for Pending Tasks */}
+        {isPending && (
+          <button
+            onClick={handleStart}
+            disabled={loading}
+            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
             style={{
               background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
-              color: '#1a0a0a',
-              animation: 'pulse 2s ease-in-out infinite'
+              border: 'none',
+              color: '#1a0a0a'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'scale(1.1)'
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(126, 237, 159, 0.5)'
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+              e.currentTarget.style.boxShadow = 'none'
             }}
           >
-            🔄 In Progress
-          </div>
-          {duration && (
-            <span 
-              className="text-xs font-mono font-semibold"
-              style={{ color: '#7bed9f' }}
-            >
-              ⏱️ {duration}
-            </span>
-          )}
-        </div>
-      )}
+            ▶️
+          </button>
+        )}
 
-      <div className="flex items-start gap-3">
-        <button
-          onClick={handleToggle}
-          disabled={loading}
-          className="w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all duration-200 mt-0.5"
-          style={{
-            borderColor: color,
-            background: isCompleted ? color : 'transparent',
-            color: isCompleted ? '#1a0a0a' : 'transparent'
-          }}
+        <span
+          className={`flex-1 text-base leading-relaxed ${isCompleted ? 'line-through opacity-50' : ''}`}
+          style={{ color: '#f5e6d3' }}
         >
-          {isCompleted ? '✓' : ''}
-        </button>
-
-        <div className="flex-1">
-          <span
-            className={`text-base leading-relaxed block ${isCompleted ? 'line-through opacity-50' : ''}`}
-            style={{ color: '#f5e6d3' }}
-          >
-            {task.title}
-          </span>
-
-          {/* Action Buttons */}
-          {isPending && (
-            <button
-              onClick={handleStart}
-              disabled={loading}
-              className="mt-2 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-300"
-              style={{
-                background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
-                color: '#1a0a0a',
-                border: 'none'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1px)'
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(126, 237, 159, 0.4)'
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = 'none'
-              }}
-            >
-              ▶️ Start
-            </button>
-          )}
-
-          {isInProgress && (
-            <div className="mt-2 flex gap-2">
-              <button
-                onClick={handleComplete}
-                disabled={loading}
-                className="px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-300"
-                style={{
-                  background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
-                  color: '#1a0a0a',
-                  border: 'none'
-                }}
-              >
-                ✅ Complete
-              </button>
-              <button
-                onClick={handleCancel}
-                disabled={loading}
-                className="px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-300"
-                style={{
-                  background: 'rgba(255, 71, 87, 0.3)',
-                  border: '1px solid rgba(255, 71, 87, 0.5)',
-                  color: '#ff4757'
-                }}
-              >
-                ❌ Cancel
-              </button>
-            </div>
-          )}
-        </div>
+          {task.title}
+        </span>
 
         <span 
           className="text-sm transition-opacity duration-200"
           style={{
             color: '#a89080',
-            opacity: showDelete ? 1 : 0
+            opacity: showIcon ? 1 : 0
           }}
         >
           👁️

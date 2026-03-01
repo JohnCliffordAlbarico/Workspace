@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import TaskColumn from './TaskColumn'
 import EmptyState from './EmptyState'
 import TaskModal from '../modal/TaskModal'
 import TaskDetailModal from '../modal/TaskDetailModal'
+import InProgressBanner from './InProgressBanner'
 
 const TaskBoard = ({ tasks, setTasks, workspace }) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -14,6 +15,10 @@ const TaskBoard = ({ tasks, setTasks, workspace }) => {
     medium: tasks.filter(t => t.priority === 'medium'),
     low: tasks.filter(t => t.priority === 'low')
   }
+
+  const inProgressTask = useMemo(() => {
+    return tasks.find(t => t.status === 'in_progress')
+  }, [tasks])
 
   const handleTaskClick = (task) => {
     setSelectedTask(task)
@@ -59,6 +64,15 @@ const TaskBoard = ({ tasks, setTasks, workspace }) => {
         </button>
       </header>
 
+      {/* In Progress Banner */}
+      {inProgressTask && (
+        <InProgressBanner 
+          task={inProgressTask} 
+          setTasks={setTasks}
+          onTaskClick={handleTaskClick}
+        />
+      )}
+
       {/* Task Modal */}
       <TaskModal 
         isOpen={isModalOpen}
@@ -77,11 +91,11 @@ const TaskBoard = ({ tasks, setTasks, workspace }) => {
         allTasks={tasks}
       />
 
-      {/* Task Columns */}
+      {/* Task Columns - 2x2 Grid */}
       {tasks.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+        <div className="grid grid-cols-2 gap-6">
           <TaskColumn
             title="Critical"
             color="#ff4757"

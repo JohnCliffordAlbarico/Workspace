@@ -68,7 +68,7 @@ const CompletedTasksView = ({ tasks, setTasks }) => {
           </p>
         </div>
       ) : (
-        <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+        <div className="grid grid-cols-2 gap-6">
           <TaskColumn
             title="Critical"
             color="#ff4757"
