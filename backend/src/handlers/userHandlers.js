@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase.js'
+import { supabasePublic as supabase } from '../config/supabase.js'
 
 // Get current user profile
 export const getProfile = async (req, res) => {
