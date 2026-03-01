@@ -99,7 +99,10 @@ const Sidebar = ({ tasks, view, setView }) => {
             </p>
           </div>
           <button
-            onClick={handleLogout}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleLogout()
+            }}
             className="p-2 rounded-lg transition-all duration-200 hover:bg-red-900/30"
             title="Logout"
           >

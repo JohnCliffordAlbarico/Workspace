@@ -9,7 +9,9 @@ const ProfileModal = ({ isOpen, onClose }) => {
   const [imagePreview, setImagePreview] = useState(null)
   const [selectedFile, setSelectedFile] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -17,6 +19,20 @@ const ProfileModal = ({ isOpen, onClose }) => {
       setDisplayName(profile.display_name || profile.email?.split('@')[0] || '')
     }
   }, [profile])
+
+  // ESC key to close
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !showDeleteConfirm) {
+        onClose()
+      }
+    }
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown)
+      return () => window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen, onClose, showDeleteConfirm])
 
   if (!isOpen || !profile) return null
 
@@ -28,12 +44,22 @@ const ProfileModal = ({ isOpen, onClose }) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
       setError('Invalid file type. Please upload JPEG, PNG, GIF, or WebP')
+      setSelectedFile(null)
+      setImagePreview(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
       return
     }
 
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       setError('File too large. Maximum size is 5MB')
+      setSelectedFile(null)
+      setImagePreview(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
       return
     }
 
@@ -56,6 +82,8 @@ const ProfileModal = ({ isOpen, onClose }) => {
       setSelectedFile(null)
       setImagePreview(null)
       setError('')
+      setSuccess('Profile image updated successfully!')
+      setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to upload image')
     }
@@ -71,12 +99,17 @@ const ProfileModal = ({ isOpen, onClose }) => {
   }
 
   const handleSave = async () => {
+    setSaving(true)
     try {
       await updateProfile({ display_name: displayName })
       setIsEditing(false)
       setError('')
+      setSuccess('Profile updated successfully!')
+      setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to update profile')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -85,6 +118,8 @@ const ProfileModal = ({ isOpen, onClose }) => {
       await deleteImage()
       setShowDeleteConfirm(false)
       setError('')
+      setSuccess('Profile image removed successfully!')
+      setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to delete image')
     }
@@ -156,6 +191,20 @@ const ProfileModal = ({ isOpen, onClose }) => {
             }}
           >
             {error}
+          </div>
+        )}
+
+        {/* Success Message */}
+        {success && (
+          <div 
+            className="mb-4 p-3 rounded-lg"
+            style={{
+              background: 'rgba(255, 165, 2, 0.2)',
+              border: '1px solid rgba(255, 165, 2, 0.5)',
+              color: '#ffa502'
+            }}
+          >
+            ✓ {success}
           </div>
         )}
 
@@ -367,13 +416,16 @@ const ProfileModal = ({ isOpen, onClose }) => {
             <>
               <button
                 onClick={handleSave}
+                disabled={saving}
                 className="flex-1 px-6 py-3 rounded-xl font-semibold"
                 style={{
                   background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
-                  color: '#f5e6d3'
+                  color: '#f5e6d3',
+                  opacity: saving ? 0.5 : 1,
+                  cursor: saving ? 'not-allowed' : 'pointer'
                 }}
               >
-                💾 Save Changes
+                {saving ? '💾 Saving...' : '💾 Save Changes'}
               </button>
               <button
                 onClick={() => {
