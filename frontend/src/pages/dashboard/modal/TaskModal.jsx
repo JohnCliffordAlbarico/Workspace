@@ -1,23 +1,57 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { Flame, Minus } from 'lucide-react'
 import { useAddTask } from '../hooks/useAddTask'
 
 const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    priority: 'medium',
-    status: 'pending',
-    days_until_due: '',
-    goal_hours: '',
-    goal_minutes: '',
-    parent_task_id: ''
+  const STORAGE_KEY = `task_draft_${workspaceId}`
+  
+  // Load from localStorage on mount
+  const [isMinimized, setIsMinimized] = useState(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_minimized`)
+    return saved === 'true'
+  })
+  
+  const [formData, setFormData] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch (e) {
+        console.error('Failed to parse saved draft:', e)
+      }
+    }
+    return {
+      title: '',
+      description: '',
+      priority: 'medium',
+      status: 'pending',
+      days_until_due: '',
+      goal_hours: '',
+      goal_minutes: '',
+      parent_task_id: ''
+    }
   })
 
   const { addTask, loading } = useAddTask(setTasks)
 
-  // Reset form when modal closes
+  // Save to localStorage whenever formData changes
+  useEffect(() => {
+    const hasContent = formData.title || formData.description
+    if (hasContent) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData))
+    }
+  }, [formData, STORAGE_KEY])
+
+  // Save minimized state to localStorage
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_minimized`, isMinimized.toString())
+  }, [isMinimized, STORAGE_KEY])
+
+  // Clear draft when modal closes (but not when minimized)
   useEffect(() => {
     if (!isOpen) {
+      setIsMinimized(false)
       setFormData({
         title: '',
         description: '',
@@ -28,12 +62,29 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
         goal_minutes: '',
         parent_task_id: ''
       })
+      localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem(`${STORAGE_KEY}_minimized`)
     }
-  }, [isOpen])
+  }, [isOpen, STORAGE_KEY])
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleMinimize = () => {
+    setIsMinimized(true)
+  }
+
+  const handleRestore = () => {
+    setIsMinimized(false)
+  }
+
+  const handleClose = () => {
+    setIsMinimized(false)
+    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(`${STORAGE_KEY}_minimized`)
+    onClose()
   }
 
   const handleSubmit = async (e) => {
@@ -72,7 +123,10 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
     }
 
     await addTask(taskData)
-    onClose()
+    // Clear localStorage after successful submission
+    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(`${STORAGE_KEY}_minimized`)
+    handleClose()
   }
 
   if (!isOpen) return null
@@ -82,14 +136,41 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
     t.status !== 'completed' && !t.parent_task_id
   )
 
-  return (
+  // Floating fire button when minimized
+  if (isMinimized) {
+    return createPortal(
+      <button
+        onClick={handleRestore}
+        className="fixed bottom-6 right-6 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 animate-pulse"
+        style={{
+          background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ff4757 100%)',
+          boxShadow: '0 8px 32px rgba(255, 107, 53, 0.6), 0 0 60px rgba(247, 147, 30, 0.4)',
+          zIndex: 9998,
+          border: '2px solid rgba(255, 255, 255, 0.3)'
+        }}
+        onMouseOver={(e) => {
+          e.currentTarget.style.transform = 'scale(1.1) rotate(5deg)'
+          e.currentTarget.style.boxShadow = '0 12px 48px rgba(255, 107, 53, 0.8), 0 0 80px rgba(247, 147, 30, 0.6)'
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.transform = 'scale(1) rotate(0deg)'
+          e.currentTarget.style.boxShadow = '0 8px 32px rgba(255, 107, 53, 0.6), 0 0 60px rgba(247, 147, 30, 0.4)'
+        }}
+      >
+        <Flame size={32} color="#fff" strokeWidth={2.5} />
+      </button>,
+      document.body
+    )
+  }
+
+  return createPortal(
     <div 
       className="fixed inset-0 flex items-center justify-center p-4"
       style={{ 
         background: 'rgba(0, 0, 0, 0.7)',
         zIndex: 9999
       }}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div 
         className="w-full max-w-2xl rounded-2xl p-8 max-h-[90vh] overflow-y-auto"
@@ -112,15 +193,25 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
           >
             ✨ Create New Task
           </h2>
-          <button
-            onClick={onClose}
-            className="text-2xl transition-all duration-200"
-            style={{ color: '#c85050' }}
-            onMouseOver={(e) => e.currentTarget.style.transform = 'rotate(90deg)'}
-            onMouseOut={(e) => e.currentTarget.style.transform = 'rotate(0deg)'}
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleMinimize}
+              className="text-2xl transition-all duration-200 hover:scale-110"
+              style={{ color: '#ffa502' }}
+              title="Minimize"
+            >
+              <Minus size={24} />
+            </button>
+            <button
+              onClick={handleClose}
+              className="text-2xl transition-all duration-200"
+              style={{ color: '#c85050' }}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'rotate(90deg)'}
+              onMouseOut={(e) => e.currentTarget.style.transform = 'rotate(0deg)'}
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -329,7 +420,7 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
           <div className="flex gap-4 pt-4">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="flex-1 px-6 py-3 rounded-xl text-base font-semibold transition-all duration-300"
               style={{
                 background: 'rgba(0,0,0,0.4)',
@@ -370,7 +461,8 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
