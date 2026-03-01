@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useProfile } from '../hooks/useProfile'
 import ConfirmationModal from './ConfirmationModal'
 
@@ -139,12 +140,12 @@ const ProfileModal = ({ isOpen, onClose }) => {
     })
   }
 
-  return (
+  return createPortal(
     <div 
       className="fixed inset-0 flex items-center justify-center p-4"
       style={{ 
         background: 'rgba(0, 0, 0, 0.7)',
-        zIndex: 9999
+        zIndex: 10000
       }}
       onClick={onClose}
     >
@@ -468,7 +469,8 @@ const ProfileModal = ({ isOpen, onClose }) => {
         confirmText="Yes, Remove"
         cancelText="Cancel"
       />
-    </div>
+    </div>,
+    document.body
   )
 }
 
