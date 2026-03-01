@@ -1,23 +1,27 @@
 import express from 'express'
+import multer from 'multer'
 import { authenticate } from '../middleware/auth.js'
-import { auditLog } from '../middleware/auditLog.js'
-import { validate, userUpdateValidation } from '../middleware/validation.js'
-import { asyncHandler } from '../middleware/errorHandler.js'
-import {
-  getCurrentUser,
-  updateUser,
-  getUserByPublicId
+import { 
+  getProfile, 
+  updateProfile, 
+  uploadProfileImage,
+  deleteProfileImage 
 } from '../handlers/userHandlers.js'
 
 const router = express.Router()
 
-// Get current user profile
-router.get('/me', authenticate, asyncHandler(getCurrentUser))
+// Configure multer for memory storage
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+})
 
-// Update user profile
-router.put('/me', authenticate, validate(userUpdateValidation), auditLog('users'), asyncHandler(updateUser))
-
-// Get user by public_id
-router.get('/:publicId', authenticate, asyncHandler(getUserByPublicId))
+// Profile routes
+router.get('/profile', authenticate, getProfile)
+router.put('/profile', authenticate, updateProfile)
+router.post('/profile/image', authenticate, upload.single('image'), uploadProfileImage)
+router.delete('/profile/image', authenticate, deleteProfileImage)
 
 export default router

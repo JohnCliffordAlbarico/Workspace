@@ -1,10 +1,12 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
+import ProfileModal from '../modal/ProfileModal'
 
 const Sidebar = ({ tasks, view, setView }) => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
+  const [showProfileModal, setShowProfileModal] = useState(false)
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -30,7 +32,7 @@ const Sidebar = ({ tasks, view, setView }) => {
 
   return (
     <aside 
-      className="w-80 flex-shrink-0 p-6 flex flex-col z-10"
+      className="w-80 flex-shrink-0 p-6 flex flex-col z-10 overflow-y-auto"
       style={{
         background: 'linear-gradient(180deg, rgba(45, 15, 20, 0.95) 0%, rgba(26, 10, 10, 0.98) 100%)',
         borderRight: '1px solid rgba(200, 80, 80, 0.2)'
@@ -49,29 +51,48 @@ const Sidebar = ({ tasks, view, setView }) => {
 
       {/* Profile Card */}
       <div 
-        className="rounded-2xl p-6 mb-6"
+        className="rounded-2xl p-6 mb-6 cursor-pointer transition-all duration-300"
         style={{
           background: 'linear-gradient(145deg, #2d1418 0%, #1a0d0d 100%)',
           border: '1px solid rgba(200, 80, 80, 0.3)',
           animation: 'pulseGlow 4s ease-in-out infinite'
         }}
+        onClick={() => setShowProfileModal(true)}
+        onMouseOver={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)'
+          e.currentTarget.style.boxShadow = '0 8px 30px rgba(200, 80, 80, 0.6)'
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = ''
+        }}
       >
         <div className="flex items-center gap-4 mb-4">
           <div 
-            className="w-16 h-16 rounded-full flex items-center justify-center text-3xl"
+            className="w-16 h-16 rounded-full flex items-center justify-center text-3xl overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, #c85050 0%, #ff6b6b 100%)',
+              background: user?.profile_img 
+                ? 'transparent' 
+                : 'linear-gradient(135deg, #c85050 0%, #ff6b6b 100%)',
               boxShadow: '0 4px 15px rgba(200, 80, 80, 0.4)'
             }}
           >
-            <span style={{ animation: 'ghostFloat 3s ease-in-out infinite' }}>👻</span>
+            {user?.profile_img ? (
+              <img 
+                src={user.profile_img} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span style={{ animation: 'ghostFloat 3s ease-in-out infinite' }}>👻</span>
+            )}
           </div>
           <div className="flex-1">
             <h2 
               className="text-xl font-bold"
               style={{ fontFamily: "'Cinzel', serif", color: '#f5e6d3' }}
             >
-              {user?.email?.split('@')[0] || 'User'}
+              {user?.display_name || user?.email?.split('@')[0] || 'User'}
             </h2>
             <p className="text-sm" style={{ color: '#c85050' }}>
               {user?.role === 'admin' ? 'Administrator' : 'Workspace Manager'}
@@ -91,6 +112,19 @@ const Sidebar = ({ tasks, view, setView }) => {
           </p>
         </div>
       </div>
+
+      {/* Profile Modal */}
+      <ProfileModal 
+        isOpen={showProfileModal}
+        onClose={() => {
+          setShowProfileModal(false)
+          // Refresh user data from localStorage
+          const userData = localStorage.getItem('user')
+          if (userData) {
+            setUser(JSON.parse(userData))
+          }
+        }}
+      />
 
       {/* View Toggle */}
       <div 
