@@ -7,6 +7,9 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [showSubtaskForm, setShowSubtaskForm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteSubtaskId, setDeleteSubtaskId] = useState(null)
+  const [showCancelEditConfirm, setShowCancelEditConfirm] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [subtaskTitle, setSubtaskTitle] = useState('')
   const [subtasks, setSubtasks] = useState([])
   const [loadingSubtasks, setLoadingSubtasks] = useState(false)
@@ -31,6 +34,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
         due_date: task.due_date ? task.due_date.split('T')[0] : '',
         goal_time_minutes: task.goal_time_minutes || ''
       })
+      setHasUnsavedChanges(false)
       loadSubtasks()
     }
   }, [task])
@@ -62,10 +66,34 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
       const response = await api.put(`/tasks/${task.id}`, updateData)
       setTasks(prev => prev.map(t => t.id === task.id ? response.data : t))
       setIsEditing(false)
+      setHasUnsavedChanges(false)
     } catch (error) {
       console.error('Failed to update task:', error)
       alert('Failed to update task. Please try again.')
     }
+  }
+
+  const handleCancelEdit = () => {
+    if (hasUnsavedChanges) {
+      setShowCancelEditConfirm(true)
+    } else {
+      setIsEditing(false)
+    }
+  }
+
+  const handleConfirmCancelEdit = () => {
+    setIsEditing(false)
+    setHasUnsavedChanges(false)
+    setShowCancelEditConfirm(false)
+    // Reset editData to original task values
+    setEditData({
+      title: task.title || '',
+      description: task.description || '',
+      priority: task.priority || 'medium',
+      status: task.status || 'pending',
+      due_date: task.due_date ? task.due_date.split('T')[0] : '',
+      goal_time_minutes: task.goal_time_minutes || ''
+    })
   }
 
   const handleAddSubtask = async () => {
@@ -105,12 +133,15 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
     }
   }
 
-  const handleDeleteSubtask = async (subtaskId) => {
-    if (!window.confirm('Delete this subtask?')) return
+  const handleDeleteSubtask = (subtaskId) => {
+    setDeleteSubtaskId(subtaskId)
+  }
 
+  const handleConfirmDeleteSubtask = async () => {
     try {
-      await api.delete(`/tasks/${subtaskId}`)
-      setSubtasks(prev => prev.filter(st => st.id !== subtaskId))
+      await api.delete(`/tasks/${deleteSubtaskId}`)
+      setSubtasks(prev => prev.filter(st => st.id !== deleteSubtaskId))
+      setDeleteSubtaskId(null)
     } catch (error) {
       console.error('Failed to delete subtask:', error)
     }
@@ -142,6 +173,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
 
   const completedSubtasks = subtasks.filter(st => st.status === 'completed').length
   const totalSubtasks = subtasks.length
+  const subtaskToDelete = subtasks.find(st => st.id === deleteSubtaskId)
 
   return (
     <div 
@@ -168,7 +200,10 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
               <input
                 type="text"
                 value={editData.title}
-                onChange={(e) => setEditData(prev => ({ ...prev, title: e.target.value }))}
+                onChange={(e) => {
+                  setEditData(prev => ({ ...prev, title: e.target.value }))
+                  setHasUnsavedChanges(true)
+                }}
                 className="w-full text-3xl font-bold px-3 py-2 rounded-lg outline-none"
                 style={{
                   fontFamily: "'Cinzel', serif",
@@ -212,7 +247,10 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
               {isEditing ? (
                 <select
                   value={editData.priority}
-                  onChange={(e) => setEditData(prev => ({ ...prev, priority: e.target.value }))}
+                  onChange={(e) => {
+                    setEditData(prev => ({ ...prev, priority: e.target.value }))
+                    setHasUnsavedChanges(true)
+                  }}
                   className="w-full px-4 py-2 rounded-lg outline-none"
                   style={{
                     background: 'rgba(0,0,0,0.4)',
@@ -246,7 +284,10 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
               {isEditing ? (
                 <select
                   value={editData.status}
-                  onChange={(e) => setEditData(prev => ({ ...prev, status: e.target.value }))}
+                  onChange={(e) => {
+                    setEditData(prev => ({ ...prev, status: e.target.value }))
+                    setHasUnsavedChanges(true)
+                  }}
                   className="w-full px-4 py-2 rounded-lg outline-none"
                   style={{
                     background: 'rgba(0,0,0,0.4)',
@@ -278,7 +319,10 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
             {isEditing ? (
               <textarea
                 value={editData.description}
-                onChange={(e) => setEditData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) => {
+                  setEditData(prev => ({ ...prev, description: e.target.value }))
+                  setHasUnsavedChanges(true)
+                }}
                 rows="4"
                 className="w-full px-4 py-3 rounded-lg outline-none resize-none"
                 style={{
@@ -304,7 +348,10 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
                 <input
                   type="date"
                   value={editData.due_date}
-                  onChange={(e) => setEditData(prev => ({ ...prev, due_date: e.target.value }))}
+                  onChange={(e) => {
+                    setEditData(prev => ({ ...prev, due_date: e.target.value }))
+                    setHasUnsavedChanges(true)
+                  }}
                   className="w-full px-4 py-2 rounded-lg outline-none"
                   style={{
                     background: 'rgba(0,0,0,0.4)',
@@ -328,7 +375,10 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
                 <input
                   type="number"
                   value={editData.goal_time_minutes}
-                  onChange={(e) => setEditData(prev => ({ ...prev, goal_time_minutes: e.target.value }))}
+                  onChange={(e) => {
+                    setEditData(prev => ({ ...prev, goal_time_minutes: e.target.value }))
+                    setHasUnsavedChanges(true)
+                  }}
                   placeholder="Minutes"
                   className="w-full px-4 py-2 rounded-lg outline-none"
                   style={{
@@ -475,7 +525,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
                   Save Changes
                 </button>
                 <button
-                  onClick={() => setIsEditing(false)}
+                  onClick={handleCancelEdit}
                   className="flex-1 px-6 py-3 rounded-xl font-semibold"
                   style={{
                     background: 'rgba(0,0,0,0.4)',
@@ -526,6 +576,28 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
         message={`Are you sure you want to delete "${task?.title}"? This will also delete all subtasks. This action cannot be undone.`}
         confirmText="Yes, Delete"
         cancelText="Cancel"
+      />
+
+      {/* Subtask Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={!!deleteSubtaskId}
+        onConfirm={handleConfirmDeleteSubtask}
+        onCancel={() => setDeleteSubtaskId(null)}
+        title="🗑️ Delete Subtask?"
+        message={`Are you sure you want to delete "${subtaskToDelete?.title}"? This action cannot be undone.`}
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+      />
+
+      {/* Cancel Edit Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showCancelEditConfirm}
+        onConfirm={handleConfirmCancelEdit}
+        onCancel={() => setShowCancelEditConfirm(false)}
+        title="⚠️ Discard Changes?"
+        message="You have unsaved changes. Are you sure you want to discard them?"
+        confirmText="Yes, Discard"
+        cancelText="Keep Editing"
       />
     </div>
   )

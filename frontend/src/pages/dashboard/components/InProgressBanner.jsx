@@ -1,18 +1,32 @@
+import { useState } from 'react'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { useTaskTimer } from '../hooks/useTaskTimer'
+import ConfirmationModal from '../modal/ConfirmationModal'
 
 const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
   const { completeTask, cancelTask, loading } = useTaskActions(setTasks)
   const duration = useTaskTimer(task?.started_at)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [showCompleteConfirm, setShowCompleteConfirm] = useState(false)
 
   if (!task) return null
 
-  const handleComplete = async () => {
-    await completeTask(task.id)
+  const handleComplete = () => {
+    setShowCompleteConfirm(true)
   }
 
-  const handleCancel = async () => {
+  const handleConfirmComplete = async () => {
+    await completeTask(task.id)
+    setShowCompleteConfirm(false)
+  }
+
+  const handleCancel = () => {
+    setShowCancelConfirm(true)
+  }
+
+  const handleConfirmCancel = async () => {
     await cancelTask(task.id)
+    setShowCancelConfirm(false)
   }
 
   const handleClick = () => {
@@ -234,6 +248,28 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
           </div>
         )}
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showCancelConfirm}
+        onConfirm={handleConfirmCancel}
+        onCancel={() => setShowCancelConfirm(false)}
+        title="❌ Cancel Task?"
+        message={`Are you sure you want to cancel "${task?.title}"? This will stop tracking time and mark the task as cancelled.`}
+        confirmText="Yes, Cancel Task"
+        cancelText="Keep Working"
+      />
+
+      {/* Complete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showCompleteConfirm}
+        onConfirm={handleConfirmComplete}
+        onCancel={() => setShowCompleteConfirm(false)}
+        title="✅ Complete Task?"
+        message={`Mark "${task?.title}" as completed? The task will be moved to the completed tasks view.`}
+        confirmText="Yes, Complete"
+        cancelText="Not Yet"
+      />
     </div>
   )
 }
