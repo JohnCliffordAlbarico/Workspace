@@ -19,29 +19,31 @@ const DayDetailModal = ({ isOpen, onClose, date, tasks }) => {
   // Filter tasks for this specific date
   const dateStr = date.toISOString().split('T')[0]
   
-  const completedTasks = tasks.filter(t => {
-    if (!t.completed_at) return false
-    const completedDate = new Date(t.completed_at).toISOString().split('T')[0]
-    return completedDate === dateStr
+  const allTasksForDate = tasks.filter(t => {
+    // Check if task is related to this date in any way
+    const completedMatch = t.completed_at && new Date(t.completed_at).toISOString().split('T')[0] === dateStr
+    const dueMatch = t.due_date && new Date(t.due_date).toISOString().split('T')[0] === dateStr
+    const createdMatch = t.created_at && new Date(t.created_at).toISOString().split('T')[0] === dateStr
+    const startedMatch = t.started_at && new Date(t.started_at).toISOString().split('T')[0] === dateStr
+    
+    return completedMatch || dueMatch || createdMatch || startedMatch
   })
 
-  const dueTasks = tasks.filter(t => {
-    if (!t.due_date) return false
-    const dueDate = new Date(t.due_date).toISOString().split('T')[0]
-    return dueDate === dateStr && t.status !== 'completed'
-  })
+  // Group tasks by priority
+  const tasksByPriority = {
+    critical: allTasksForDate.filter(t => t.priority === 'critical'),
+    high: allTasksForDate.filter(t => t.priority === 'high'),
+    medium: allTasksForDate.filter(t => t.priority === 'medium'),
+    low: allTasksForDate.filter(t => t.priority === 'low')
+  }
 
-  const createdTasks = tasks.filter(t => {
-    if (!t.created_at) return false
-    const createdDate = new Date(t.created_at).toISOString().split('T')[0]
-    return createdDate === dateStr
-  })
-
-  const startedTasks = tasks.filter(t => {
-    if (!t.started_at) return false
-    const startedDate = new Date(t.started_at).toISOString().split('T')[0]
-    return startedDate === dateStr
-  })
+  // Priority configuration
+  const priorityConfig = {
+    critical: { label: 'Critical Priority', emoji: '🔴', color: '#ff4757' },
+    high: { label: 'High Priority', emoji: '🟠', color: '#ffa502' },
+    medium: { label: 'Medium Priority', emoji: '🟢', color: '#7bed9f' },
+    low: { label: 'Low Priority', emoji: '🔵', color: '#70a1ff' }
+  }
 
   // Priority colors
   const getPriorityColor = (priority) => {
@@ -54,15 +56,24 @@ const DayDetailModal = ({ isOpen, onClose, date, tasks }) => {
     }
   }
 
-  // Priority emoji
-  const getPriorityEmoji = (priority) => {
-    switch (priority) {
-      case 'critical': return '🔴'
-      case 'high': return '🟠'
-      case 'medium': return '🟢'
-      case 'low': return '🔵'
-      default: return '⚪'
+  // Get task status badge
+  const getTaskStatusBadge = (task) => {
+    const badges = []
+    
+    if (task.completed_at && new Date(task.completed_at).toISOString().split('T')[0] === dateStr) {
+      badges.push({ label: 'Completed', color: '#7bed9f', icon: '✓' })
     }
+    if (task.due_date && new Date(task.due_date).toISOString().split('T')[0] === dateStr) {
+      badges.push({ label: 'Due', color: '#ff4757', icon: '📅' })
+    }
+    if (task.started_at && new Date(task.started_at).toISOString().split('T')[0] === dateStr) {
+      badges.push({ label: 'Started', color: '#ffa502', icon: '⏱️' })
+    }
+    if (task.created_at && new Date(task.created_at).toISOString().split('T')[0] === dateStr) {
+      badges.push({ label: 'Created', color: '#70a1ff', icon: '🎯' })
+    }
+    
+    return badges
   }
 
   // Format time duration
@@ -83,6 +94,7 @@ const DayDetailModal = ({ isOpen, onClose, date, tasks }) => {
   }
 
   // Calculate summary stats
+  const completedTasks = allTasksForDate.filter(t => t.status === 'completed')
   const totalCompleted = completedTasks.length
   const totalTime = completedTasks.reduce((sum, task) => {
     const actualTime = getActualTime(task)
@@ -97,70 +109,94 @@ const DayDetailModal = ({ isOpen, onClose, date, tasks }) => {
     return actualTime && task.goal_time_minutes && actualTime > task.goal_time_minutes
   }).length
 
-  const TaskCard = ({ task, showTime = false }) => (
-    <div
-      className="p-4 rounded-lg mb-3 transition-all duration-300"
-      style={{
-        background: 'rgba(0, 0, 0, 0.3)',
-        border: `1px solid ${getPriorityColor(task.priority)}40`
-      }}
-      onMouseOver={(e) => {
-        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.5)'
-        e.currentTarget.style.transform = 'translateX(4px)'
-      }}
-      onMouseOut={(e) => {
-        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)'
-        e.currentTarget.style.transform = 'translateX(0)'
-      }}
-    >
-      <div className="flex items-start gap-3">
-        <span className="text-xl">{getPriorityEmoji(task.priority)}</span>
-        <div className="flex-1">
-          <h4 
-            className="font-semibold mb-1"
-            style={{ color: '#f5e6d3' }}
-          >
-            {task.title}
-          </h4>
-          {task.description && (
-            <p 
-              className="text-sm mb-2"
-              style={{ color: '#a89080' }}
+  const TaskCard = ({ task }) => {
+    const statusBadges = getTaskStatusBadge(task)
+    const isCompleted = task.status === 'completed'
+    
+    return (
+      <div
+        className="p-4 rounded-lg mb-3 transition-all duration-300"
+        style={{
+          background: 'rgba(0, 0, 0, 0.3)',
+          border: `1px solid ${getPriorityColor(task.priority)}40`
+        }}
+        onMouseOver={(e) => {
+          e.currentTarget.style.background = 'rgba(0, 0, 0, 0.5)'
+          e.currentTarget.style.transform = 'translateX(4px)'
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)'
+          e.currentTarget.style.transform = 'translateX(0)'
+        }}
+      >
+        <div className="flex items-start gap-3">
+          <div className="flex-1">
+            <h4 
+              className="font-semibold mb-2"
+              style={{ color: '#f5e6d3' }}
             >
-              {task.description}
-            </p>
-          )}
-          {showTime && (
-            <div className="flex gap-4 text-xs mt-2">
-              {(() => {
-                const actualTime = getActualTime(task)
-                if (actualTime) {
-                  return (
-                    <>
-                      <span style={{ color: '#ffa502' }}>
-                        ⏱️ {formatDuration(actualTime)}
-                      </span>
-                      {task.goal_time_minutes && (
-                        <span 
-                          style={{ 
-                            color: actualTime <= task.goal_time_minutes ? '#7bed9f' : '#ff4757' 
-                          }}
-                        >
-                          {actualTime <= task.goal_time_minutes ? '✓' : '⚠️'} 
-                          Goal: {formatDuration(task.goal_time_minutes)}
-                        </span>
-                      )}
-                    </>
-                  )
-                }
-                return null
-              })()}
+              {task.title}
+            </h4>
+            
+            {/* Status Badges */}
+            <div className="flex flex-wrap gap-2 mb-2">
+              {statusBadges.map((badge, idx) => (
+                <span
+                  key={idx}
+                  className="text-xs px-2 py-1 rounded font-semibold"
+                  style={{
+                    background: `${badge.color}20`,
+                    border: `1px solid ${badge.color}40`,
+                    color: badge.color
+                  }}
+                >
+                  {badge.icon} {badge.label}
+                </span>
+              ))}
             </div>
-          )}
+
+            {task.description && (
+              <p 
+                className="text-sm mb-2"
+                style={{ color: '#a89080' }}
+              >
+                {task.description}
+              </p>
+            )}
+            
+            {/* Time tracking for completed tasks */}
+            {isCompleted && (
+              <div className="flex gap-4 text-xs mt-2">
+                {(() => {
+                  const actualTime = getActualTime(task)
+                  if (actualTime) {
+                    return (
+                      <>
+                        <span style={{ color: '#ffa502' }}>
+                          ⏱️ {formatDuration(actualTime)}
+                        </span>
+                        {task.goal_time_minutes && (
+                          <span 
+                            style={{ 
+                              color: actualTime <= task.goal_time_minutes ? '#7bed9f' : '#ff4757' 
+                            }}
+                          >
+                            {actualTime <= task.goal_time_minutes ? '✓' : '⚠️'} 
+                            Goal: {formatDuration(task.goal_time_minutes)}
+                          </span>
+                        )}
+                      </>
+                    )
+                  }
+                  return null
+                })()}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   return createPortal(
     <div 
@@ -204,84 +240,32 @@ const DayDetailModal = ({ isOpen, onClose, date, tasks }) => {
           </button>
         </div>
 
-        {/* Completed Tasks Section */}
-        {completedTasks.length > 0 && (
-          <div className="mb-6">
-            <h3 
-              className="text-xl font-bold mb-4 flex items-center gap-2"
-              style={{ 
-                fontFamily: "'Cinzel', serif",
-                color: '#7bed9f' 
-              }}
-            >
-              <span>✓</span>
-              <span>Completed Tasks ({completedTasks.length})</span>
-            </h3>
-            {completedTasks.map(task => (
-              <TaskCard key={task.id} task={task} showTime={true} />
-            ))}
-          </div>
-        )}
+        {/* Priority Sections */}
+        {Object.entries(priorityConfig).map(([priority, config]) => {
+          const priorityTasks = tasksByPriority[priority]
+          if (priorityTasks.length === 0) return null
 
-        {/* Due Tasks Section */}
-        {dueTasks.length > 0 && (
-          <div className="mb-6">
-            <h3 
-              className="text-xl font-bold mb-4 flex items-center gap-2"
-              style={{ 
-                fontFamily: "'Cinzel', serif",
-                color: '#ff4757' 
-              }}
-            >
-              <span>📅</span>
-              <span>Due Tasks ({dueTasks.length})</span>
-            </h3>
-            {dueTasks.map(task => (
-              <TaskCard key={task.id} task={task} />
-            ))}
-          </div>
-        )}
-
-        {/* Started Tasks Section */}
-        {startedTasks.length > 0 && (
-          <div className="mb-6">
-            <h3 
-              className="text-xl font-bold mb-4 flex items-center gap-2"
-              style={{ 
-                fontFamily: "'Cinzel', serif",
-                color: '#ffa502' 
-              }}
-            >
-              <span>⏱️</span>
-              <span>Started Tasks ({startedTasks.length})</span>
-            </h3>
-            {startedTasks.map(task => (
-              <TaskCard key={task.id} task={task} />
-            ))}
-          </div>
-        )}
-
-        {/* Created Tasks Section */}
-        {createdTasks.length > 0 && (
-          <div className="mb-6">
-            <h3 
-              className="text-xl font-bold mb-4 flex items-center gap-2"
-              style={{ 
-                fontFamily: "'Cinzel', serif",
-                color: '#70a1ff' 
-              }}
-            >
-              <span>🎯</span>
-              <span>Created Tasks ({createdTasks.length})</span>
-            </h3>
-            {createdTasks.map(task => (
-              <TaskCard key={task.id} task={task} />
-            ))}
-          </div>
-        )}
+          return (
+            <div key={priority} className="mb-6">
+              <h3 
+                className="text-xl font-bold mb-4 flex items-center gap-2"
+                style={{ 
+                  fontFamily: "'Cinzel', serif",
+                  color: config.color
+                }}
+              >
+                <span>{config.emoji}</span>
+                <span>{config.label} ({priorityTasks.length})</span>
+              </h3>
+              {priorityTasks.map(task => (
+                <TaskCard key={task.id} task={task} />
+              ))}
+            </div>
+          )
+        })}
 
         {/* Summary Section */}
-        {completedTasks.length > 0 && (
+        {totalCompleted > 0 && (
           <div 
             className="p-5 rounded-xl mt-6"
             style={{
@@ -344,8 +328,7 @@ const DayDetailModal = ({ isOpen, onClose, date, tasks }) => {
         )}
 
         {/* Empty State */}
-        {completedTasks.length === 0 && dueTasks.length === 0 && 
-         createdTasks.length === 0 && startedTasks.length === 0 && (
+        {allTasksForDate.length === 0 && (
           <div 
             className="text-center py-12"
             style={{ color: '#a89080' }}

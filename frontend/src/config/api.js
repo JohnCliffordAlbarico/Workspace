@@ -32,9 +32,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('token')
-      window.location.href = '/'
+      // Token expired or invalid - trigger session expired modal
+      const event = new CustomEvent('sessionExpired')
+      window.dispatchEvent(event)
     }
     return Promise.reject(error)
   }
