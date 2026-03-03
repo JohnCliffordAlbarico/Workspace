@@ -1,10 +1,7 @@
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 
 const SessionExpiredModal = ({ isOpen, onClose }) => {
-  const navigate = useNavigate()
-
   useEffect(() => {
     if (isOpen) {
       // Prevent closing with ESC - user must click button
@@ -28,8 +25,8 @@ const SessionExpiredModal = ({ isOpen, onClose }) => {
     // Close modal
     onClose()
     
-    // Redirect to login
-    navigate('/', { replace: true })
+    // Redirect to login using window.location
+    window.location.href = '/'
   }
 
   return createPortal(
