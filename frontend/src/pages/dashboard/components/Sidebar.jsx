@@ -1,9 +1,9 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
+import { LogOut, Menu } from 'lucide-react'
 import ProfileModal from '../modal/ProfileModal'
 
-const Sidebar = ({ tasks, view, setView }) => {
+const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen }) => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -48,6 +48,42 @@ const Sidebar = ({ tasks, view, setView }) => {
           50% { box-shadow: 0 0 45px rgba(200, 80, 80, 0.7); }
         }
       `}</style>
+
+      {/* Menu Icon Button */}
+      <button
+        onClick={onMenuClick}
+        className="mb-4 p-3 rounded-xl transition-all duration-300"
+        style={{
+          background: isMenuOpen 
+            ? 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)' 
+            : 'rgba(45, 20, 25, 0.6)',
+          border: '1px solid rgba(200, 80, 80, 0.3)',
+        }}
+        onMouseOver={(e) => {
+          if (!isMenuOpen) {
+            e.currentTarget.style.background = 'rgba(45, 20, 25, 0.8)'
+            e.currentTarget.style.transform = 'translateY(-2px)'
+            e.currentTarget.style.boxShadow = '0 4px 15px rgba(200, 80, 80, 0.3)'
+          }
+        }}
+        onMouseOut={(e) => {
+          if (!isMenuOpen) {
+            e.currentTarget.style.background = 'rgba(45, 20, 25, 0.6)'
+            e.currentTarget.style.transform = 'translateY(0)'
+            e.currentTarget.style.boxShadow = ''
+          }
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <Menu className="w-6 h-6" style={{ color: '#f5e6d3' }} />
+          <span 
+            className="text-base font-semibold"
+            style={{ color: '#f5e6d3', fontFamily: "'Cinzel', serif" }}
+          >
+            Menu
+          </span>
+        </div>
+      </button>
 
       {/* Profile Card */}
       <div 
