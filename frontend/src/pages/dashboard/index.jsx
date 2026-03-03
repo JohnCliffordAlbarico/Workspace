@@ -1,5 +1,5 @@
 import Sidebar from './components/Sidebar'
-import TaskBoard from './components/TaskBoard'
+import PriorityBoard from './components/PriorityBoard'
 import CompletedTasksView from './components/CompletedTasksView'
 import CalendarView from './components/CalendarView'
 import MainMenuOverlay from './components/MainMenuOverlay'
@@ -69,7 +69,7 @@ const Dashboard = () => {
       case 'dashboard':
       default:
         return view === 'active' ? (
-          <TaskBoard tasks={filteredTasks} setTasks={setTasks} workspace={workspace} />
+          <PriorityBoard tasks={filteredTasks} setTasks={setTasks} workspace={workspace} />
         ) : (
           <CompletedTasksView tasks={filteredTasks} setTasks={setTasks} />
         )

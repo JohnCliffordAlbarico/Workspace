@@ -1,9 +1,32 @@
 import { useState } from 'react'
 import { useTaskActions } from '../hooks/useTaskActions'
+import { useDraggable } from '@dnd-kit/core'
 
 const TaskItem = ({ task, color, setTasks, onTaskClick, allTasks }) => {
   const [showIcon, setShowIcon] = useState(false)
   const { startTask, loading } = useTaskActions(setTasks)
+  
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task.id,
+    data: {
+      priority: task.priority
+    },
+    disabled: loading || task.status === 'in_progress'
+  })
+
+  const isInProgress = task.status === 'in_progress'
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    opacity: isDragging ? 0.3 : 1,
+    cursor: isDragging ? 'grabbing' : 'grab',
+    zIndex: isDragging ? 1000 : 'auto',
+    transition: isDragging ? 'none' : 'all 0.3s ease-out'
+  } : {
+    cursor: loading || isInProgress ? 'not-allowed' : 'grab',
+    transition: 'all 0.3s ease-out',
+    opacity: isInProgress ? 0.7 : 1
+  }
 
   const handleStart = async (e) => {
     e.stopPropagation()
@@ -44,11 +67,15 @@ const TaskItem = ({ task, color, setTasks, onTaskClick, allTasks }) => {
 
   return (
     <div
-      className="rounded-xl p-4 transition-all duration-300 cursor-pointer"
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className="rounded-xl p-4 transition-all duration-300"
       style={{
         background: `${color}26`,
         border: `1px solid ${color}66`,
-        animation: 'slideIn 0.3s ease-out forwards'
+        animation: 'slideIn 0.3s ease-out forwards',
+        ...style
       }}
       onMouseEnter={() => setShowIcon(true)}
       onMouseLeave={() => setShowIcon(false)}
@@ -59,9 +86,27 @@ const TaskItem = ({ task, color, setTasks, onTaskClick, allTasks }) => {
           from { opacity: 0; transform: translateX(-20px); }
           to { opacity: 1; transform: translateX(0); }
         }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
       `}</style>
 
       <div className="flex items-start gap-3">
+        {/* In Progress indicator */}
+        {isInProgress && (
+          <div 
+            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+            style={{
+              background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
+              animation: 'pulse 2s ease-in-out infinite'
+            }}
+            title="Task in progress - cannot change priority"
+          >
+            ⏱️
+          </div>
+        )}
+        
         {/* Start Button for Pending Tasks */}
         {isPending && (
           <button
