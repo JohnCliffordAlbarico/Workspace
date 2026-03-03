@@ -29,7 +29,7 @@ export const usePriorityDrag = (setTasks) => {
 
     // Persist to backend
     try {
-      await api.put(`/api/tasks/${taskId}`, { priority: newPriority })
+      await api.put(`/tasks/${taskId}`, { priority: newPriority })
       setError(null)
     } catch (error) {
       console.error('Failed to update task priority:', error)

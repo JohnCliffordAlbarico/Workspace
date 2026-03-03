@@ -1,11 +1,15 @@
 import { DndContext, DragOverlay, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
-import PriorityDropZone from './PriorityDropZone'
+import TaskColumn from './TaskColumn'
+import EmptyState from './EmptyState'
+import TaskModal from '../modal/TaskModal'
 import TaskDetailModal from '../modal/TaskDetailModal'
+import InProgressBanner from './InProgressBanner'
 import { usePriorityDrag } from '../hooks/usePriorityDrag'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 const PriorityBoard = ({ tasks, setTasks, workspace }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState(null)
   const [activeTask, setActiveTask] = useState(null)
   const { handleDragEnd, handleDragStart, handleDragCancel, isDragging, error } = usePriorityDrag(setTasks)
@@ -14,7 +18,7 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // 8px movement required before drag starts
+        distance: 8,
       },
     }),
     useSensor(TouchSensor, {
@@ -28,7 +32,20 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
     })
   )
 
-  const priorities = ['critical', 'high', 'medium', 'low']
+  const tasksByPriority = {
+    critical: tasks.filter(t => t.priority === 'critical'),
+    high: tasks.filter(t => t.priority === 'high'),
+    medium: tasks.filter(t => t.priority === 'medium'),
+    low: tasks.filter(t => t.priority === 'low')
+  }
+
+  const inProgressTask = useMemo(() => {
+    return tasks.find(t => t.status === 'in_progress')
+  }, [tasks])
+
+  const handleTaskClick = (task) => {
+    setSelectedTask(task)
+  }
 
   const onDragStart = (event) => {
     const task = tasks.find(t => t.id === event.active.id)
@@ -53,79 +70,163 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
   }
 
   return (
-    <>
-      <DndContext 
-        sensors={sensors}
-        onDragStart={onDragStart} 
-        onDragEnd={onDragEnd}
-        onDragCancel={onDragCancel}
-      >
-        <div 
-          className="flex-1 overflow-y-auto p-8"
-          style={{
-            cursor: isDragging ? 'grabbing' : 'default'
-          }}
-        >
-          {/* Error notification */}
-          {error && (
-            <div 
-              className="max-w-6xl mx-auto mb-4 p-4 rounded-lg"
+    <DndContext 
+      sensors={sensors}
+      onDragStart={onDragStart} 
+      onDragEnd={onDragEnd}
+      onDragCancel={onDragCancel}
+    >
+      <main className="flex-1 p-8 overflow-auto z-10">
+        {/* Header */}
+        <header className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 
+              className="text-4xl font-bold mb-2"
               style={{
-                background: '#ff475740',
-                border: '1px solid #ff4757',
-                color: '#fff5f5'
+                fontFamily: "'Cinzel', serif",
+                color: '#f5e6d3',
+                textShadow: '0 2px 10px rgba(200, 80, 80, 0.3)'
               }}
             >
-              {error}
-            </div>
-          )}
-
-          <div className="max-w-6xl mx-auto space-y-4">
-            {priorities.map(priority => (
-              <PriorityDropZone
-                key={priority}
-                priority={priority}
-                tasks={tasks}
-                setTasks={setTasks}
-                onTaskClick={setSelectedTask}
-                allTasks={tasks}
-              />
-            ))}
+              🔥 Yuuko's Task Board
+            </h1>
+            <p style={{ color: '#a89080' }}>
+              Managing productivity with elegance
+            </p>
           </div>
-        </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-6 py-3 rounded-xl text-base font-semibold transition-all duration-300"
+            style={{
+              background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
+              color: '#f5e6d3',
+              border: 'none'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)'
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(200, 80, 80, 0.4)'
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+          >
+            ✨ New Task
+          </button>
+        </header>
 
-        <DragOverlay>
-          {activeTask ? (
-            <div 
-              className="rounded-xl p-4 shadow-2xl"
-              style={{
-                background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
-                border: '2px solid #ffb733',
-                color: '#1a0a0a',
-                opacity: 0.95,
-                cursor: 'grabbing',
-                minWidth: '200px',
-                fontWeight: '600'
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <span>🎯</span>
-                <span>{activeTask.title}</span>
-              </div>
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+        {/* Error notification */}
+        {error && (
+          <div 
+            className="mb-4 p-4 rounded-lg"
+            style={{
+              background: '#ff475740',
+              border: '1px solid #ff4757',
+              color: '#fff5f5'
+            }}
+          >
+            {error}
+          </div>
+        )}
 
-      {selectedTask && (
-        <TaskDetailModal
-          task={selectedTask}
-          onClose={() => setSelectedTask(null)}
+        {/* In Progress Banner */}
+        {inProgressTask && (
+          <InProgressBanner 
+            task={inProgressTask} 
+            setTasks={setTasks}
+            onTaskClick={handleTaskClick}
+          />
+        )}
+
+        {/* Task Modal */}
+        <TaskModal 
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          workspaceId={workspace.id}
           setTasks={setTasks}
-          workspace={workspace}
+          tasks={tasks}
         />
-      )}
-    </>
+
+        {/* Task Detail Modal */}
+        <TaskDetailModal
+          isOpen={!!selectedTask}
+          onClose={() => setSelectedTask(null)}
+          task={selectedTask}
+          setTasks={setTasks}
+          allTasks={tasks}
+        />
+
+        {/* Task Columns - 2x2 Grid */}
+        {tasks.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="grid grid-cols-2 gap-6">
+            <TaskColumn
+              title="Critical"
+              color="#ff4757"
+              tasks={tasksByPriority.critical}
+              setTasks={setTasks}
+              onTaskClick={handleTaskClick}
+              allTasks={tasks}
+              priority="critical"
+              isDragging={isDragging}
+            />
+            <TaskColumn
+              title="High Priority"
+              color="#ffa502"
+              tasks={tasksByPriority.high}
+              setTasks={setTasks}
+              onTaskClick={handleTaskClick}
+              allTasks={tasks}
+              priority="high"
+              isDragging={isDragging}
+            />
+            <TaskColumn
+              title="Medium"
+              color="#ffa502"
+              tasks={tasksByPriority.medium}
+              setTasks={setTasks}
+              onTaskClick={handleTaskClick}
+              allTasks={tasks}
+              priority="medium"
+              isDragging={isDragging}
+            />
+            <TaskColumn
+              title="Low Priority"
+              color="#70a1ff"
+              tasks={tasksByPriority.low}
+              setTasks={setTasks}
+              onTaskClick={handleTaskClick}
+              allTasks={tasks}
+              priority="low"
+              isDragging={isDragging}
+            />
+          </div>
+        )}
+      </main>
+
+      <DragOverlay>
+        {activeTask ? (
+          <div 
+            className="rounded-xl p-4 shadow-2xl"
+            style={{
+              background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
+              border: '2px solid #ffb733',
+              color: '#1a0a0a',
+              opacity: 0.95,
+              cursor: 'grabbing',
+              minWidth: '200px',
+              fontWeight: '600'
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <span>🎯</span>
+              <span>{activeTask.title}</span>
+            </div>
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   )
 }
 

@@ -1,14 +1,21 @@
+import { useDroppable } from '@dnd-kit/core'
 import TaskItem from './TaskItem'
 
-const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick, allTasks }) => {
+const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick, allTasks, priority, isDragging }) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: priority
+  })
+
   const incompleteTasks = tasks.filter(t => t.status !== 'completed')
 
   return (
     <section 
-      className="rounded-2xl p-5"
+      ref={setNodeRef}
+      className="rounded-2xl p-5 transition-all duration-300"
       style={{
-        background: 'rgba(45, 20, 25, 0.6)',
-        border: `1px solid ${color}40`
+        background: isOver ? 'rgba(45, 20, 25, 0.8)' : 'rgba(45, 20, 25, 0.6)',
+        border: `1px solid ${color}40`,
+        boxShadow: isOver ? `0 0 20px ${color}40` : 'none'
       }}
     >
       <div 
