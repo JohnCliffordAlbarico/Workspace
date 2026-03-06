@@ -1,6 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import SettingsModal from '../modal/SettingsModal'
 
 const MainMenuOverlay = ({ isOpen, onClose, onSelectView, currentView }) => {
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
   // Close on ESC key
   useEffect(() => {
     const handleEsc = (e) => {
@@ -41,15 +43,19 @@ const MainMenuOverlay = ({ isOpen, onClose, onSelectView, currentView }) => {
       icon: '⚙️', 
       label: 'Settings', 
       description: 'Customize your workspace preferences',
-      disabled: true 
+      disabled: false 
     }
   ]
 
   const handleSelect = (viewId) => {
     const item = menuItems.find(item => item.id === viewId)
     if (!item?.disabled) {
-      onSelectView(viewId)
-      onClose()
+      if (viewId === 'settings') {
+        setShowSettingsModal(true)
+      } else {
+        onSelectView(viewId)
+        onClose()
+      }
     }
   }
 
@@ -157,6 +163,12 @@ const MainMenuOverlay = ({ isOpen, onClose, onSelectView, currentView }) => {
           Close Menu (ESC)
         </button>
       </div>
+
+      {/* Settings Modal */}
+      <SettingsModal 
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
     </div>
   )
 }

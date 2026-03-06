@@ -166,3 +166,64 @@ export const deleteProfileImage = async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 }
+
+// Change password
+export const changePassword = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const { currentPassword, newPassword } = req.body
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' })
+    }
+    
+    // Validate new password
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' })
+    }
+    
+    if (!/[A-Z]/.test(newPassword)) {
+      return res.status(400).json({ error: 'Password must contain at least one uppercase letter' })
+    }
+    
+    if (!/[a-z]/.test(newPassword)) {
+      return res.status(400).json({ error: 'Password must contain at least one lowercase letter' })
+    }
+    
+    if (!/[0-9]/.test(newPassword)) {
+      return res.status(400).json({ error: 'Password must contain at least one number' })
+    }
+    
+    // Get user email
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('email')
+      .eq('id', userId)
+      .single()
+    
+    if (userError) throw userError
+    
+    // Verify current password by attempting to sign in
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword
+    })
+    
+    if (signInError) {
+      return res.status(401).json({ error: 'Current password is incorrect' })
+    }
+    
+    // Update password using admin client
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      userId,
+      { password: newPassword }
+    )
+    
+    if (updateError) throw updateError
+    
+    res.json({ message: 'Password changed successfully' })
+  } catch (error) {
+    console.error('Change password error:', error)
+    res.status(500).json({ error: error.message })
+  }
+}

@@ -5,7 +5,8 @@ import {
   getProfile, 
   updateProfile, 
   uploadProfileImage,
-  deleteProfileImage 
+  deleteProfileImage,
+  changePassword
 } from '../handlers/userHandlers.js'
 
 const router = express.Router()
@@ -23,5 +24,8 @@ router.get('/profile', authenticate, getProfile)
 router.put('/profile', authenticate, updateProfile)
 router.post('/profile/image', authenticate, upload.single('image'), uploadProfileImage)
 router.delete('/profile/image', authenticate, deleteProfileImage)
+
+// Password routes
+router.post('/change-password', authenticate, changePassword)
 
 export default router
