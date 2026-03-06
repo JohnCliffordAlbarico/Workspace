@@ -16,15 +16,23 @@ const DayDetailModal = ({ isOpen, onClose, date, tasks }) => {
 
   if (!isOpen || !date) return null
 
+  // Helper to format date in local timezone (avoids UTC conversion issues)
+  const formatLocalDate = (date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   // Filter tasks for this specific date
-  const dateStr = date.toISOString().split('T')[0]
+  const dateStr = formatLocalDate(date)
   
   const allTasksForDate = tasks.filter(t => {
     // Check if task is related to this date in any way
-    const completedMatch = t.completed_at && new Date(t.completed_at).toISOString().split('T')[0] === dateStr
-    const dueMatch = t.due_date && new Date(t.due_date).toISOString().split('T')[0] === dateStr
-    const createdMatch = t.created_at && new Date(t.created_at).toISOString().split('T')[0] === dateStr
-    const startedMatch = t.started_at && new Date(t.started_at).toISOString().split('T')[0] === dateStr
+    const completedMatch = t.completed_at && formatLocalDate(new Date(t.completed_at)) === dateStr
+    const dueMatch = t.due_date && formatLocalDate(new Date(t.due_date)) === dateStr
+    const createdMatch = t.created_at && formatLocalDate(new Date(t.created_at)) === dateStr
+    const startedMatch = t.started_at && formatLocalDate(new Date(t.started_at)) === dateStr
     
     return completedMatch || dueMatch || createdMatch || startedMatch
   })
@@ -60,16 +68,16 @@ const DayDetailModal = ({ isOpen, onClose, date, tasks }) => {
   const getTaskStatusBadge = (task) => {
     const badges = []
     
-    if (task.completed_at && new Date(task.completed_at).toISOString().split('T')[0] === dateStr) {
+    if (task.completed_at && formatLocalDate(new Date(task.completed_at)) === dateStr) {
       badges.push({ label: 'Completed', color: '#7bed9f', icon: '✓' })
     }
-    if (task.due_date && new Date(task.due_date).toISOString().split('T')[0] === dateStr) {
+    if (task.due_date && formatLocalDate(new Date(task.due_date)) === dateStr) {
       badges.push({ label: 'Due', color: '#ff4757', icon: '📅' })
     }
-    if (task.started_at && new Date(task.started_at).toISOString().split('T')[0] === dateStr) {
+    if (task.started_at && formatLocalDate(new Date(task.started_at)) === dateStr) {
       badges.push({ label: 'Started', color: '#ffa502', icon: '⏱️' })
     }
-    if (task.created_at && new Date(task.created_at).toISOString().split('T')[0] === dateStr) {
+    if (task.created_at && formatLocalDate(new Date(task.created_at)) === dateStr) {
       badges.push({ label: 'Created', color: '#70a1ff', icon: '🎯' })
     }
     

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+
+
+
+
 /* Custom Scrollbar Styling */
 * {
   scrollbar-width: thin;
@@ -58,3 +62,6 @@ input[type="number"]:hover::-webkit-inner-spin-button,
 input[type="number"]:hover::-webkit-outer-spin-button {
   opacity: 1;
 }
+
+
+

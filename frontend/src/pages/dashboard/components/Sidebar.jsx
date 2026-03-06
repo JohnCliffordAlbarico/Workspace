@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut, Menu } from 'lucide-react'
 import ProfileModal from '../modal/ProfileModal'
-
+import OsirisFont from "../../../../font/Osiris_BQ_Regular.otf";
 const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen }) => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)

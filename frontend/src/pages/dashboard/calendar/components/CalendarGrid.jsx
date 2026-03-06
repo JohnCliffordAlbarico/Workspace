@@ -22,25 +22,33 @@ const CalendarGrid = ({ currentDate, tasks, onDateClick, filter = 'all' }) => {
   // Day headers
   const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
+  // Helper to format date in local timezone (avoids UTC conversion issues)
+  const formatLocalDate = (date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   // Helper to count tasks for a specific date
   const getTasksForDate = (date) => {
-    const dateStr = date.toISOString().split('T')[0]
+    const dateStr = formatLocalDate(date)
     
     const completed = tasks.filter(t => {
       if (!t.completed_at) return false
-      const completedDate = new Date(t.completed_at).toISOString().split('T')[0]
+      const completedDate = formatLocalDate(new Date(t.completed_at))
       return completedDate === dateStr
     })
 
     const due = tasks.filter(t => {
       if (!t.due_date) return false
-      const dueDate = new Date(t.due_date).toISOString().split('T')[0]
+      const dueDate = formatLocalDate(new Date(t.due_date))
       return dueDate === dateStr && t.status !== 'completed'
     })
 
     const created = tasks.filter(t => {
       if (!t.created_at) return false
-      const createdDate = new Date(t.created_at).toISOString().split('T')[0]
+      const createdDate = formatLocalDate(new Date(t.created_at))
       return createdDate === dateStr
     })
 
