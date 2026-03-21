@@ -5,9 +5,14 @@ import Signup from './pages/signup'
 import Dashboard from './pages/dashboard'
 import ProtectedRoute from './components/ProtectedRoute'
 import SessionExpiredModal from './components/SessionExpiredModal'
+import { useSessionMonitor } from './hooks/useSessionMonitor'
 
 function App() {
   const [showSessionExpired, setShowSessionExpired] = useState(false)
+
+  // Monitor session and check token expiration periodically
+  // Checks every 30 seconds and on user activity
+  useSessionMonitor(30000)
 
   useEffect(() => {
     // Listen for session expired events
