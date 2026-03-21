@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo, memo } from 'react'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { useDraggable } from '@dnd-kit/core'
 
-const TaskItem = ({ task, color, setTasks, onTaskClick, allTasks }) => {
+const TaskItem = memo(({ task, color, setTasks, onTaskClick, allTasks }) => {
   const [showIcon, setShowIcon] = useState(false)
   const { startTask, loading } = useTaskActions(setTasks)
   
@@ -15,18 +15,41 @@ const TaskItem = ({ task, color, setTasks, onTaskClick, allTasks }) => {
   })
 
   const isInProgress = task.status === 'in_progress'
+  const isCompleted = task.status === 'completed'
+  const isPending = task.status === 'pending'
 
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    opacity: isDragging ? 0.3 : 1,
-    cursor: isDragging ? 'grabbing' : 'grab',
-    zIndex: isDragging ? 1000 : 'auto',
-    transition: isDragging ? 'none' : 'all 0.3s ease-out'
-  } : {
-    cursor: loading || isInProgress ? 'not-allowed' : 'grab',
-    transition: 'all 0.3s ease-out',
-    opacity: isInProgress ? 0.7 : 1
-  }
+  // Memoize style object to prevent re-creation
+  const style = useMemo(() => {
+    if (transform) {
+      return {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        opacity: isDragging ? 0.3 : 1,
+        cursor: isDragging ? 'grabbing' : 'grab',
+        zIndex: isDragging ? 1000 : 'auto',
+        transition: isDragging ? 'none' : 'all 0.3s ease-out',
+        willChange: 'transform'
+      }
+    }
+    return {
+      cursor: loading || isInProgress ? 'not-allowed' : 'grab',
+      transition: 'all 0.3s ease-out',
+      opacity: isInProgress ? 0.7 : 1
+    }
+  }, [transform, isDragging, loading, isInProgress])
+
+  // Calculate actual time spent for completed tasks - memoized
+  const actualTime = useMemo(() => {
+    if (!isCompleted || !task.started_at || !task.completed_at) return null
+    
+    const start = new Date(task.started_at)
+    const end = new Date(task.completed_at)
+    const minutes = Math.floor((end - start) / 60000)
+    
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    
+    return { hours, mins, total: minutes }
+  }, [isCompleted, task.started_at, task.completed_at])
 
   const handleStart = async (e) => {
     e.stopPropagation()
@@ -44,25 +67,7 @@ const TaskItem = ({ task, color, setTasks, onTaskClick, allTasks }) => {
   const handleCardClick = () => {
     onTaskClick(task)
   }
-
-  const isCompleted = task.status === 'completed'
-  const isPending = task.status === 'pending'
-
-  // Calculate actual time spent for completed tasks
-  const getActualTime = () => {
-    if (!isCompleted || !task.started_at || !task.completed_at) return null
-    
-    const start = new Date(task.started_at)
-    const end = new Date(task.completed_at)
-    const minutes = Math.floor((end - start) / 60000)
-    
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    
-    return { hours, mins, total: minutes }
-  }
   
-  const actualTime = getActualTime()
   const goalTime = task.goal_time_minutes
 
   return (
@@ -175,6 +180,8 @@ const TaskItem = ({ task, color, setTasks, onTaskClick, allTasks }) => {
       </div>
     </div>
   )
-}
+})
+
+TaskItem.displayName = 'TaskItem'
 
 export default TaskItem
