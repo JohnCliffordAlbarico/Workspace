@@ -3,7 +3,7 @@ import TaskColumn from './TaskColumn'
 import EmptyState from './EmptyState'
 import TaskDetailModal from '../modal/TaskDetailModal'
 
-const CompletedTasksView = ({ tasks, setTasks }) => {
+const CompletedTasksView = ({ tasks, setTasks, pagination, onPageChange }) => {
   const [selectedTask, setSelectedTask] = useState(null)
 
   const tasksByPriority = {
@@ -17,7 +17,7 @@ const CompletedTasksView = ({ tasks, setTasks }) => {
     setSelectedTask(task)
   }
 
-  const totalCompleted = tasks.length
+  const totalCompleted = pagination?.total || tasks.length
 
   return (
     <main className="flex-1 p-8 overflow-auto z-10">
@@ -68,36 +68,95 @@ const CompletedTasksView = ({ tasks, setTasks }) => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-6">
-          <TaskColumn
-            title="Critical"
-            color="#ff4757"
-            tasks={tasksByPriority.critical}
-            setTasks={setTasks}
-            onTaskClick={handleTaskClick}
-          />
-          <TaskColumn
-            title="High Priority"
-            color="#ffa502"
-            tasks={tasksByPriority.high}
-            setTasks={setTasks}
-            onTaskClick={handleTaskClick}
-          />
-          <TaskColumn
-            title="Medium"
-            color="#ffa502"
-            tasks={tasksByPriority.medium}
-            setTasks={setTasks}
-            onTaskClick={handleTaskClick}
-          />
-          <TaskColumn
-            title="Low Priority"
-            color="#70a1ff"
-            tasks={tasksByPriority.low}
-            setTasks={setTasks}
-            onTaskClick={handleTaskClick}
-          />
-        </div>
+        <>
+          <div className="grid grid-cols-2 gap-6">
+            <TaskColumn
+              title="Critical"
+              color="#ff4757"
+              tasks={tasksByPriority.critical}
+              setTasks={setTasks}
+              onTaskClick={handleTaskClick}
+            />
+            <TaskColumn
+              title="High Priority"
+              color="#ffa502"
+              tasks={tasksByPriority.high}
+              setTasks={setTasks}
+              onTaskClick={handleTaskClick}
+            />
+            <TaskColumn
+              title="Medium"
+              color="#ffa502"
+              tasks={tasksByPriority.medium}
+              setTasks={setTasks}
+              onTaskClick={handleTaskClick}
+            />
+            <TaskColumn
+              title="Low Priority"
+              color="#70a1ff"
+              tasks={tasksByPriority.low}
+              setTasks={setTasks}
+              onTaskClick={handleTaskClick}
+            />
+          </div>
+
+          {/* Pagination Controls */}
+          {pagination && pagination.totalPages > 1 && (
+            <div 
+              className="mt-8 flex items-center justify-center gap-4"
+              style={{ color: '#f5e6d3' }}
+            >
+              <button
+                onClick={() => onPageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className="px-4 py-2 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                style={{
+                  background: pagination.page === 1 
+                    ? 'rgba(45, 20, 25, 0.4)' 
+                    : 'linear-gradient(145deg, rgba(200, 80, 80, 0.3) 0%, rgba(150, 50, 50, 0.4) 100%)',
+                  border: '1px solid rgba(200, 80, 80, 0.3)',
+                }}
+              >
+                ← Previous
+              </button>
+
+              <div className="flex items-center gap-2">
+                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(pageNum => (
+                  <button
+                    key={pageNum}
+                    onClick={() => onPageChange(pageNum)}
+                    className="w-10 h-10 rounded-lg transition-all"
+                    style={{
+                      background: pageNum === pagination.page
+                        ? 'linear-gradient(145deg, rgba(200, 80, 80, 0.5) 0%, rgba(150, 50, 50, 0.6) 100%)'
+                        : 'rgba(45, 20, 25, 0.4)',
+                      border: pageNum === pagination.page
+                        ? '2px solid rgba(200, 80, 80, 0.6)'
+                        : '1px solid rgba(200, 80, 80, 0.2)',
+                      fontWeight: pageNum === pagination.page ? 'bold' : 'normal'
+                    }}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => onPageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.totalPages}
+                className="px-4 py-2 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                style={{
+                  background: pagination.page === pagination.totalPages
+                    ? 'rgba(45, 20, 25, 0.4)'
+                    : 'linear-gradient(145deg, rgba(200, 80, 80, 0.3) 0%, rgba(150, 50, 50, 0.4) 100%)',
+                  border: '1px solid rgba(200, 80, 80, 0.3)',
+                }}
+              >
+                Next →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </main>
   )

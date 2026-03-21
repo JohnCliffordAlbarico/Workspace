@@ -5,8 +5,10 @@ import EmptyState from './EmptyState'
 import TaskModal from '../modal/TaskModal'
 import TaskDetailModal from '../modal/TaskDetailModal'
 import InProgressBanner from './InProgressBanner'
+import QuickAddTask from './QuickAddTask'
 import { usePriorityDrag } from '../hooks/usePriorityDrag'
 import { useState, useMemo } from 'react'
+import api from '../../../config/api'
 
 const PriorityBoard = ({ tasks, setTasks, workspace }) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -67,6 +69,23 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
   const onDragCancel = () => {
     setActiveTask(null)
     handleDragCancel()
+  }
+
+  const handleQuickAdd = async (title) => {
+    try {
+      const response = await api.post('/tasks', {
+        workspace_id: workspace.id,
+        title,
+        priority: 'medium',
+        status: 'pending',
+        position: tasks.length
+      })
+      
+      setTasks(prev => [...prev, response.data])
+    } catch (error) {
+      console.error('Failed to create task:', error)
+      throw error
+    }
   }
 
   return (
@@ -137,6 +156,12 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
             onTaskClick={handleTaskClick}
           />
         )}
+
+        {/* Quick Add Task */}
+        <QuickAddTask 
+          workspaceId={workspace.id}
+          onTaskAdded={handleQuickAdd}
+        />
 
         {/* Task Modal */}
         <TaskModal 

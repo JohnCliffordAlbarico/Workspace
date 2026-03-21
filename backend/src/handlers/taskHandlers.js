@@ -3,22 +3,43 @@ import { supabaseAdmin } from '../config/supabase.js'
 // Get all tasks for a workspace
 export const getTasks = async (req, res) => {
   try {
-    const { workspaceId } = req.query
+    const { workspaceId, status, page = 1, limit = 50 } = req.query
+
+    // Calculate pagination
+    const pageNum = parseInt(page)
+    const limitNum = parseInt(limit)
+    const offset = (pageNum - 1) * limitNum
 
     let query = supabaseAdmin
       .from('tasks')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', req.user.id)
 
     if (workspaceId) {
       query = query.eq('workspace_id', workspaceId)
     }
 
-    const { data, error } = await query.order('position', { ascending: true })
+    if (status) {
+      query = query.eq('status', status)
+    }
+
+    // Apply pagination and ordering
+    const { data, error, count } = await query
+      .order('completed_at', { ascending: false, nullsFirst: false })
+      .order('position', { ascending: true })
+      .range(offset, offset + limitNum - 1)
 
     if (error) throw error
 
-    res.json(data)
+    res.json({
+      data,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: count,
+        totalPages: Math.ceil(count / limitNum)
+      }
+    })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

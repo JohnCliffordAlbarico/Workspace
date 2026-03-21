@@ -10,10 +10,40 @@ import { useState, useMemo, useEffect } from 'react'
 
 const Dashboard = () => {
   const { workspace, loading: workspaceLoading } = useWorkspace()
-  const { tasks, setTasks, loading: tasksLoading } = useTasks(workspace?.id)
   const [view, setView] = useState('active') // 'active' or 'completed'
   const [currentView, setCurrentView] = useState('dashboard') // 'dashboard', 'calendar', etc.
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [completedPage, setCompletedPage] = useState(1)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  // Fetch all tasks for sidebar stats and calendar (no pagination)
+  const { tasks: allTasks, setTasks: setAllTasks, loading: allTasksLoading } = useTasks(workspace?.id, { refresh: refreshTrigger })
+  
+  // Fetch paginated completed tasks only when in completed view
+  const { 
+    tasks: paginatedCompletedTasks, 
+    setTasks: setPaginatedCompletedTasks, 
+    loading: paginatedLoading,
+    pagination: completedPagination 
+  } = useTasks(workspace?.id, { 
+    status: 'completed', 
+    page: completedPage, 
+    limit: 20,
+    refresh: refreshTrigger
+  })
+
+  // Separate active and completed from all tasks
+  const activeTasks = useMemo(() => 
+    allTasks.filter(t => t.status !== 'completed'), 
+    [allTasks]
+  )
+  
+  const allCompletedTasks = useMemo(() => 
+    allTasks.filter(t => t.status === 'completed'), 
+    [allTasks]
+  )
+
+  const tasksLoading = view === 'completed' ? paginatedLoading : allTasksLoading
 
   // Close menu on ESC key
   useEffect(() => {
@@ -26,12 +56,43 @@ const Dashboard = () => {
     return () => window.removeEventListener('keydown', handleEsc)
   }, [isMenuOpen])
 
-  const filteredTasks = useMemo(() => {
-    if (view === 'completed') {
-      return tasks.filter(t => t.status === 'completed')
+  const handlePageChange = (newPage) => {
+    setCompletedPage(newPage)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Update handler that syncs both allTasks and paginated tasks
+  const handleTaskUpdate = (updatedTasks) => {
+    if (Array.isArray(updatedTasks)) {
+      // Direct array update
+      if (view === 'completed') {
+        setPaginatedCompletedTasks(updatedTasks)
+      }
+      setAllTasks(updatedTasks)
+    } else if (typeof updatedTasks === 'function') {
+      // Function update (prev => ...)
+      setAllTasks(prevAll => {
+        const newTasks = updatedTasks(prevAll)
+        
+        // Check if any task changed status
+        const statusChanged = newTasks.some((newTask, idx) => {
+          const oldTask = prevAll[idx]
+          return oldTask && newTask.status !== oldTask.status
+        })
+        
+        // If status changed, trigger a refresh of both lists
+        if (statusChanged) {
+          setRefreshTrigger(prev => prev + 1)
+        }
+        
+        return newTasks
+      })
+      
+      if (view === 'completed') {
+        setPaginatedCompletedTasks(updatedTasks)
+      }
     }
-    return tasks.filter(t => t.status !== 'completed')
-  }, [tasks, view])
+  }
 
   if (workspaceLoading || tasksLoading) {
     return (
@@ -65,13 +126,18 @@ const Dashboard = () => {
   const renderMainContent = () => {
     switch (currentView) {
       case 'calendar':
-        return <CalendarView tasks={tasks} setTasks={setTasks} workspace={workspace} />
+        return <CalendarView tasks={allTasks} setTasks={setAllTasks} workspace={workspace} />
       case 'dashboard':
       default:
         return view === 'active' ? (
-          <PriorityBoard tasks={filteredTasks} setTasks={setTasks} workspace={workspace} />
+          <PriorityBoard tasks={activeTasks} setTasks={setAllTasks} workspace={workspace} />
         ) : (
-          <CompletedTasksView tasks={filteredTasks} setTasks={setTasks} />
+          <CompletedTasksView 
+            tasks={paginatedCompletedTasks} 
+            setTasks={handleTaskUpdate}
+            pagination={completedPagination}
+            onPageChange={handlePageChange}
+          />
         )
     }
   }
@@ -88,9 +154,14 @@ const Dashboard = () => {
       <FloatingButterflies />
       
       <Sidebar 
-        tasks={tasks} 
+        tasks={allTasks} 
         view={view} 
-        setView={setView}
+        setView={(newView) => {
+          setView(newView)
+          if (newView === 'completed') {
+            setCompletedPage(1) // Reset to first page when switching to completed view
+          }
+        }}
         onMenuClick={() => setIsMenuOpen(true)}
         isMenuOpen={isMenuOpen}
       />
