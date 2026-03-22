@@ -4,6 +4,7 @@ import CompletedTasksView from './components/CompletedTasksView'
 import CalendarView from './components/CalendarView'
 import MainMenuOverlay from './components/MainMenuOverlay'
 import FloatingButterflies from './components/FloatingButterflies'
+import MusicPlayer from '../../components/MusicPlayer'
 import { useWorkspace } from '../../hooks/useWorkspace'
 import { useTasks } from './hooks/useTasks'
 import { useState, useMemo, useEffect } from 'react'
@@ -174,6 +175,8 @@ const Dashboard = () => {
         onSelectView={setCurrentView}
         currentView={currentView}
       />
+
+      <MusicPlayer />
     </div>
   )
 }
