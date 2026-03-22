@@ -152,10 +152,11 @@ const MusicPlayer = () => {
       {isMinimized && (
         <button
           onClick={() => setIsMinimized(false)}
-          className="fixed right-4 bottom-4 p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 z-50"
+          className="fixed right-4 bottom-4 p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110"
           style={{
             background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
-            border: '2px solid rgba(200, 80, 80, 0.5)'
+            border: '2px solid rgba(200, 80, 80, 0.5)',
+            zIndex: 9999
           }}
           title="Open Music Player"
         >
@@ -166,12 +167,13 @@ const MusicPlayer = () => {
       {/* Music Player Panel */}
       {!isMinimized && (
         <div
-          className="fixed right-0 top-0 h-full shadow-2xl transition-all duration-300 z-50"
+          className="fixed right-0 top-0 h-full shadow-2xl transition-all duration-300"
           style={{
             width: isExpanded ? '400px' : '80px',
             background: 'linear-gradient(145deg, rgba(45, 20, 25, 0.98) 0%, rgba(26, 10, 10, 0.98) 100%)',
             borderLeft: '2px solid rgba(200, 80, 80, 0.3)',
-            backdropFilter: 'blur(10px)'
+            backdropFilter: 'blur(10px)',
+            zIndex: 9999
           }}
         >
           {/* Collapsed View */}
@@ -379,10 +381,11 @@ const MusicPlayer = () => {
                         </p>
                         <button
                           onClick={() => setShowAddForm(!showAddForm)}
-                          className="text-xs px-2 py-1 rounded"
+                          className="text-xs px-2 py-1 rounded cursor-pointer"
                           style={{
                             background: 'rgba(200, 80, 80, 0.2)',
-                            color: '#c85050'
+                            color: '#c85050',
+                            pointerEvents: 'auto'
                           }}
                         >
                           {showAddForm ? '✕' : '+ Add'}
@@ -460,10 +463,11 @@ const MusicPlayer = () => {
 
                           <button
                             type="submit"
-                            className="w-full px-2 py-1 rounded text-sm font-semibold"
+                            className="w-full px-2 py-1 rounded text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity"
                             style={{
                               background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
-                              color: '#f5e6d3'
+                              color: '#f5e6d3',
+                              pointerEvents: 'auto'
                             }}
                           >
                             Add Playlist
@@ -517,10 +521,11 @@ const MusicPlayer = () => {
                     </p>
                     <button
                       onClick={() => setShowAddForm(true)}
-                      className="px-4 py-2 rounded-lg text-sm font-semibold"
+                      className="px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer"
                       style={{
                         background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
-                        color: '#f5e6d3'
+                        color: '#f5e6d3',
+                        pointerEvents: 'auto'
                       }}
                     >
                       + Add Playlist
