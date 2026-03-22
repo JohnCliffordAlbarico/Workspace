@@ -36,7 +36,7 @@ const MainMenuOverlay = ({ isOpen, onClose, onSelectView, currentView }) => {
       icon: '📊', 
       label: 'Analytics', 
       description: 'Track your productivity and insights',
-      disabled: true 
+      disabled: false 
     },
     { 
       id: 'settings', 

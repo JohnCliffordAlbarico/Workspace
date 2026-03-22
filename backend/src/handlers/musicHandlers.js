@@ -5,7 +5,7 @@ export const getMusicPreferences = async (req, res) => {
   try {
     const userId = req.user.id
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('user_music_preferences')
       .select('*')
       .eq('user_id', userId)
@@ -27,7 +27,7 @@ export const getActivePlatformPlaylist = async (req, res) => {
     const userId = req.user.id
     const { platform } = req.params
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('user_music_preferences')
       .select('*')
       .eq('user_id', userId)
@@ -56,14 +56,14 @@ export const createMusicPreference = async (req, res) => {
     
     // If setting as active, deactivate other playlists for this platform
     if (is_active) {
-      await supabase
+      await supabaseAdmin
         .from('user_music_preferences')
         .update({ is_active: false })
         .eq('user_id', userId)
         .eq('platform', platform)
     }
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('user_music_preferences')
       .insert({
         user_id: userId,
@@ -94,7 +94,7 @@ export const updateMusicPreference = async (req, res) => {
     const { playlist_url, playlist_name, platform, is_active, volume, autoplay } = req.body
     
     // Verify ownership
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from('user_music_preferences')
       .select('*')
       .eq('id', id)
@@ -107,7 +107,7 @@ export const updateMusicPreference = async (req, res) => {
     
     // If setting as active, deactivate other playlists for this platform
     if (is_active && !existing.is_active) {
-      await supabase
+      await supabaseAdmin
         .from('user_music_preferences')
         .update({ is_active: false })
         .eq('user_id', userId)
@@ -123,7 +123,7 @@ export const updateMusicPreference = async (req, res) => {
     if (volume !== undefined) updateData.volume = volume
     if (autoplay !== undefined) updateData.autoplay = autoplay
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('user_music_preferences')
       .update(updateData)
       .eq('id', id)
@@ -147,7 +147,7 @@ export const deleteMusicPreference = async (req, res) => {
     const { id } = req.params
     
     // Get the preference to delete cover image if exists
-    const { data: preference } = await supabase
+    const { data: preference } = await supabaseAdmin
       .from('user_music_preferences')
       .select('*')
       .eq('id', id)
@@ -173,7 +173,7 @@ export const deleteMusicPreference = async (req, res) => {
       }
     }
     
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('user_music_preferences')
       .delete()
       .eq('id', id)
@@ -211,7 +211,7 @@ export const uploadPlaylistCover = async (req, res) => {
     }
     
     // Verify ownership
-    const { data: preference } = await supabase
+    const { data: preference } = await supabaseAdmin
       .from('user_music_preferences')
       .select('*')
       .eq('id', id)
@@ -256,7 +256,7 @@ export const uploadPlaylistCover = async (req, res) => {
       .getPublicUrl(fileName)
     
     // Update music preference with new cover image URL
-    const { data: updatedPreference, error: updateError } = await supabase
+    const { data: updatedPreference, error: updateError } = await supabaseAdmin
       .from('user_music_preferences')
       .update({ cover_image: publicUrl })
       .eq('id', id)
@@ -280,7 +280,7 @@ export const deletePlaylistCover = async (req, res) => {
     const { id } = req.params
     
     // Get the preference
-    const { data: preference } = await supabase
+    const { data: preference } = await supabaseAdmin
       .from('user_music_preferences')
       .select('*')
       .eq('id', id)
@@ -307,7 +307,7 @@ export const deletePlaylistCover = async (req, res) => {
     }
     
     // Update preference to remove cover image URL
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('user_music_preferences')
       .update({ cover_image: null })
       .eq('id', id)

@@ -10,6 +10,7 @@ import {
   deletePlaylistCover
 } from '../handlers/musicHandlers.js'
 import { authenticate } from '../middleware/auth.js'
+import { musicLimiter } from '../middleware/rateLimiter.js'
 
 const router = express.Router()
 
@@ -20,6 +21,9 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB
   }
 })
+
+// Apply music-specific rate limiter
+router.use(musicLimiter)
 
 // All routes require authentication
 router.use(authenticate)

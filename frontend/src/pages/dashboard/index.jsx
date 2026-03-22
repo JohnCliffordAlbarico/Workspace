@@ -2,6 +2,7 @@ import Sidebar from './components/Sidebar'
 import PriorityBoard from './components/PriorityBoard'
 import CompletedTasksView from './components/CompletedTasksView'
 import CalendarView from './components/CalendarView'
+import AnalyticsView from './components/AnalyticsView'
 import MainMenuOverlay from './components/MainMenuOverlay'
 import FloatingButterflies from './components/FloatingButterflies'
 import MusicPlayer from '../../components/MusicPlayer'
@@ -128,6 +129,8 @@ const Dashboard = () => {
     switch (currentView) {
       case 'calendar':
         return <CalendarView tasks={allTasks} setTasks={setAllTasks} workspace={workspace} />
+      case 'analytics':
+        return <AnalyticsView tasks={allTasks} />
       case 'dashboard':
       default:
         return view === 'active' ? (

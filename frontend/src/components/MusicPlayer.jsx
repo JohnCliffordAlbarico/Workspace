@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
+import { Music, Youtube, Plus, X, Trash2, Play, Edit2 } from 'lucide-react'
 import { useMusicPlayer } from '../hooks/useMusicPlayer'
 import ConfirmationModal from '../pages/dashboard/modal/ConfirmationModal'
+import FloatingMusicPlayer from './FloatingMusicPlayer'
 
 const MusicPlayer = () => {
   const {
@@ -26,6 +28,8 @@ const MusicPlayer = () => {
   const [showAddForm, setShowAddForm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [showFloatingPlayer, setShowFloatingPlayer] = useState(false)
+  const [editingPlaylist, setEditingPlaylist] = useState(null)
   const [volume, setVolume] = useState(50)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -40,6 +44,43 @@ const MusicPlayer = () => {
   const [imagePreview, setImagePreview] = useState(null)
   const fileInputRef = useRef(null)
 
+  // Load floating player state from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedState = localStorage.getItem('floatingPlayerState')
+      if (savedState) {
+        const { isOpen, playlistId, platform } = JSON.parse(savedState)
+        if (isOpen && playlistId && platform) {
+          // Wait for preferences to load
+          if (!loading && currentPlaylist) {
+            setShowFloatingPlayer(true)
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error loading floating player state:', err)
+      // Clear corrupted data
+      localStorage.removeItem('floatingPlayerState')
+    }
+  }, [loading, currentPlaylist])
+
+  // Save floating player state to localStorage
+  useEffect(() => {
+    try {
+      if (showFloatingPlayer && currentPlaylist) {
+        localStorage.setItem('floatingPlayerState', JSON.stringify({
+          isOpen: true,
+          playlistId: currentPlaylist.id,
+          platform: currentPlatform
+        }))
+      } else {
+        localStorage.removeItem('floatingPlayerState')
+      }
+    } catch (err) {
+      console.error('Error saving floating player state:', err)
+    }
+  }, [showFloatingPlayer, currentPlaylist, currentPlatform])
+
   // Load volume from localStorage
   useEffect(() => {
     const savedVolume = localStorage.getItem('musicVolume')
@@ -47,6 +88,11 @@ const MusicPlayer = () => {
       setVolume(parseInt(savedVolume))
     }
   }, [])
+
+  // Debug: Log showAddForm changes
+  useEffect(() => {
+    console.log('showAddForm changed to:', showAddForm)
+  }, [showAddForm])
 
   // Save volume to localStorage
   const handleVolumeChange = (newVolume) => {
@@ -68,12 +114,37 @@ const MusicPlayer = () => {
       return url
     } else if (platform === 'youtube') {
       // Convert YouTube URL to embed URL
+      
+      // Handle playlist URLs
       // https://www.youtube.com/playlist?list=PLrAXtmErZgOeiKm4sgNOknGvNjby9efdf
       // to https://www.youtube.com/embed/videoseries?list=PLrAXtmErZgOeiKm4sgNOknGvNjby9efdf
       if (url.includes('youtube.com/playlist')) {
         const listId = url.split('list=')[1]?.split('&')[0]
-        return `https://www.youtube.com/embed/videoseries?list=${listId}`
+        if (listId) {
+          return `https://www.youtube.com/embed/videoseries?list=${listId}`
+        }
       }
+      
+      // Handle single video URLs (convert to embed)
+      // https://www.youtube.com/watch?v=VIDEO_ID
+      // to https://www.youtube.com/embed/VIDEO_ID
+      if (url.includes('youtube.com/watch')) {
+        const videoId = url.split('v=')[1]?.split('&')[0]
+        if (videoId) {
+          return `https://www.youtube.com/embed/${videoId}`
+        }
+      }
+      
+      // Handle youtu.be short URLs
+      // https://youtu.be/VIDEO_ID
+      // to https://www.youtube.com/embed/VIDEO_ID
+      if (url.includes('youtu.be/')) {
+        const videoId = url.split('youtu.be/')[1]?.split('?')[0]
+        if (videoId) {
+          return `https://www.youtube.com/embed/${videoId}`
+        }
+      }
+      
       return url
     }
     return url
@@ -109,24 +180,47 @@ const MusicPlayer = () => {
     setError('')
     
     try {
-      const newPref = await createPreference({
-        ...formData,
-        is_active: true
-      })
+      if (editingPlaylist) {
+        // Update existing playlist
+        await updatePreference(editingPlaylist.id, {
+          playlist_name: formData.playlist_name,
+          playlist_url: formData.playlist_url
+        })
 
-      // Upload cover if selected
-      if (selectedFile && newPref.id) {
-        await uploadCover(newPref.id, selectedFile)
+        // Upload new cover if selected
+        if (selectedFile) {
+          await uploadCover(editingPlaylist.id, selectedFile)
+        }
+
+        setSuccess('Playlist updated successfully!')
+        setEditingPlaylist(null)
+      } else {
+        // Create new playlist
+        const existingPlaylists = getPlaylistsByPlatform(currentPlatform)
+        const isFirstPlaylist = existingPlaylists.length === 0
+        
+        const newPref = await createPreference({
+          playlist_name: formData.playlist_name,
+          playlist_url: formData.playlist_url,
+          platform: currentPlatform,
+          is_active: isFirstPlaylist
+        })
+
+        // Upload cover if selected
+        if (selectedFile && newPref.id) {
+          await uploadCover(newPref.id, selectedFile)
+        }
+
+        setSuccess('Playlist added successfully!')
       }
-
-      setSuccess('Playlist added successfully!')
+      
       setTimeout(() => setSuccess(''), 3000)
       setShowAddForm(false)
-      setFormData({ playlist_name: '', playlist_url: '', platform: 'spotify' })
+      setFormData({ playlist_name: '', playlist_url: '', platform: currentPlatform })
       setSelectedFile(null)
       setImagePreview(null)
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to add playlist')
+      setError(err.response?.data?.error || 'Failed to save playlist')
     }
   }
 
@@ -205,7 +299,7 @@ const MusicPlayer = () => {
 
           {/* Expanded View */}
           {isExpanded && (
-            <div className="h-full flex flex-col p-4 overflow-hidden">
+            <div className="h-full flex flex-col p-4 overflow-hidden" style={{ pointerEvents: 'auto' }}>
               {/* Header */}
               <div className="flex justify-between items-center mb-4">
                 <h3
@@ -299,7 +393,106 @@ const MusicPlayer = () => {
               </div>
 
               {/* Player Content */}
-              <div className="flex-1 overflow-y-auto">
+              <div 
+                className="flex-1 overflow-y-auto" 
+                style={{ 
+                  position: 'relative',
+                  pointerEvents: 'auto'
+                }}
+              >
+                {/* Add Form - Show regardless of playlist state */}
+                {showAddForm && (
+                  <form onSubmit={handleSubmit} className="mb-3 p-3 rounded-lg space-y-2" style={{ background: 'rgba(0,0,0,0.3)' }}>
+                    <div className="text-xs mb-2" style={{ color: '#a89080' }}>
+                      {editingPlaylist ? 'Editing' : 'Adding to'}: {currentPlatform === 'spotify' ? '🎵 Spotify' : '📺 YouTube'}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Playlist Name"
+                      value={formData.playlist_name}
+                      onChange={(e) => setFormData({ ...formData, playlist_name: e.target.value })}
+                      required
+                      className="w-full px-2 py-1 rounded text-sm outline-none"
+                      style={{
+                        background: 'rgba(0,0,0,0.4)',
+                        border: '1px solid rgba(200, 80, 80, 0.3)',
+                        color: '#f5e6d3'
+                      }}
+                    />
+                    <input
+                      type="url"
+                      placeholder="Playlist URL"
+                      value={formData.playlist_url}
+                      onChange={(e) => setFormData({ ...formData, playlist_url: e.target.value })}
+                      required
+                      className="w-full px-2 py-1 rounded text-sm outline-none"
+                      style={{
+                        background: 'rgba(0,0,0,0.4)',
+                        border: '1px solid rgba(200, 80, 80, 0.3)',
+                        color: '#f5e6d3'
+                      }}
+                    />
+                    
+                    {/* Cover Image Upload */}
+                    <div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full px-2 py-1 rounded text-xs"
+                        style={{
+                          background: 'rgba(200, 80, 80, 0.2)',
+                          border: '1px solid rgba(200, 80, 80, 0.3)',
+                          color: '#f5e6d3'
+                        }}
+                      >
+                        📷 {selectedFile ? selectedFile.name : 'Add Cover Image (Optional)'}
+                      </button>
+                      {imagePreview && (
+                        <img src={imagePreview} alt="Preview" className="w-full h-20 object-cover rounded mt-2" />
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        className="flex-1 px-2 py-1 rounded text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+                        style={{
+                          background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
+                          color: '#f5e6d3',
+                          pointerEvents: 'auto'
+                        }}
+                      >
+                        {editingPlaylist ? 'Update Playlist' : 'Add Playlist'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddForm(false)
+                          setEditingPlaylist(null)
+                          setFormData({ playlist_name: '', playlist_url: '', platform: currentPlatform })
+                          setSelectedFile(null)
+                          setImagePreview(null)
+                        }}
+                        className="px-3 py-1 rounded text-sm font-semibold cursor-pointer hover:opacity-80"
+                        style={{
+                          background: 'rgba(0,0,0,0.4)',
+                          border: '1px solid rgba(200, 80, 80, 0.3)',
+                          color: '#f5e6d3'
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+
                 {currentPlaylist ? (
                   <div className="space-y-4">
                     {/* Current Playlist Info */}
@@ -310,13 +503,29 @@ const MusicPlayer = () => {
                         border: '1px solid rgba(200, 80, 80, 0.3)'
                       }}
                     >
-                      {currentPlaylist.cover_image && (
+                      {/* Cover Image or Icon */}
+                      {currentPlaylist.cover_image ? (
                         <img
                           src={currentPlaylist.cover_image}
                           alt={currentPlaylist.playlist_name}
-                          className="w-full h-32 object-cover rounded-lg mb-2"
+                          className="w-full h-32 object-contain rounded-lg mb-2"
+                          style={{ background: 'rgba(0,0,0,0.2)' }}
                         />
+                      ) : (
+                        <div
+                          className="w-full h-32 rounded-lg mb-2 flex items-center justify-center"
+                          style={{
+                            background: 'linear-gradient(135deg, #c85050 0%, #ff6b6b 100%)'
+                          }}
+                        >
+                          {currentPlatform === 'spotify' ? (
+                            <Music size={48} style={{ color: '#f5e6d3', opacity: 0.8 }} />
+                          ) : (
+                            <Youtube size={48} style={{ color: '#f5e6d3', opacity: 0.8 }} />
+                          )}
+                        </div>
                       )}
+                      
                       <p
                         className="font-semibold text-sm mb-1"
                         style={{ color: '#f5e6d3' }}
@@ -324,50 +533,32 @@ const MusicPlayer = () => {
                         {currentPlaylist.playlist_name}
                       </p>
                       <p
-                        className="text-xs"
+                        className="text-xs mb-3 flex items-center gap-1"
                         style={{ color: '#a89080' }}
                       >
-                        {currentPlatform === 'spotify' ? '🎵 Spotify' : '📺 YouTube'}
+                        {currentPlatform === 'spotify' ? (
+                          <>
+                            <Music size={12} /> Spotify
+                          </>
+                        ) : (
+                          <>
+                            <Youtube size={12} /> YouTube
+                          </>
+                        )}
                       </p>
-                    </div>
-
-                    {/* Embed Player */}
-                    <div
-                      className="rounded-lg overflow-hidden"
-                      style={{
-                        border: '1px solid rgba(200, 80, 80, 0.3)'
-                      }}
-                    >
-                      <iframe
-                        src={getEmbedUrl(currentPlaylist.playlist_url, currentPlatform)}
-                        width="100%"
-                        height="300"
-                        frameBorder="0"
-                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                        loading="lazy"
-                        title={currentPlaylist.playlist_name}
-                      />
-                    </div>
-
-                    {/* Volume Control */}
-                    <div>
-                      <label
-                        className="block text-xs mb-2"
-                        style={{ color: '#f5e6d3' }}
-                      >
-                        🔊 Volume: {volume}%
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={volume}
-                        onChange={(e) => handleVolumeChange(parseInt(e.target.value))}
-                        className="w-full"
+                      
+                      {/* Play Button */}
+                      <button
+                        onClick={() => setShowFloatingPlayer(true)}
+                        className="w-full py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                         style={{
-                          accentColor: '#c85050'
+                          background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
+                          color: '#f5e6d3'
                         }}
-                      />
+                      >
+                        <Play size={16} fill="currentColor" />
+                        Play in Floating Player
+                      </button>
                     </div>
 
                     {/* Playlist List */}
@@ -380,157 +571,122 @@ const MusicPlayer = () => {
                           {currentPlatform === 'spotify' ? 'Spotify' : 'YouTube'} Playlists
                         </p>
                         <button
-                          onClick={() => setShowAddForm(!showAddForm)}
-                          className="text-xs px-2 py-1 rounded cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            console.log('Toggle add form clicked!')
+                            setShowAddForm(!showAddForm)
+                          }}
+                          type="button"
+                          className="text-xs px-2 py-1 rounded cursor-pointer hover:opacity-80"
                           style={{
                             background: 'rgba(200, 80, 80, 0.2)',
                             color: '#c85050',
-                            pointerEvents: 'auto'
+                            pointerEvents: 'auto',
+                            position: 'relative',
+                            zIndex: 1
                           }}
                         >
-                          {showAddForm ? '✕' : '+ Add'}
+                          {showAddForm ? '✕ Close' : '+ Add'}
                         </button>
                       </div>
 
-                      {/* Add Form */}
-                      {showAddForm && (
-                        <form onSubmit={handleSubmit} className="mb-3 p-3 rounded-lg space-y-2" style={{ background: 'rgba(0,0,0,0.3)' }}>
-                          <input
-                            type="text"
-                            placeholder="Playlist Name"
-                            value={formData.playlist_name}
-                            onChange={(e) => setFormData({ ...formData, playlist_name: e.target.value })}
-                            required
-                            className="w-full px-2 py-1 rounded text-sm outline-none"
-                            style={{
-                              background: 'rgba(0,0,0,0.4)',
-                              border: '1px solid rgba(200, 80, 80, 0.3)',
-                              color: '#f5e6d3'
-                            }}
-                          />
-                          <input
-                            type="url"
-                            placeholder="Playlist URL"
-                            value={formData.playlist_url}
-                            onChange={(e) => setFormData({ ...formData, playlist_url: e.target.value })}
-                            required
-                            className="w-full px-2 py-1 rounded text-sm outline-none"
-                            style={{
-                              background: 'rgba(0,0,0,0.4)',
-                              border: '1px solid rgba(200, 80, 80, 0.3)',
-                              color: '#f5e6d3'
-                            }}
-                          />
-                          <select
-                            value={formData.platform}
-                            onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
-                            className="w-full px-2 py-1 rounded text-sm outline-none"
-                            style={{
-                              background: 'rgba(0,0,0,0.4)',
-                              border: '1px solid rgba(200, 80, 80, 0.3)',
-                              color: '#f5e6d3'
-                            }}
-                          >
-                            <option value="spotify">Spotify</option>
-                            <option value="youtube">YouTube</option>
-                          </select>
-                          
-                          {/* Cover Image Upload */}
-                          <div>
-                            <input
-                              ref={fileInputRef}
-                              type="file"
-                              accept="image/*"
-                              onChange={handleFileSelect}
-                              className="hidden"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => fileInputRef.current?.click()}
-                              className="w-full px-2 py-1 rounded text-xs"
-                              style={{
-                                background: 'rgba(200, 80, 80, 0.2)',
-                                border: '1px solid rgba(200, 80, 80, 0.3)',
-                                color: '#f5e6d3'
-                              }}
-                            >
-                              📷 {selectedFile ? selectedFile.name : 'Add Cover Image'}
-                            </button>
-                            {imagePreview && (
-                              <img src={imagePreview} alt="Preview" className="w-full h-20 object-cover rounded mt-2" />
-                            )}
-                          </div>
-
-                          <button
-                            type="submit"
-                            className="w-full px-2 py-1 rounded text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity"
-                            style={{
-                              background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
-                              color: '#f5e6d3',
-                              pointerEvents: 'auto'
-                            }}
-                          >
-                            Add Playlist
-                          </button>
-                        </form>
-                      )}
-
                       {/* Playlist Items */}
                       <div className="space-y-2">
-                        {getPlaylistsByPlatform(currentPlatform).map((playlist) => (
-                          <div
-                            key={playlist.id}
-                            className="p-2 rounded-lg flex justify-between items-center"
-                            style={{
-                              background: playlist.is_active
-                                ? 'rgba(200, 80, 80, 0.2)'
-                                : 'rgba(0,0,0,0.2)',
-                              border: '1px solid rgba(200, 80, 80, 0.3)'
-                            }}
-                          >
-                            <button
-                              onClick={() => setActivePlaylist(playlist.id, playlist.platform)}
-                              className="flex-1 text-left text-xs"
-                              style={{ color: '#f5e6d3' }}
-                            >
-                              {playlist.is_active && '▶ '}
-                              {playlist.playlist_name}
-                            </button>
-                            <button
-                              onClick={() => {
-                                setDeleteTarget(playlist.id)
-                                setShowDeleteConfirm(true)
+                        {getPlaylistsByPlatform(currentPlatform).length > 0 ? (
+                          getPlaylistsByPlatform(currentPlatform).map((playlist) => (
+                            <div
+                              key={playlist.id}
+                              className="p-2 rounded-lg flex justify-between items-center transition-all duration-200"
+                              style={{
+                                background: playlist.is_active
+                                  ? 'rgba(200, 80, 80, 0.3)'
+                                  : 'rgba(0,0,0,0.2)',
+                                border: playlist.is_active
+                                  ? '1px solid rgba(200, 80, 80, 0.5)'
+                                  : '1px solid rgba(200, 80, 80, 0.2)'
                               }}
-                              className="text-xs ml-2"
-                              style={{ color: '#ff4757' }}
                             >
-                              🗑️
-                            </button>
-                          </div>
-                        ))}
+                              <button
+                                onClick={() => setActivePlaylist(playlist.id, playlist.platform)}
+                                className="flex-1 text-left text-xs hover:opacity-80 transition-opacity"
+                                style={{ color: '#f5e6d3' }}
+                              >
+                                {playlist.is_active && '▶ '}
+                                {playlist.playlist_name}
+                              </button>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => {
+                                    setEditingPlaylist(playlist)
+                                    setFormData({
+                                      playlist_name: playlist.playlist_name,
+                                      playlist_url: playlist.playlist_url,
+                                      platform: playlist.platform
+                                    })
+                                    setShowAddForm(true)
+                                  }}
+                                  className="text-xs p-1 hover:opacity-80 transition-opacity"
+                                  style={{ color: '#ffa502' }}
+                                  title="Edit"
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setDeleteTarget(playlist.id)
+                                    setShowDeleteConfirm(true)
+                                  }}
+                                  className="text-xs p-1 hover:opacity-80 transition-opacity"
+                                  style={{ color: '#ff4757' }}
+                                  title="Delete"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p
+                            className="text-xs text-center py-4"
+                            style={{ color: '#a89080' }}
+                          >
+                            No playlists yet. Click "+ Add" to create one.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <p
-                      className="text-sm mb-4"
-                      style={{ color: '#a89080' }}
-                    >
-                      No {currentPlatform} playlist added yet
-                    </p>
-                    <button
-                      onClick={() => setShowAddForm(true)}
-                      className="px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer"
-                      style={{
-                        background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
-                        color: '#f5e6d3',
-                        pointerEvents: 'auto'
-                      }}
-                    >
-                      + Add Playlist
-                    </button>
-                  </div>
+                  !showAddForm && (
+                    <div className="text-center py-8">
+                      <p
+                        className="text-sm mb-4"
+                        style={{ color: '#a89080' }}
+                      >
+                        No {currentPlatform} playlist added yet
+                      </p>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          console.log('Add Playlist button clicked!')
+                          setShowAddForm(true)
+                        }}
+                        type="button"
+                        className="px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer hover:opacity-90"
+                        style={{
+                          background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
+                          color: '#f5e6d3',
+                          pointerEvents: 'auto',
+                          position: 'relative',
+                          zIndex: 1
+                        }}
+                      >
+                        + Add Your First Playlist
+                      </button>
+                    </div>
+                  )
                 )}
               </div>
             </div>
@@ -551,6 +707,29 @@ const MusicPlayer = () => {
         confirmText="Yes, Remove"
         cancelText="Cancel"
       />
+
+      {/* Floating Music Player */}
+      {showFloatingPlayer && currentPlaylist && (
+        <FloatingMusicPlayer
+          playlist={currentPlaylist}
+          platform={currentPlatform}
+          onClose={() => setShowFloatingPlayer(false)}
+          onNext={() => {
+            const playlists = getPlaylistsByPlatform(currentPlatform)
+            const currentIndex = playlists.findIndex(p => p.id === currentPlaylist.id)
+            if (currentIndex < playlists.length - 1) {
+              setActivePlaylist(playlists[currentIndex + 1].id, currentPlatform)
+            }
+          }}
+          onPrevious={() => {
+            const playlists = getPlaylistsByPlatform(currentPlatform)
+            const currentIndex = playlists.findIndex(p => p.id === currentPlaylist.id)
+            if (currentIndex > 0) {
+              setActivePlaylist(playlists[currentIndex - 1].id, currentPlatform)
+            }
+          }}
+        />
+      )}
     </>
   )
 }

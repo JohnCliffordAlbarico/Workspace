@@ -6,6 +6,7 @@ import TaskModal from '../modal/TaskModal'
 import TaskDetailModal from '../modal/TaskDetailModal'
 import InProgressBanner from './InProgressBanner'
 import QuickAddTask from './QuickAddTask'
+import DigitalClock from './DigitalClock'
 import { usePriorityDrag } from '../hooks/usePriorityDrag'
 import { useState, useMemo } from 'react'
 import api from '../../../config/api'
@@ -35,10 +36,10 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
   )
 
   const tasksByPriority = {
-    critical: tasks.filter(t => t.priority === 'critical'),
-    high: tasks.filter(t => t.priority === 'high'),
-    medium: tasks.filter(t => t.priority === 'medium'),
-    low: tasks.filter(t => t.priority === 'low')
+    critical: tasks.filter(t => t.priority === 'critical' && t.status !== 'in_progress'),
+    high: tasks.filter(t => t.priority === 'high' && t.status !== 'in_progress'),
+    medium: tasks.filter(t => t.priority === 'medium' && t.status !== 'in_progress'),
+    low: tasks.filter(t => t.priority === 'low' && t.status !== 'in_progress')
   }
 
   const inProgressTask = useMemo(() => {
@@ -113,25 +114,29 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
               Managing productivity with elegance
             </p>
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-6 py-3 rounded-xl text-base font-semibold transition-all duration-300"
-            style={{
-              background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
-              color: '#f5e6d3',
-              border: 'none'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)'
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(200, 80, 80, 0.4)'
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}
-          >
-            ✨ New Task
-          </button>
+          
+          <div className="flex items-center gap-6">
+            <DigitalClock />
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-6 py-3 rounded-xl text-base font-semibold transition-all duration-300"
+              style={{
+                background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
+                color: '#f5e6d3',
+                border: 'none'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)'
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(200, 80, 80, 0.4)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              ✨ New Task
+            </button>
+          </div>
         </header>
 
         {/* Error notification */}

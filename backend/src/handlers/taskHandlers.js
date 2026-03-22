@@ -3,12 +3,7 @@ import { supabaseAdmin } from '../config/supabase.js'
 // Get all tasks for a workspace
 export const getTasks = async (req, res) => {
   try {
-    const { workspaceId, status, page = 1, limit = 50 } = req.query
-
-    // Calculate pagination
-    const pageNum = parseInt(page)
-    const limitNum = parseInt(limit)
-    const offset = (pageNum - 1) * limitNum
+    const { workspaceId, status, page, limit } = req.query
 
     let query = supabaseAdmin
       .from('tasks')
@@ -23,23 +18,38 @@ export const getTasks = async (req, res) => {
       query = query.eq('status', status)
     }
 
-    // Apply pagination and ordering
-    const { data, error, count } = await query
+    // Apply ordering
+    query = query
       .order('completed_at', { ascending: false, nullsFirst: false })
       .order('position', { ascending: true })
-      .range(offset, offset + limitNum - 1)
+
+    // Only apply pagination if page and limit are provided
+    if (page && limit) {
+      const pageNum = parseInt(page)
+      const limitNum = parseInt(limit)
+      const offset = (pageNum - 1) * limitNum
+
+      const { data, error, count } = await query.range(offset, offset + limitNum - 1)
+
+      if (error) throw error
+
+      return res.json({
+        data,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: count,
+          totalPages: Math.ceil(count / limitNum)
+        }
+      })
+    }
+
+    // No pagination - return all tasks
+    const { data, error } = await query
 
     if (error) throw error
 
-    res.json({
-      data,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total: count,
-        totalPages: Math.ceil(count / limitNum)
-      }
-    })
+    res.json(data)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

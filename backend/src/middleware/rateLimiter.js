@@ -26,3 +26,12 @@ export const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false
 })
+
+// Lenient rate limiter for music operations (frequent updates)
+export const musicLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 30, // Limit each IP to 30 music requests per minute
+  message: 'Too many music requests, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false
+})
