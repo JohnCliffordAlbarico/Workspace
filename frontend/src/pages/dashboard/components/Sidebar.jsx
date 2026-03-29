@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut, Menu } from 'lucide-react'
 import ProfileModal from '../modal/ProfileModal'
+import BreakTimeWidget from './BreakTimeWidget'
 const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen }) => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
@@ -109,7 +110,8 @@ const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen }) => {
               background: user?.profile_img 
                 ? 'transparent' 
                 : 'linear-gradient(135deg, #c85050 0%, #ff6b6b 100%)',
-              boxShadow: '0 4px 15px rgba(200, 80, 80, 0.4)'
+              boxShadow: '0 4px 15px rgba(200, 80, 80, 0.4)',
+              border: '3px solid rgba(200, 80, 80, 0.6)'
             }}
           >
             {user?.profile_img ? (

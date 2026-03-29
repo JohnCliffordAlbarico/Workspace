@@ -6,6 +6,7 @@ import TaskModal from '../modal/TaskModal'
 import TaskDetailModal from '../modal/TaskDetailModal'
 import InProgressBanner from './InProgressBanner'
 import QuickAddTask from './QuickAddTask'
+import BreakTimeWidget from './BreakTimeWidget'
 import DigitalClock from './DigitalClock'
 import { usePriorityDrag } from '../hooks/usePriorityDrag'
 import { useState, useMemo } from 'react'
@@ -161,6 +162,9 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
             onTaskClick={handleTaskClick}
           />
         )}
+
+        {/* Break Time Widget */}
+        <BreakTimeWidget />
 
         {/* Quick Add Task */}
         <QuickAddTask 

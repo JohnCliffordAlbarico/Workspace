@@ -7,6 +7,7 @@ import userRoutes from './src/routes/userRoutes.js'
 import workspaceRoutes from './src/routes/workspaceRoutes.js'
 import taskRoutes from './src/routes/taskRoutes.js'
 import musicRoutes from './src/routes/musicRoutes.js'
+import breakTimeRoutes from './src/routes/breakTimeRoutes.js'
 import { apiLimiter } from './src/middleware/rateLimiter.js'
 import { errorHandler, notFoundHandler } from './src/middleware/errorHandler.js'
 
@@ -74,6 +75,7 @@ app.use('/api/users', userRoutes)
 app.use('/api/workspaces', workspaceRoutes)
 app.use('/api/tasks', taskRoutes)
 app.use('/api/music', musicRoutes)
+app.use('/api/breaktime', breakTimeRoutes)
 
 // Error handling
 app.use(notFoundHandler)

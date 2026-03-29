@@ -1,12 +1,36 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { 
   startOfMonth, 
   endOfMonth, 
   eachDayOfInterval,
   format 
 } from 'date-fns'
+import axios from 'axios'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 const CalendarStats = ({ currentDate, tasks }) => {
+  const [breakTimes, setBreakTimes] = useState([])
+  const [loadingBreaks, setLoadingBreaks] = useState(true)
+
+  // Fetch all break times
+  useEffect(() => {
+    const fetchBreakTimes = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await axios.get(`${API_URL}/api/breaktime`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        setBreakTimes(response.data)
+      } catch (err) {
+        console.error('Error fetching break times:', err)
+      } finally {
+        setLoadingBreaks(false)
+      }
+    }
+
+    fetchBreakTimes()
+  }, [currentDate])
   const stats = useMemo(() => {
     const monthStart = startOfMonth(currentDate)
     const monthEnd = endOfMonth(currentDate)
@@ -34,6 +58,18 @@ const CalendarStats = ({ currentDate, tasks }) => {
       const minutes = Math.floor((end - start) / 60000)
       return sum + minutes
     }, 0)
+
+    // Break time earned and used this month
+    const breakTimesThisMonth = breakTimes.filter(bt => {
+      if (!bt.created_at) return false
+      const createdMonth = format(new Date(bt.created_at), 'yyyy-MM')
+      return createdMonth === monthStr
+    })
+
+    const breakTimeEarned = breakTimesThisMonth.reduce((sum, bt) => sum + bt.earned_minutes, 0)
+    const breakTimeUsed = breakTimesThisMonth
+      .filter(bt => bt.status === 'used')
+      .reduce((sum, bt) => sum + bt.earned_minutes, 0)
 
     // Most productive day
     const dayTaskCounts = {}
@@ -67,11 +103,13 @@ const CalendarStats = ({ currentDate, tasks }) => {
       completedCount: completedThisMonth.length,
       dueCount: dueThisMonth.length,
       totalTime,
+      breakTimeEarned,
+      breakTimeUsed,
       mostProductiveDay,
       completionRate,
       avgPerDay
     }
-  }, [currentDate, tasks])
+  }, [currentDate, tasks, breakTimes])
 
   const formatTime = (minutes) => {
     const hours = Math.floor(minutes / 60)
@@ -143,6 +181,38 @@ const CalendarStats = ({ currentDate, tasks }) => {
             style={{ color: '#ffa502' }}
           >
             {formatTime(stats.totalTime)}
+          </div>
+        </div>
+
+        {/* Break Time Earned */}
+        <div>
+          <div 
+            className="text-xs uppercase tracking-wider mb-1"
+            style={{ color: '#a89080' }}
+          >
+            Break Time Earned
+          </div>
+          <div 
+            className="text-2xl font-bold"
+            style={{ color: '#50c878' }}
+          >
+            {stats.breakTimeEarned}m
+          </div>
+        </div>
+
+        {/* Break Time Used */}
+        <div>
+          <div 
+            className="text-xs uppercase tracking-wider mb-1"
+            style={{ color: '#a89080' }}
+          >
+            Break Time Used
+          </div>
+          <div 
+            className="text-2xl font-bold"
+            style={{ color: '#50c878' }}
+          >
+            {stats.breakTimeUsed}m
           </div>
         </div>
 

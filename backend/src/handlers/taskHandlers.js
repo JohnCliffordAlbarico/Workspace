@@ -1,5 +1,39 @@
 import { supabaseAdmin } from '../config/supabase.js'
 
+// Helper function to calculate and create break time entries
+const calculateAndCreateBreakTime = async (userId, taskId, actualTimeMinutes, previousTimeMinutes = 0) => {
+  if (!actualTimeMinutes || actualTimeMinutes <= 0) return
+
+  // Calculate how many 25-minute blocks were completed
+  const previousBlocks = Math.floor(previousTimeMinutes / 25)
+  const currentBlocks = Math.floor(actualTimeMinutes / 25)
+  
+  // Only create new break time if we crossed a new 25-minute threshold
+  const newBlocksEarned = currentBlocks - previousBlocks
+
+  if (newBlocksEarned > 0) {
+    // Create break time entries (5 minutes per 25-minute block)
+    const breakEntries = []
+    for (let i = 0; i < newBlocksEarned; i++) {
+      breakEntries.push({
+        user_id: userId,
+        task_id: taskId,
+        earned_minutes: 5,
+        remaining_minutes: 5,
+        status: 'available'
+      })
+    }
+
+    const { error } = await supabaseAdmin
+      .from('break_time')
+      .insert(breakEntries)
+
+    if (error) {
+      console.error('Error creating break time:', error)
+    }
+  }
+}
+
 // Get all tasks for a workspace
 export const getTasks = async (req, res) => {
   try {
@@ -156,6 +190,16 @@ export const updateTask = async (req, res) => {
       due_date
     } = req.body
 
+    // Get the current task to compare actual_time_minutes
+    const { data: currentTask, error: fetchError } = await supabaseAdmin
+      .from('tasks')
+      .select('actual_time_minutes')
+      .eq('id', id)
+      .eq('user_id', req.user.id)
+      .single()
+
+    if (fetchError) throw fetchError
+
     const updateData = {}
     if (title !== undefined) updateData.title = title
     if (description !== undefined) updateData.description = description
@@ -177,6 +221,16 @@ export const updateTask = async (req, res) => {
       .single()
 
     if (error) throw error
+
+    // Auto-create break time if actual_time_minutes increased
+    if (actual_time_minutes !== undefined && actual_time_minutes > 0) {
+      await calculateAndCreateBreakTime(
+        req.user.id,
+        id,
+        actual_time_minutes,
+        currentTask.actual_time_minutes || 0
+      )
+    }
 
     res.json(data)
   } catch (error) {

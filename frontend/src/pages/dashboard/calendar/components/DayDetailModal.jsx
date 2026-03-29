@@ -1,8 +1,37 @@
 import { createPortal } from 'react-dom'
 import { format } from 'date-fns'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { Coffee } from 'lucide-react'
+import axios from 'axios'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 const DayDetailModal = ({ isOpen, onClose, date, tasks }) => {
+  const [breakTimes, setBreakTimes] = useState([])
+  const [loadingBreaks, setLoadingBreaks] = useState(false)
+
+  // Fetch break times when modal opens
+  useEffect(() => {
+    if (!isOpen || !date) return
+
+    const fetchBreakTimes = async () => {
+      try {
+        setLoadingBreaks(true)
+        const token = localStorage.getItem('token')
+        const response = await axios.get(`${API_URL}/api/breaktime?status=used`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        setBreakTimes(response.data)
+      } catch (err) {
+        console.error('Error fetching break times:', err)
+      } finally {
+        setLoadingBreaks(false)
+      }
+    }
+
+    fetchBreakTimes()
+  }, [isOpen, date])
+
   // Close on ESC key
   useEffect(() => {
     const handleEsc = (e) => {
@@ -35,6 +64,12 @@ const DayDetailModal = ({ isOpen, onClose, date, tasks }) => {
     const startedMatch = t.started_at && formatLocalDate(new Date(t.started_at)) === dateStr
     
     return completedMatch || dueMatch || createdMatch || startedMatch
+  })
+
+  // Filter break times for this specific date
+  const breakTimesForDate = breakTimes.filter(bt => {
+    if (!bt.completed_at) return false
+    return formatLocalDate(new Date(bt.completed_at)) === dateStr
   })
 
   // Group tasks by priority
@@ -331,6 +366,70 @@ const DayDetailModal = ({ isOpen, onClose, date, tasks }) => {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Break Time History Section */}
+        {breakTimesForDate.length > 0 && (
+          <div 
+            className="p-5 rounded-xl mt-6"
+            style={{
+              background: 'linear-gradient(145deg, rgba(20, 45, 30, 0.6) 0%, rgba(15, 30, 20, 0.7) 100%)',
+              border: '1px solid rgba(80, 200, 120, 0.3)'
+            }}
+          >
+            <h3 
+              className="text-lg font-bold mb-3 flex items-center gap-2"
+              style={{ 
+                fontFamily: "'Cinzel', serif",
+                color: '#50c878' 
+              }}
+            >
+              <Coffee className="w-5 h-5" />
+              Break Time History
+            </h3>
+            
+            <div className="space-y-2">
+              {breakTimesForDate.map(bt => (
+                <div
+                  key={bt.id}
+                  className="p-3 rounded-lg flex items-center justify-between"
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.3)',
+                    border: '1px solid rgba(80, 200, 120, 0.2)'
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Coffee className="w-4 h-4" style={{ color: '#50c878' }} />
+                    <span className="text-sm font-semibold" style={{ color: '#50c878' }}>
+                      {bt.earned_minutes} min break
+                    </span>
+                  </div>
+                  <div className="text-xs" style={{ color: '#a89080' }}>
+                    {bt.completed_at && format(new Date(bt.completed_at), 'h:mm a')}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Total break time for the day */}
+            <div 
+              className="mt-3 p-3 rounded-lg text-center"
+              style={{
+                background: 'rgba(80, 200, 120, 0.1)',
+                border: '1px solid rgba(80, 200, 120, 0.3)'
+              }}
+            >
+              <span className="text-sm" style={{ color: '#a89080' }}>
+                Total break time: 
+              </span>
+              <span 
+                className="text-lg font-bold ml-2"
+                style={{ color: '#50c878', fontFamily: "'Cinzel', serif" }}
+              >
+                {breakTimesForDate.reduce((sum, bt) => sum + bt.earned_minutes, 0)} min
+              </span>
             </div>
           </div>
         )}
