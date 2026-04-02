@@ -73,15 +73,21 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
     handleDragCancel()
   }
 
-  const handleQuickAdd = async (title) => {
+  const handleQuickAdd = async (title, goalMinutes = null) => {
     try {
-      const response = await api.post('/tasks', {
+      const taskData = {
         workspace_id: workspace.id,
         title,
         priority: 'medium',
         status: 'pending',
         position: tasks.length
-      })
+      }
+      
+      if (goalMinutes) {
+        taskData.goal_time_minutes = goalMinutes
+      }
+      
+      const response = await api.post('/tasks', taskData)
       
       setTasks(prev => [...prev, response.data])
     } catch (error) {

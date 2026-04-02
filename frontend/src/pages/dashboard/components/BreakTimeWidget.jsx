@@ -64,6 +64,9 @@ const BreakTimeWidget = () => {
 
   if (loading) return null
 
+  // Don't show widget if no break time available
+  if (availableMinutes === 0) return null
+
   // Active break view
   if (activeBreakMinutes !== null) {
     return (

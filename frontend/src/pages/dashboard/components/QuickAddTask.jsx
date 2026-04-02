@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Clock } from 'lucide-react'
 
 const QuickAddTask = ({ workspaceId, onTaskAdded }) => {
   const [title, setTitle] = useState('')
+  const [minutes, setMinutes] = useState('')
   const [isAdding, setIsAdding] = useState(false)
 
   const handleSubmit = async (e) => {
@@ -12,8 +13,9 @@ const QuickAddTask = ({ workspaceId, onTaskAdded }) => {
 
     setIsAdding(true)
     try {
-      await onTaskAdded(title.trim())
+      await onTaskAdded(title.trim(), minutes ? parseInt(minutes) : null)
       setTitle('')
+      setMinutes('')
     } catch (error) {
       console.error('Failed to add task:', error)
     } finally {
@@ -30,7 +32,7 @@ const QuickAddTask = ({ workspaceId, onTaskAdded }) => {
         border: '1px solid rgba(200, 80, 80, 0.3)',
       }}
     >
-      <div className="flex gap-3 items-center">
+      <div className="flex gap-3 items-center mb-3">
         <div className="flex-1 relative">
           <input
             type="text"
@@ -54,17 +56,6 @@ const QuickAddTask = ({ workspaceId, onTaskAdded }) => {
               e.target.style.background = 'rgba(0, 0, 0, 0.3)'
             }}
           />
-          {title && (
-            <div 
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs px-2 py-1 rounded"
-              style={{
-                background: 'rgba(200, 80, 80, 0.2)',
-                color: '#d4a574',
-              }}
-            >
-              Press Enter ⏎
-            </div>
-          )}
         </div>
         <button
           type="submit"
@@ -92,8 +83,36 @@ const QuickAddTask = ({ workspaceId, onTaskAdded }) => {
           <span className="font-semibold">Add</span>
         </button>
       </div>
-      <div className="mt-2 text-xs" style={{ color: '#a89080' }}>
-        💡 Quick add creates a medium priority task. Use "New Task" button for more options.
+      
+      {/* Minutes Input */}
+      <div className="flex items-center gap-2">
+        <Clock className="w-4 h-4" style={{ color: '#ffa502' }} />
+        <input
+          type="number"
+          value={minutes}
+          onChange={(e) => setMinutes(e.target.value)}
+          placeholder="Goal time (minutes)"
+          min="1"
+          disabled={isAdding}
+          className="flex-1 px-3 py-2 rounded-lg text-sm transition-all duration-200"
+          style={{
+            background: 'rgba(0, 0, 0, 0.3)',
+            border: '1px solid rgba(200, 80, 80, 0.2)',
+            color: '#f5e6d3',
+            outline: 'none',
+          }}
+          onFocus={(e) => {
+            e.target.style.border = '1px solid rgba(200, 80, 80, 0.5)'
+            e.target.style.background = 'rgba(0, 0, 0, 0.4)'
+          }}
+          onBlur={(e) => {
+            e.target.style.border = '1px solid rgba(200, 80, 80, 0.2)'
+            e.target.style.background = 'rgba(0, 0, 0, 0.3)'
+          }}
+        />
+        <span className="text-xs" style={{ color: '#a89080' }}>
+          Optional - Set goal time to earn break time
+        </span>
       </div>
     </form>
   )
