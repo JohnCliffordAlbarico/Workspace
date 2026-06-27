@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export const useTaskTimer = (startedAt) => {
+export const useTaskTimer = (startedAt, accumulatedMinutes = 0) => {
   const [duration, setDuration] = useState('')
 
   useEffect(() => {
@@ -13,10 +13,11 @@ export const useTaskTimer = (startedAt) => {
       const start = new Date(startedAt)
       const now = new Date()
       const diff = Math.floor((now - start) / 1000) // seconds
+      const totalSeconds = diff + (accumulatedMinutes || 0) * 60
 
-      const hours = Math.floor(diff / 3600)
-      const minutes = Math.floor((diff % 3600) / 60)
-      const seconds = diff % 60
+      const hours = Math.floor(totalSeconds / 3600)
+      const minutes = Math.floor((totalSeconds % 3600) / 60)
+      const seconds = totalSeconds % 60
 
       if (hours > 0) {
         setDuration(`${hours}h ${minutes}m ${seconds}s`)
@@ -31,7 +32,7 @@ export const useTaskTimer = (startedAt) => {
     const interval = setInterval(updateDuration, 1000)
 
     return () => clearInterval(interval)
-  }, [startedAt])
+  }, [startedAt, accumulatedMinutes])
 
   return duration
 }

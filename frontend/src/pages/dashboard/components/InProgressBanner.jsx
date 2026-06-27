@@ -5,7 +5,7 @@ import ConfirmationModal from '../modal/ConfirmationModal'
 
 const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
   const { completeTask, pauseTask, cancelTask, startTask, loading } = useTaskActions(setTasks)
-  const duration = useTaskTimer(task?.started_at)
+  const duration = useTaskTimer(task?.started_at, task?.actual_time_minutes)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false)
   const [showPauseConfirm, setShowPauseConfirm] = useState(false)
