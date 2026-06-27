@@ -37,14 +37,14 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
   )
 
   const tasksByPriority = {
-    critical: tasks.filter(t => t.priority === 'critical' && t.status !== 'in_progress'),
-    high: tasks.filter(t => t.priority === 'high' && t.status !== 'in_progress'),
-    medium: tasks.filter(t => t.priority === 'medium' && t.status !== 'in_progress'),
-    low: tasks.filter(t => t.priority === 'low' && t.status !== 'in_progress')
+    critical: tasks.filter(t => t.priority === 'critical' && t.status !== 'in_progress' && t.status !== 'paused'),
+    high: tasks.filter(t => t.priority === 'high' && t.status !== 'in_progress' && t.status !== 'paused'),
+    medium: tasks.filter(t => t.priority === 'medium' && t.status !== 'in_progress' && t.status !== 'paused'),
+    low: tasks.filter(t => t.priority === 'low' && t.status !== 'in_progress' && t.status !== 'paused')
   }
 
   const inProgressTask = useMemo(() => {
-    return tasks.find(t => t.status === 'in_progress')
+    return tasks.find(t => t.status === 'in_progress' || t.status === 'paused')
   }, [tasks])
 
   const handleTaskClick = (task) => {

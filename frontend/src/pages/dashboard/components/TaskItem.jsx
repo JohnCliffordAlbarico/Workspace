@@ -19,6 +19,7 @@ const TaskItem = memo(({ task, color, setTasks, onTaskClick, allTasks }) => {
   const isInProgress = task.status === 'in_progress'
   const isCompleted = task.status === 'completed'
   const isPending = task.status === 'pending'
+  const isPaused = task.status === 'paused'
 
   // Memoize style object to prevent re-creation
   const style = useMemo(() => {
@@ -35,7 +36,7 @@ const TaskItem = memo(({ task, color, setTasks, onTaskClick, allTasks }) => {
     return {
       cursor: loading || isInProgress ? 'not-allowed' : 'grab',
       transition: 'all 0.3s ease-out',
-      opacity: isInProgress ? 0.7 : 1
+      opacity: isInProgress ? 0.7 : isPaused ? 0.85 : 1
     }
   }, [transform, isDragging, loading, isInProgress])
 
@@ -123,6 +124,19 @@ const TaskItem = memo(({ task, color, setTasks, onTaskClick, allTasks }) => {
             ⏱️
           </div>
         )}
+
+        {/* Paused indicator */}
+        {isPaused && (
+          <div 
+            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+            style={{
+              background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)'
+            }}
+            title="Task paused - click resume to continue"
+          >
+            ⏸️
+          </div>
+        )}
         
         {/* Start Button for Pending Tasks */}
         {isPending && (
@@ -138,6 +152,30 @@ const TaskItem = memo(({ task, color, setTasks, onTaskClick, allTasks }) => {
             onMouseOver={(e) => {
               e.currentTarget.style.transform = 'scale(1.1)'
               e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 165, 2, 0.5)'
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+          >
+            ▶️
+          </button>
+        )}
+
+        {/* Resume Button for Paused Tasks */}
+        {isPaused && (
+          <button
+            onClick={handleStart}
+            disabled={loading}
+            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
+            style={{
+              background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
+              border: 'none',
+              color: '#1a0a0a'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'scale(1.1)'
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(46, 213, 115, 0.5)'
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.transform = 'scale(1)'

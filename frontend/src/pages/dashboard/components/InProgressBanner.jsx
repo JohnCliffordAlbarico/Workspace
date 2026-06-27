@@ -4,13 +4,16 @@ import { useTaskTimer } from '../hooks/useTaskTimer'
 import ConfirmationModal from '../modal/ConfirmationModal'
 
 const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
-  const { completeTask, pauseTask, cancelTask, loading } = useTaskActions(setTasks)
+  const { completeTask, pauseTask, cancelTask, startTask, loading } = useTaskActions(setTasks)
   const duration = useTaskTimer(task?.started_at)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false)
   const [showPauseConfirm, setShowPauseConfirm] = useState(false)
+  const [showResumeConfirm, setShowResumeConfirm] = useState(false)
 
   if (!task) return null
+
+  const isPaused = task.status === 'paused'
 
   const handleComplete = () => {
     setShowCompleteConfirm(true)
@@ -30,6 +33,15 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
     setShowPauseConfirm(false)
   }
 
+  const handleResume = () => {
+    setShowResumeConfirm(true)
+  }
+
+  const handleConfirmResume = async () => {
+    await startTask(task.id)
+    setShowResumeConfirm(false)
+  }
+
   const handleCancel = () => {
     setShowCancelConfirm(true)
   }
@@ -43,24 +55,37 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
     onTaskClick(task)
   }
 
+  // Format minutes into Xm or Xh Ym
+  const formatMinutes = (mins) => {
+    if (mins < 60) return `${mins}m`
+    return `${Math.floor(mins / 60)}h ${mins % 60}m`
+  }
+
   // Calculate progress metrics
   const getProgressMetrics = () => {
-    if (!task?.started_at) return null
-    
-    const start = new Date(task.started_at)
-    const now = new Date()
-    const elapsedMinutes = Math.floor((now - start) / 60000)
-    
+    let elapsedMinutes = 0
+
+    if (isPaused) {
+      // For paused tasks, use accumulated actual_time_minutes
+      elapsedMinutes = task.actual_time_minutes || 0
+    } else {
+      // For in_progress tasks, calculate live from started_at
+      if (!task?.started_at) return null
+      const start = new Date(task.started_at)
+      const now = new Date()
+      elapsedMinutes = Math.floor((now - start) / 60000)
+    }
+
     if (!task.goal_time_minutes) {
       return {
         elapsed: elapsedMinutes,
         hasGoal: false
       }
     }
-    
+
     const percentage = Math.min(100, (elapsedMinutes / task.goal_time_minutes) * 100)
     const remaining = task.goal_time_minutes - elapsedMinutes
-    
+
     return {
       elapsed: elapsedMinutes,
       goal: task.goal_time_minutes,
@@ -97,12 +122,14 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
             <div 
               className="px-4 py-2 rounded-lg text-sm font-semibold"
               style={{
-                background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
+                background: isPaused
+                  ? 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)'
+                  : 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
                 color: '#1a0a0a',
-                animation: 'pulse 2s ease-in-out infinite'
+                animation: isPaused ? 'none' : 'pulse 2s ease-in-out infinite'
               }}
             >
-              🔄 In Progress
+              {isPaused ? '⏸️ Paused' : '🔄 In Progress'}
             </div>
 
             <div className="flex-1">
@@ -115,7 +142,14 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
               >
                 {task.title}
               </h3>
-              {duration && (
+              {isPaused ? (
+                <p 
+                  className="text-sm font-mono font-semibold"
+                  style={{ color: '#7bed9f' }}
+                >
+                  ⏸️ {formatMinutes(task.actual_time_minutes || 0)} worked
+                </p>
+              ) : duration && (
                 <p 
                   className="text-sm font-mono font-semibold"
                   style={{ color: '#ffa502' }}
@@ -147,26 +181,49 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
             >
               ✅ Complete
             </button>
-            <button
-              onClick={handlePause}
-              disabled={loading}
-              className="px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
-              style={{
-                background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
-                color: '#1a0a0a',
-                border: 'none'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)'
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(46, 213, 115, 0.4)'
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = 'none'
-              }}
-            >
-              ⏸️ Pause
-            </button>
+            {isPaused ? (
+              <button
+                onClick={handleResume}
+                disabled={loading}
+                className="px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
+                style={{
+                  background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
+                  color: '#1a0a0a',
+                  border: 'none'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(46, 213, 115, 0.4)'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              >
+                ▶️ Resume
+              </button>
+            ) : (
+              <button
+                onClick={handlePause}
+                disabled={loading}
+                className="px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
+                style={{
+                  background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
+                  color: '#1a0a0a',
+                  border: 'none'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(46, 213, 115, 0.4)'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              >
+                ⏸️ Pause
+              </button>
+            )}
             <button
               onClick={handleCancel}
               disabled={loading}
@@ -237,7 +294,7 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
                   className="font-mono font-bold"
                   style={{ color: '#ffa502' }}
                 >
-                  {duration}
+                  {isPaused ? formatMinutes(metrics.elapsed) : duration}
                 </div>
               </div>
               
@@ -310,6 +367,17 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
         message={`Pause "${task?.title}"? Time worked so far will be saved. You can resume later.`}
         confirmText="Yes, Pause"
         cancelText="Keep Working"
+      />
+
+      {/* Resume Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showResumeConfirm}
+        onConfirm={handleConfirmResume}
+        onCancel={() => setShowResumeConfirm(false)}
+        title="▶️ Resume Task?"
+        message={`Resume "${task?.title}"? Timer will restart from where you left off. ${formatMinutes(task.actual_time_minutes || 0)} already worked.`}
+        confirmText="Yes, Resume"
+        cancelText="Not Yet"
       />
     </div>
   )
