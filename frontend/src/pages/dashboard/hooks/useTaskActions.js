@@ -76,6 +76,36 @@ export const useTaskActions = (setTasks) => {
     }
   }
 
+  const pauseTask = async (taskId, startedAt) => {
+    setLoading(true)
+    try {
+      let accumulatedMinutes = 0
+      if (startedAt) {
+        const elapsed = Math.floor((Date.now() - new Date(startedAt).getTime()) / 60000)
+        accumulatedMinutes = Math.max(0, elapsed)
+      }
+
+      const updateData = {
+        status: 'paused',
+        actual_time_minutes: accumulatedMinutes > 0 ? accumulatedMinutes : undefined,
+        started_at: null
+      }
+      
+      const response = await api.put(`/tasks/${taskId}`, updateData)
+      
+      setTasks(prev => 
+        prev.map(task => task.id === taskId ? response.data : task)
+      )
+      return true
+    } catch (error) {
+      console.error('Failed to pause task:', error)
+      alert('Failed to pause task. Please try again.')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const cancelTask = async (taskId) => {
     setLoading(true)
     try {
@@ -111,5 +141,5 @@ export const useTaskActions = (setTasks) => {
     }
   }
 
-  return { toggleTask, startTask, completeTask, cancelTask, deleteTask, loading }
+  return { toggleTask, startTask, completeTask, pauseTask, cancelTask, deleteTask, loading }
 }

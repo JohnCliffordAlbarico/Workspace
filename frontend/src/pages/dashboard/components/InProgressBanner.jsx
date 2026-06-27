@@ -4,10 +4,11 @@ import { useTaskTimer } from '../hooks/useTaskTimer'
 import ConfirmationModal from '../modal/ConfirmationModal'
 
 const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
-  const { completeTask, cancelTask, loading } = useTaskActions(setTasks)
+  const { completeTask, pauseTask, cancelTask, loading } = useTaskActions(setTasks)
   const duration = useTaskTimer(task?.started_at)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false)
+  const [showPauseConfirm, setShowPauseConfirm] = useState(false)
 
   if (!task) return null
 
@@ -18,6 +19,15 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
   const handleConfirmComplete = async () => {
     await completeTask(task.id)
     setShowCompleteConfirm(false)
+  }
+
+  const handlePause = () => {
+    setShowPauseConfirm(true)
+  }
+
+  const handleConfirmPause = async () => {
+    await pauseTask(task.id, task.started_at)
+    setShowPauseConfirm(false)
   }
 
   const handleCancel = () => {
@@ -136,6 +146,26 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
               }}
             >
               ✅ Complete
+            </button>
+            <button
+              onClick={handlePause}
+              disabled={loading}
+              className="px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
+              style={{
+                background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
+                color: '#1a0a0a',
+                border: 'none'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)'
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(46, 213, 115, 0.4)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              ⏸️ Pause
             </button>
             <button
               onClick={handleCancel}
@@ -269,6 +299,17 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
         message={`Mark "${task?.title}" as completed? The task will be moved to the completed tasks view.`}
         confirmText="Yes, Complete"
         cancelText="Not Yet"
+      />
+
+      {/* Pause Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showPauseConfirm}
+        onConfirm={handleConfirmPause}
+        onCancel={() => setShowPauseConfirm(false)}
+        title="⏸️ Pause Task?"
+        message={`Pause "${task?.title}"? Time worked so far will be saved. You can resume later.`}
+        confirmText="Yes, Pause"
+        cancelText="Keep Working"
       />
     </div>
   )

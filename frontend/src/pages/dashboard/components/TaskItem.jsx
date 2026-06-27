@@ -1,10 +1,12 @@
 import { useState, useMemo, memo } from 'react'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { useDraggable } from '@dnd-kit/core'
+import ConfirmationModal from '../modal/ConfirmationModal'
 
 const TaskItem = memo(({ task, color, setTasks, onTaskClick, allTasks }) => {
   const [showIcon, setShowIcon] = useState(false)
-  const { startTask, loading } = useTaskActions(setTasks)
+  const [showPauseConfirm, setShowPauseConfirm] = useState(false)
+  const { startTask, pauseTask, loading } = useTaskActions(setTasks)
   
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
@@ -62,6 +64,16 @@ const TaskItem = memo(({ task, color, setTasks, onTaskClick, allTasks }) => {
     }
 
     await startTask(task.id)
+  }
+
+  const handlePause = async (e) => {
+    e.stopPropagation()
+    setShowPauseConfirm(true)
+  }
+
+  const handleConfirmPause = async () => {
+    await pauseTask(task.id, task.started_at)
+    setShowPauseConfirm(false)
   }
 
   const handleCardClick = () => {
@@ -136,6 +148,30 @@ const TaskItem = memo(({ task, color, setTasks, onTaskClick, allTasks }) => {
           </button>
         )}
 
+        {/* Pause Button for In Progress Tasks */}
+        {isInProgress && (
+          <button
+            onClick={handlePause}
+            disabled={loading}
+            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
+            style={{
+              background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
+              border: 'none',
+              color: '#1a0a0a'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'scale(1.1)'
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(46, 213, 115, 0.5)'
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+          >
+            ⏸️
+          </button>
+        )}
+
         <div className="flex-1">
           <span
             className={`text-base leading-relaxed ${isCompleted ? 'line-through opacity-50' : ''}`}
@@ -178,6 +214,17 @@ const TaskItem = memo(({ task, color, setTasks, onTaskClick, allTasks }) => {
           👁️
         </span>
       </div>
+
+      {/* Pause Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showPauseConfirm}
+        onConfirm={handleConfirmPause}
+        onCancel={() => setShowPauseConfirm(false)}
+        title="⏸️ Pause Task?"
+        message={`Pause "${task.title}"? Time worked so far will be saved. You can resume later.`}
+        confirmText="Yes, Pause"
+        cancelText="Keep Working"
+      />
     </div>
   )
 })

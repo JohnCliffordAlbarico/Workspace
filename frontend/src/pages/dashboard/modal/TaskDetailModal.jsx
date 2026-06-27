@@ -297,6 +297,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
                 >
                   <option value="pending">⏳ Pending</option>
                   <option value="in_progress">🔄 In Progress</option>
+                  <option value="paused">⏸️ Paused</option>
                   <option value="completed">✅ Completed</option>
                   <option value="cancelled">❌ Cancelled</option>
                 </select>
@@ -304,6 +305,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
                 <span style={{ color: '#a89080' }}>
                   {task.status === 'pending' && '⏳ Pending'}
                   {task.status === 'in_progress' && '🔄 In Progress'}
+                  {task.status === 'paused' && '⏸️ Paused'}
                   {task.status === 'completed' && '✅ Completed'}
                   {task.status === 'cancelled' && '❌ Cancelled'}
                 </span>
