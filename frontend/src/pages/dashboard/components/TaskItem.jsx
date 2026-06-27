@@ -73,7 +73,7 @@ const TaskItem = memo(({ task, color, setTasks, onTaskClick, allTasks }) => {
   }
 
   const handleConfirmPause = async () => {
-    await pauseTask(task.id, task.started_at)
+    await pauseTask(task.id, task.started_at, task.actual_time_minutes)
     setShowPauseConfirm(false)
   }
 

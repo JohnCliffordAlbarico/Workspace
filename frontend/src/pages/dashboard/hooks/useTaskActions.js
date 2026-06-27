@@ -76,18 +76,20 @@ export const useTaskActions = (setTasks) => {
     }
   }
 
-  const pauseTask = async (taskId, startedAt) => {
+  const pauseTask = async (taskId, startedAt, previousActualMinutes = 0) => {
     setLoading(true)
     try {
-      let accumulatedMinutes = 0
+      let sessionMinutes = 0
       if (startedAt) {
         const elapsed = Math.floor((Date.now() - new Date(startedAt).getTime()) / 60000)
-        accumulatedMinutes = Math.max(0, elapsed)
+        sessionMinutes = Math.max(0, elapsed)
       }
+
+      const totalMinutes = (previousActualMinutes || 0) + sessionMinutes
 
       const updateData = {
         status: 'paused',
-        actual_time_minutes: accumulatedMinutes > 0 ? accumulatedMinutes : undefined,
+        actual_time_minutes: totalMinutes > 0 ? totalMinutes : undefined,
         started_at: null
       }
       

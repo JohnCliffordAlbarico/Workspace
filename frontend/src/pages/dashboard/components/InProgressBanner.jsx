@@ -29,7 +29,7 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
   }
 
   const handleConfirmPause = async () => {
-    await pauseTask(task.id, task.started_at)
+    await pauseTask(task.id, task.started_at, task.actual_time_minutes)
     setShowPauseConfirm(false)
   }
 
