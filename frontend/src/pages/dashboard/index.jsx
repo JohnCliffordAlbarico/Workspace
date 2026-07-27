@@ -169,6 +169,7 @@ const Dashboard = () => {
         }}
         onMenuClick={() => setIsMenuOpen(true)}
         isMenuOpen={isMenuOpen}
+        workspace={workspace}
       />
       
       {renderMainContent()}

@@ -1,9 +1,9 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Menu } from 'lucide-react'
+import { LogOut, Menu, ArrowLeftRight } from 'lucide-react'
 import ProfileModal from '../modal/ProfileModal'
 import BreakTimeWidget from './BreakTimeWidget'
-const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen }) => {
+const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen, workspace }) => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -84,6 +84,55 @@ const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen }) => {
           </span>
         </div>
       </button>
+
+      {/* Workspace Card */}
+      <div
+        className="rounded-2xl p-4 mb-6 cursor-pointer transition-all duration-300"
+        style={{
+          background: 'linear-gradient(145deg, rgba(20, 40, 30, 0.8) 0%, rgba(15, 30, 20, 0.9) 100%)',
+          border: '1px solid rgba(80, 200, 120, 0.3)',
+        }}
+        onClick={() => navigate('/workspaces')}
+        onMouseOver={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)'
+          e.currentTarget.style.boxShadow = '0 8px 25px rgba(80, 200, 120, 0.3)'
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = ''
+        }}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, #2d8659 0%, #50c878 100%)',
+                boxShadow: '0 4px 12px rgba(80, 200, 120, 0.4)'
+              }}
+            >
+              <span
+                className="text-sm font-bold"
+                style={{ color: '#f5e6d3', fontFamily: "'Cinzel', serif" }}
+              >
+                {workspace?.name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'WS'}
+              </span>
+            </div>
+            <div>
+              <p
+                className="text-sm font-bold"
+                style={{ color: '#50c878', fontFamily: "'Cinzel', serif" }}
+              >
+                {workspace?.name || 'Workspace'}
+              </p>
+              <p className="text-xs" style={{ color: '#a89080' }}>
+                Click to switch
+              </p>
+            </div>
+          </div>
+          <ArrowLeftRight className="w-4 h-4" style={{ color: '#50c878' }} />
+        </div>
+      </div>
 
       {/* Profile Card */}
       <div 
