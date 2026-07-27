@@ -1,7 +1,10 @@
 import { useState } from 'react'
 
-const WorkspaceCard = ({ workspace, onSelect, onDelete, isOwned }) => {
+const WorkspaceCard = ({ workspace, onSelect, onDelete, onUpdate, isOwned }) => {
   const [showConfirm, setShowConfirm] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editName, setEditName] = useState(workspace.name)
+  const [saving, setSaving] = useState(false)
 
   const handleDelete = async (e) => {
     e.stopPropagation()
@@ -10,6 +13,34 @@ const WorkspaceCard = ({ workspace, onSelect, onDelete, isOwned }) => {
       setShowConfirm(false)
     } catch (err) {
       console.error('Failed to delete workspace:', err)
+    }
+  }
+
+  const handleRename = async (e) => {
+    e.stopPropagation()
+    if (!editName.trim() || editName.trim() === workspace.name) {
+      setIsEditing(false)
+      setEditName(workspace.name)
+      return
+    }
+    setSaving(true)
+    try {
+      await onUpdate(workspace.id, editName.trim())
+      setIsEditing(false)
+    } catch (err) {
+      console.error('Failed to rename workspace:', err)
+      setEditName(workspace.name)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleEditKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleRename(e)
+    } else if (e.key === 'Escape') {
+      setIsEditing(false)
+      setEditName(workspace.name)
     }
   }
 
@@ -35,16 +66,20 @@ const WorkspaceCard = ({ workspace, onSelect, onDelete, isOwned }) => {
         background: 'linear-gradient(145deg, rgba(45, 20, 25, 0.8) 0%, rgba(26, 10, 10, 0.9) 100%)',
         border: '1px solid rgba(200, 80, 80, 0.3)',
       }}
-      onClick={() => onSelect(workspace)}
+      onClick={() => !isEditing && onSelect(workspace)}
       onMouseOver={(e) => {
-        e.currentTarget.style.transform = 'translateY(-4px)'
-        e.currentTarget.style.boxShadow = '0 12px 40px rgba(200, 80, 80, 0.4)'
-        e.currentTarget.style.borderColor = 'rgba(200, 80, 80, 0.6)'
+        if (!isEditing) {
+          e.currentTarget.style.transform = 'translateY(-4px)'
+          e.currentTarget.style.boxShadow = '0 12px 40px rgba(200, 80, 80, 0.4)'
+          e.currentTarget.style.borderColor = 'rgba(200, 80, 80, 0.6)'
+        }
       }}
       onMouseOut={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)'
-        e.currentTarget.style.boxShadow = ''
-        e.currentTarget.style.borderColor = 'rgba(200, 80, 80, 0.3)'
+        if (!isEditing) {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = ''
+          e.currentTarget.style.borderColor = 'rgba(200, 80, 80, 0.3)'
+        }
       }}
     >
       {/* Workspace Icon */}
@@ -59,17 +94,37 @@ const WorkspaceCard = ({ workspace, onSelect, onDelete, isOwned }) => {
           className="text-xl font-bold"
           style={{ color: '#f5e6d3', fontFamily: "'Cinzel', serif" }}
         >
-          {getInitials(workspace.name)}
+          {getInitials(isEditing ? editName : workspace.name)}
         </span>
       </div>
 
       {/* Workspace Name */}
-      <h3
-        className="text-xl font-bold mb-2"
-        style={{ fontFamily: "'Cinzel', serif", color: '#f5e6d3' }}
-      >
-        {workspace.name}
-      </h3>
+      {isEditing ? (
+        <input
+          type="text"
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          onKeyDown={handleEditKeyDown}
+          onBlur={handleRename}
+          autoFocus
+          disabled={saving}
+          className="text-xl font-bold mb-2 w-full px-2 py-1 rounded-lg outline-none"
+          style={{
+            fontFamily: "'Cinzel', serif",
+            background: 'rgba(0,0,0,0.4)',
+            border: '1px solid rgba(200, 80, 80, 0.5)',
+            color: '#f5e6d3'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <h3
+          className="text-xl font-bold mb-2"
+          style={{ fontFamily: "'Cinzel', serif", color: '#f5e6d3' }}
+        >
+          {workspace.name}
+        </h3>
+      )}
 
       {/* Created Date */}
       <p className="text-sm mb-4" style={{ color: '#a89080' }}>
@@ -77,33 +132,52 @@ const WorkspaceCard = ({ workspace, onSelect, onDelete, isOwned }) => {
       </p>
 
       {/* Enter Button */}
-      <div
-        className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300"
-        style={{
-          background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
-          color: '#f5e6d3'
-        }}
-      >
-        <span>Enter Workspace</span>
-        <span>→</span>
-      </div>
-
-      {/* Delete Button (only for owned workspaces) */}
-      {isOwned && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            setShowConfirm(true)
-          }}
-          className="absolute top-4 right-4 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200"
+      {!isEditing && (
+        <div
+          className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300"
           style={{
-            background: 'rgba(255, 71, 87, 0.2)',
-            color: '#ff4757'
+            background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
+            color: '#f5e6d3'
           }}
-          title="Delete workspace"
         >
-          🗑️
-        </button>
+          <span>Enter Workspace</span>
+          <span>→</span>
+        </div>
+      )}
+
+      {/* Action Buttons (only for owned workspaces) */}
+      {isOwned && !isEditing && (
+        <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsEditing(true)
+              setEditName(workspace.name)
+            }}
+            className="p-2 rounded-lg transition-all duration-200"
+            style={{
+              background: 'rgba(200, 80, 80, 0.2)',
+              color: '#c85050'
+            }}
+            title="Rename workspace"
+          >
+            ✏️
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowConfirm(true)
+            }}
+            className="p-2 rounded-lg transition-all duration-200"
+            style={{
+              background: 'rgba(255, 71, 87, 0.2)',
+              color: '#ff4757'
+            }}
+            title="Delete workspace"
+          >
+            🗑️
+          </button>
+        </div>
       )}
 
       {/* Delete Confirmation */}

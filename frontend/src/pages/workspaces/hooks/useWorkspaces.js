@@ -30,6 +30,20 @@ export const useWorkspaces = () => {
     setWorkspaces(prev => prev.filter(w => w.id !== id))
   }
 
+  const updateWorkspace = async (id, name) => {
+    const response = await api.put(`/workspaces/${id}`, { name })
+    setWorkspaces(prev => prev.map(w => w.id === id ? response.data : w))
+    // Update selected workspace in localStorage if it's the one being edited
+    const saved = localStorage.getItem('selectedWorkspace')
+    if (saved) {
+      const selected = JSON.parse(saved)
+      if (selected.id === id) {
+        localStorage.setItem('selectedWorkspace', JSON.stringify(response.data))
+      }
+    }
+    return response.data
+  }
+
   const selectWorkspace = (workspace) => {
     localStorage.setItem('selectedWorkspace', JSON.stringify(workspace))
   }
@@ -54,6 +68,7 @@ export const useWorkspaces = () => {
     fetchWorkspaces,
     createWorkspace,
     deleteWorkspace,
+    updateWorkspace,
     selectWorkspace,
     getSelectedWorkspace
   }

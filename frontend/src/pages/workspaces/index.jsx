@@ -12,6 +12,7 @@ const Workspaces = () => {
     error,
     createWorkspace,
     deleteWorkspace,
+    updateWorkspace,
     selectWorkspace
   } = useWorkspaces()
 
@@ -179,6 +180,7 @@ const Workspaces = () => {
                 workspace={workspace}
                 onSelect={handleSelectWorkspace}
                 onDelete={deleteWorkspace}
+                onUpdate={updateWorkspace}
                 isOwned={true}
               />
             ))}
