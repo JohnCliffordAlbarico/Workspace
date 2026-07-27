@@ -91,8 +91,9 @@ const Dashboard = () => {
         return newTasks
       })
       
+      // Apply the same updater to paginated completed tasks
       if (view === 'completed') {
-        setPaginatedCompletedTasks(updatedTasks)
+        setPaginatedCompletedTasks(prev => updatedTasks(prev))
       }
     }
   }

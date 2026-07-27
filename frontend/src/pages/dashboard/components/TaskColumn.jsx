@@ -1,12 +1,12 @@
 import { useDroppable } from '@dnd-kit/core'
 import TaskItem from './TaskItem'
 
-const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick, allTasks, priority, isDragging }) => {
+const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick, allTasks, priority, isDragging, showCompletedCount = false }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: priority
   })
 
-  const incompleteTasks = tasks.filter(t => t.status !== 'completed')
+  const displayCount = showCompletedCount ? tasks.length : tasks.filter(t => t.status !== 'completed').length
 
   return (
     <section 
@@ -33,7 +33,7 @@ const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick, allTasks, prio
           className="ml-auto px-2 py-1 rounded text-xs"
           style={{ background: `${color}33`, color }}
         >
-          {incompleteTasks.length}
+          {displayCount}
         </span>
       </div>
 

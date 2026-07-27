@@ -76,6 +76,7 @@ const CompletedTasksView = ({ tasks, setTasks, pagination, onPageChange }) => {
               tasks={tasksByPriority.critical}
               setTasks={setTasks}
               onTaskClick={handleTaskClick}
+              showCompletedCount
             />
             <TaskColumn
               title="High Priority"
@@ -83,13 +84,15 @@ const CompletedTasksView = ({ tasks, setTasks, pagination, onPageChange }) => {
               tasks={tasksByPriority.high}
               setTasks={setTasks}
               onTaskClick={handleTaskClick}
+              showCompletedCount
             />
             <TaskColumn
               title="Medium"
-              color="#ffa502"
+              color="#7bed9f"
               tasks={tasksByPriority.medium}
               setTasks={setTasks}
               onTaskClick={handleTaskClick}
+              showCompletedCount
             />
             <TaskColumn
               title="Low Priority"
@@ -97,13 +100,14 @@ const CompletedTasksView = ({ tasks, setTasks, pagination, onPageChange }) => {
               tasks={tasksByPriority.low}
               setTasks={setTasks}
               onTaskClick={handleTaskClick}
+              showCompletedCount
             />
           </div>
 
           {/* Pagination Controls */}
           {pagination && pagination.totalPages > 1 && (
             <div 
-              className="mt-8 flex items-center justify-center gap-4"
+              className="mt-8 flex items-center justify-center gap-2"
               style={{ color: '#f5e6d3' }}
             >
               <button
@@ -117,28 +121,52 @@ const CompletedTasksView = ({ tasks, setTasks, pagination, onPageChange }) => {
                   border: '1px solid rgba(200, 80, 80, 0.3)',
                 }}
               >
-                ← Previous
+                ← Prev
               </button>
 
-              <div className="flex items-center gap-2">
-                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(pageNum => (
-                  <button
-                    key={pageNum}
-                    onClick={() => onPageChange(pageNum)}
-                    className="w-10 h-10 rounded-lg transition-all"
-                    style={{
-                      background: pageNum === pagination.page
-                        ? 'linear-gradient(145deg, rgba(200, 80, 80, 0.5) 0%, rgba(150, 50, 50, 0.6) 100%)'
-                        : 'rgba(45, 20, 25, 0.4)',
-                      border: pageNum === pagination.page
-                        ? '2px solid rgba(200, 80, 80, 0.6)'
-                        : '1px solid rgba(200, 80, 80, 0.2)',
-                      fontWeight: pageNum === pagination.page ? 'bold' : 'normal'
-                    }}
-                  >
-                    {pageNum}
-                  </button>
-                ))}
+              <div className="flex items-center gap-1">
+                {(() => {
+                  const pages = []
+                  const total = pagination.totalPages
+                  const current = pagination.page
+
+                  if (total <= 5) {
+                    for (let i = 1; i <= total; i++) pages.push(i)
+                  } else {
+                    pages.push(1)
+                    if (current > 3) pages.push('...')
+                    const start = Math.max(2, current - 1)
+                    const end = Math.min(total - 1, current + 1)
+                    for (let i = start; i <= end; i++) pages.push(i)
+                    if (current < total - 2) pages.push('...')
+                    if (total > 1) pages.push(total)
+                  }
+
+                  return pages.map((page, idx) =>
+                    page === '...' ? (
+                      <span key={`ellipsis-${idx}`} className="px-2" style={{ color: '#a89080' }}>
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={page}
+                        onClick={() => onPageChange(page)}
+                        className="w-10 h-10 rounded-lg transition-all"
+                        style={{
+                          background: page === current
+                            ? 'linear-gradient(145deg, rgba(200, 80, 80, 0.5) 0%, rgba(150, 50, 50, 0.6) 100%)'
+                            : 'rgba(45, 20, 25, 0.4)',
+                          border: page === current
+                            ? '2px solid rgba(200, 80, 80, 0.6)'
+                            : '1px solid rgba(200, 80, 80, 0.2)',
+                          fontWeight: page === current ? 'bold' : 'normal'
+                        }}
+                      >
+                        {page}
+                      </button>
+                    )
+                  )
+                })()}
               </div>
 
               <button

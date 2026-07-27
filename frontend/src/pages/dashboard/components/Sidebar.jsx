@@ -89,13 +89,13 @@ const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen, workspace }) =
       <div
         className="rounded-2xl p-4 mb-6 cursor-pointer transition-all duration-300"
         style={{
-          background: 'linear-gradient(145deg, rgba(20, 40, 30, 0.8) 0%, rgba(15, 30, 20, 0.9) 100%)',
-          border: '1px solid rgba(80, 200, 120, 0.3)',
+          background: 'linear-gradient(145deg, rgba(45, 15, 20, 0.8) 0%, rgba(26, 10, 10, 0.9) 100%)',
+          border: '1px solid rgba(200, 80, 80, 0.3)',
         }}
         onClick={() => navigate('/workspaces')}
         onMouseOver={(e) => {
           e.currentTarget.style.transform = 'translateY(-2px)'
-          e.currentTarget.style.boxShadow = '0 8px 25px rgba(80, 200, 120, 0.3)'
+          e.currentTarget.style.boxShadow = '0 8px 25px rgba(200, 80, 80, 0.3)'
         }}
         onMouseOut={(e) => {
           e.currentTarget.style.transform = 'translateY(0)'
@@ -107,8 +107,8 @@ const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen, workspace }) =
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center"
               style={{
-                background: 'linear-gradient(135deg, #2d8659 0%, #50c878 100%)',
-                boxShadow: '0 4px 12px rgba(80, 200, 120, 0.4)'
+                background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
+                boxShadow: '0 4px 12px rgba(200, 80, 80, 0.4)'
               }}
             >
               <span
@@ -121,7 +121,7 @@ const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen, workspace }) =
             <div>
               <p
                 className="text-sm font-bold"
-                style={{ color: '#50c878', fontFamily: "'Cinzel', serif" }}
+                style={{ color: '#f5e6d3', fontFamily: "'Cinzel', serif" }}
               >
                 {workspace?.name || 'Workspace'}
               </p>
@@ -130,7 +130,7 @@ const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen, workspace }) =
               </p>
             </div>
           </div>
-          <ArrowLeftRight className="w-4 h-4" style={{ color: '#50c878' }} />
+          <ArrowLeftRight className="w-4 h-4" style={{ color: '#c85050' }} />
         </div>
       </div>
 
