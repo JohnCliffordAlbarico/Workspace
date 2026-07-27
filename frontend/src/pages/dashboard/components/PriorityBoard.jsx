@@ -36,11 +36,18 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
     })
   )
 
+  // Only show main tasks (no parent_task_id) in the priority columns
+  // Subtasks are displayed nested under their parent in TaskColumn
+  const mainTasks = useMemo(() => 
+    tasks.filter(t => !t.parent_task_id), 
+    [tasks]
+  )
+
   const tasksByPriority = {
-    critical: tasks.filter(t => t.priority === 'critical' && t.status !== 'in_progress' && t.status !== 'paused'),
-    high: tasks.filter(t => t.priority === 'high' && t.status !== 'in_progress' && t.status !== 'paused'),
-    medium: tasks.filter(t => t.priority === 'medium' && t.status !== 'in_progress' && t.status !== 'paused'),
-    low: tasks.filter(t => t.priority === 'low' && t.status !== 'in_progress' && t.status !== 'paused')
+    critical: mainTasks.filter(t => t.priority === 'critical' && t.status !== 'in_progress' && t.status !== 'paused'),
+    high: mainTasks.filter(t => t.priority === 'high' && t.status !== 'in_progress' && t.status !== 'paused'),
+    medium: mainTasks.filter(t => t.priority === 'medium' && t.status !== 'in_progress' && t.status !== 'paused'),
+    low: mainTasks.filter(t => t.priority === 'low' && t.status !== 'in_progress' && t.status !== 'paused')
   }
 
   const inProgressTask = useMemo(() => {
@@ -223,7 +230,7 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
             />
             <TaskColumn
               title="Medium"
-              color="#ffa502"
+              color="#7bed9f"
               tasks={tasksByPriority.medium}
               setTasks={setTasks}
               onTaskClick={handleTaskClick}

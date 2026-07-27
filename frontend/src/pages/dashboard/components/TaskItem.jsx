@@ -3,9 +3,10 @@ import { useTaskActions } from '../hooks/useTaskActions'
 import { useDraggable } from '@dnd-kit/core'
 import ConfirmationModal from '../modal/ConfirmationModal'
 
-const TaskItem = memo(({ task, color, setTasks, onTaskClick, allTasks }) => {
+const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, allTasks }) => {
   const [showIcon, setShowIcon] = useState(false)
   const [showPauseConfirm, setShowPauseConfirm] = useState(false)
+  const [showSubtasks, setShowSubtasks] = useState(true)
   const { startTask, pauseTask, loading } = useTaskActions(setTasks)
   
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -20,6 +21,9 @@ const TaskItem = memo(({ task, color, setTasks, onTaskClick, allTasks }) => {
   const isCompleted = task.status === 'completed'
   const isPending = task.status === 'pending'
   const isPaused = task.status === 'paused'
+
+  const hasSubtasks = subtasks.length > 0
+  const completedSubtasks = subtasks.filter(t => t.status === 'completed').length
 
   // Memoize style object to prevent re-creation
   const style = useMemo(() => {
@@ -80,178 +84,221 @@ const TaskItem = memo(({ task, color, setTasks, onTaskClick, allTasks }) => {
   const handleCardClick = () => {
     onTaskClick(task)
   }
+
+  const handleSubtaskClick = (e, subtask) => {
+    e.stopPropagation()
+    onTaskClick(subtask)
+  }
   
   const goalTime = task.goal_time_minutes
 
   return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      className="rounded-xl p-4 transition-all duration-300"
-      style={{
-        background: `${color}26`,
-        border: `1px solid ${color}66`,
-        animation: 'slideIn 0.3s ease-out forwards',
-        ...style
-      }}
-      onMouseEnter={() => setShowIcon(true)}
-      onMouseLeave={() => setShowIcon(false)}
-      onClick={handleCardClick}
-    >
-      <style>{`
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateX(-20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.6; }
-        }
-      `}</style>
+    <div className="mb-3">
+      {/* Main Task Card */}
+      <div
+        ref={setNodeRef}
+        {...attributes}
+        {...listeners}
+        className="rounded-xl p-4 transition-all duration-300"
+        style={{
+          background: `${color}26`,
+          border: `1px solid ${color}66`,
+          animation: 'slideIn 0.3s ease-out forwards',
+          ...style
+        }}
+        onMouseEnter={() => setShowIcon(true)}
+        onMouseLeave={() => setShowIcon(false)}
+        onClick={handleCardClick}
+      >
+        <style>{`
+          @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+          }
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+          }
+        `}</style>
 
-      <div className="flex items-start gap-3">
-        {/* In Progress indicator */}
-        {isInProgress && (
-          <div 
-            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-            style={{
-              background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
-              animation: 'pulse 2s ease-in-out infinite'
-            }}
-            title="Task in progress - cannot change priority"
-          >
-            ⏱️
-          </div>
-        )}
+        <div className="flex items-start gap-3">
+          {/* In Progress indicator */}
+          {isInProgress && (
+            <div 
+              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
+                animation: 'pulse 2s ease-in-out infinite'
+              }}
+              title="Task in progress - cannot change priority"
+            >
+              ⏱️
+            </div>
+          )}
 
-        {/* Paused indicator */}
-        {isPaused && (
-          <div 
-            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-            style={{
-              background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)'
-            }}
-            title="Task paused - click resume to continue"
-          >
-            ⏸️
-          </div>
-        )}
-        
-        {/* Start Button for Pending Tasks */}
-        {isPending && (
-          <button
-            onClick={handleStart}
-            disabled={loading}
-            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
-            style={{
-              background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
-              border: 'none',
-              color: '#1a0a0a'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'scale(1.1)'
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 165, 2, 0.5)'
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'scale(1)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}
-          >
-            ▶️
-          </button>
-        )}
+          {/* Paused indicator */}
+          {isPaused && (
+            <div 
+              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)'
+              }}
+              title="Task paused - click resume to continue"
+            >
+              ⏸️
+            </div>
+          )}
+          
+          {/* Start Button for Pending Tasks */}
+          {isPending && (
+            <button
+              onClick={handleStart}
+              disabled={loading}
+              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
+              style={{
+                background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
+                border: 'none',
+                color: '#1a0a0a'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'scale(1.1)'
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 165, 2, 0.5)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'scale(1)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              ▶️
+            </button>
+          )}
 
-        {/* Resume Button for Paused Tasks */}
-        {isPaused && (
-          <button
-            onClick={handleStart}
-            disabled={loading}
-            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
-            style={{
-              background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
-              border: 'none',
-              color: '#1a0a0a'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'scale(1.1)'
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(46, 213, 115, 0.5)'
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'scale(1)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}
-          >
-            ▶️
-          </button>
-        )}
+          {/* Resume Button for Paused Tasks */}
+          {isPaused && (
+            <button
+              onClick={handleStart}
+              disabled={loading}
+              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
+              style={{
+                background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
+                border: 'none',
+                color: '#1a0a0a'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'scale(1.1)'
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(46, 213, 115, 0.5)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'scale(1)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              ▶️
+            </button>
+          )}
 
-        {/* Pause Button for In Progress Tasks */}
-        {isInProgress && (
-          <button
-            onClick={handlePause}
-            disabled={loading}
-            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
-            style={{
-              background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
-              border: 'none',
-              color: '#1a0a0a'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'scale(1.1)'
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(46, 213, 115, 0.5)'
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'scale(1)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}
-          >
-            ⏸️
-          </button>
-        )}
+          {/* Pause Button for In Progress Tasks */}
+          {isInProgress && (
+            <button
+              onClick={handlePause}
+              disabled={loading}
+              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
+              style={{
+                background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
+                border: 'none',
+                color: '#1a0a0a'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'scale(1.1)'
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(46, 213, 115, 0.5)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'scale(1)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              ⏸️
+            </button>
+          )}
 
-        <div className="flex-1">
-          <span
-            className={`text-base leading-relaxed ${isCompleted ? 'line-through opacity-50' : ''}`}
-            style={{ color: '#f5e6d3' }}
-          >
-            {task.title}
-          </span>
-
-          {/* Time information for completed tasks */}
-          {isCompleted && actualTime && (
-            <div className="flex gap-3 text-xs mt-2">
-              <span 
-                className="font-mono"
-                style={{ color: '#ffa502' }}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-base leading-relaxed ${isCompleted ? 'line-through opacity-50' : ''}`}
+                style={{ color: '#f5e6d3' }}
               >
-                ⏱️ {actualTime.hours}h {actualTime.mins}m
+                {task.title}
               </span>
-              {goalTime && (
+              {hasSubtasks && (
                 <span 
-                  className="font-mono"
+                  className="text-xs px-2 py-0.5 rounded-full cursor-pointer"
                   style={{ 
-                    color: actualTime.total <= goalTime ? '#ffa502' : '#ff4757' 
+                    background: `${color}40`, 
+                    color,
+                    border: `1px solid ${color}60`
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowSubtasks(!showSubtasks)
                   }}
                 >
-                  {actualTime.total <= goalTime ? '✓' : '⚠️'} 
-                  Goal: {Math.floor(goalTime / 60)}h {goalTime % 60}m
+                  {completedSubtasks}/{subtasks.length}
                 </span>
               )}
             </div>
-          )}
-        </div>
 
-        <span 
-          className="text-sm transition-opacity duration-200"
-          style={{
-            color: '#a89080',
-            opacity: showIcon ? 1 : 0
-          }}
-        >
-          👁️
-        </span>
+            {/* Time information for completed tasks */}
+            {isCompleted && actualTime && (
+              <div className="flex gap-3 text-xs mt-2">
+                <span 
+                  className="font-mono"
+                  style={{ color: '#ffa502' }}
+                >
+                  ⏱️ {actualTime.hours}h {actualTime.mins}m
+                </span>
+                {goalTime && (
+                  <span 
+                    className="font-mono"
+                    style={{ 
+                      color: actualTime.total <= goalTime ? '#ffa502' : '#ff4757' 
+                    }}
+                  >
+                    {actualTime.total <= goalTime ? '✓' : '⚠️'} 
+                    Goal: {Math.floor(goalTime / 60)}h {goalTime % 60}m
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <span 
+            className="text-sm transition-opacity duration-200"
+            style={{
+              color: '#a89080',
+              opacity: showIcon ? 1 : 0
+            }}
+          >
+            👁️
+          </span>
+        </div>
       </div>
+
+      {/* Subtasks */}
+      {hasSubtasks && showSubtasks && (
+        <div 
+          className="ml-6 mt-2 space-y-2"
+          style={{ borderLeft: `2px solid ${color}40`, paddingLeft: '12px' }}
+        >
+          {subtasks.map(subtask => (
+            <SubtaskItem 
+              key={subtask.id}
+              subtask={subtask}
+              color={color}
+              onTaskClick={handleSubtaskClick}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Pause Confirmation Modal */}
       <ConfirmationModal
@@ -267,6 +314,47 @@ const TaskItem = memo(({ task, color, setTasks, onTaskClick, allTasks }) => {
   )
 })
 
+// Subtask Item Component
+const SubtaskItem = memo(({ subtask, color, onTaskClick }) => {
+  const isCompleted = subtask.status === 'completed'
+  const isPending = subtask.status === 'pending'
+  const isInProgress = subtask.status === 'in_progress'
+  const isPaused = subtask.status === 'paused'
+
+  const statusIcon = isCompleted ? '✅' : isInProgress ? '🔄' : isPaused ? '⏸️' : '⬜'
+
+  return (
+    <div
+      className="rounded-lg px-3 py-2 transition-all duration-200 cursor-pointer"
+      style={{
+        background: `${color}15`,
+        border: `1px solid ${color}30`,
+        opacity: isCompleted ? 0.6 : 1
+      }}
+      onClick={(e) => onTaskClick(e, subtask)}
+      onMouseOver={(e) => {
+        e.currentTarget.style.background = `${color}25`
+        e.currentTarget.style.borderColor = `${color}50`
+      }}
+      onMouseOut={(e) => {
+        e.currentTarget.style.background = `${color}15`
+        e.currentTarget.style.borderColor = `${color}30`
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-sm">{statusIcon}</span>
+        <span 
+          className={`text-sm ${isCompleted ? 'line-through opacity-60' : ''}`}
+          style={{ color: '#f5e6d3' }}
+        >
+          {subtask.title}
+        </span>
+      </div>
+    </div>
+  )
+})
+
 TaskItem.displayName = 'TaskItem'
+SubtaskItem.displayName = 'SubtaskItem'
 
 export default TaskItem

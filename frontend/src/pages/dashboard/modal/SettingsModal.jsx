@@ -89,7 +89,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
     setLoading(true)
 
     try {
-      await api.post('/api/users/change-password', {
+      await api.post('/users/change-password', {
         currentPassword,
         newPassword
       })

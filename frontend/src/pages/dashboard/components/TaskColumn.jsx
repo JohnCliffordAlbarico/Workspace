@@ -1,4 +1,5 @@
 import { useDroppable } from '@dnd-kit/core'
+import { useMemo } from 'react'
 import TaskItem from './TaskItem'
 
 const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick, allTasks, priority, isDragging, showCompletedCount = false }) => {
@@ -7,6 +8,14 @@ const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick, allTasks, prio
   })
 
   const displayCount = showCompletedCount ? tasks.length : tasks.filter(t => t.status !== 'completed').length
+
+  // Build task hierarchy: for each main task, find its subtasks
+  const tasksWithSubtasks = useMemo(() => {
+    return tasks.map(task => ({
+      ...task,
+      subtasks: allTasks.filter(t => t.parent_task_id === task.id)
+    }))
+  }, [tasks, allTasks])
 
   return (
     <section 
@@ -38,10 +47,11 @@ const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick, allTasks, prio
       </div>
 
       <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-        {tasks.map((task) => (
+        {tasksWithSubtasks.map((task) => (
           <TaskItem 
             key={task.id} 
             task={task} 
+            subtasks={task.subtasks}
             color={color} 
             setTasks={setTasks}
             onTaskClick={onTaskClick}

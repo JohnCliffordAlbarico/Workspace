@@ -195,7 +195,7 @@ export const changePassword = async (req, res) => {
     }
     
     // Get user email
-    const { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('email')
       .eq('id', userId)
@@ -203,8 +203,8 @@ export const changePassword = async (req, res) => {
     
     if (userError) throw userError
     
-    // Verify current password by attempting to sign in
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    // Verify current password using admin client
+    const { error: signInError } = await supabaseAdmin.auth.signInWithPassword({
       email: user.email,
       password: currentPassword
     })

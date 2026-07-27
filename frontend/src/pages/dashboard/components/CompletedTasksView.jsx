@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import TaskColumn from './TaskColumn'
 import EmptyState from './EmptyState'
 import TaskDetailModal from '../modal/TaskDetailModal'
@@ -6,11 +6,17 @@ import TaskDetailModal from '../modal/TaskDetailModal'
 const CompletedTasksView = ({ tasks, setTasks, pagination, onPageChange }) => {
   const [selectedTask, setSelectedTask] = useState(null)
 
+  // Filter main tasks only - subtasks are displayed nested under their parent
+  const mainTasks = useMemo(() => 
+    tasks.filter(t => !t.parent_task_id), 
+    [tasks]
+  )
+
   const tasksByPriority = {
-    critical: tasks.filter(t => t.priority === 'critical'),
-    high: tasks.filter(t => t.priority === 'high'),
-    medium: tasks.filter(t => t.priority === 'medium'),
-    low: tasks.filter(t => t.priority === 'low')
+    critical: mainTasks.filter(t => t.priority === 'critical'),
+    high: mainTasks.filter(t => t.priority === 'high'),
+    medium: mainTasks.filter(t => t.priority === 'medium'),
+    low: mainTasks.filter(t => t.priority === 'low')
   }
 
   const handleTaskClick = (task) => {
@@ -76,6 +82,7 @@ const CompletedTasksView = ({ tasks, setTasks, pagination, onPageChange }) => {
               tasks={tasksByPriority.critical}
               setTasks={setTasks}
               onTaskClick={handleTaskClick}
+              allTasks={tasks}
               showCompletedCount
             />
             <TaskColumn
@@ -84,6 +91,7 @@ const CompletedTasksView = ({ tasks, setTasks, pagination, onPageChange }) => {
               tasks={tasksByPriority.high}
               setTasks={setTasks}
               onTaskClick={handleTaskClick}
+              allTasks={tasks}
               showCompletedCount
             />
             <TaskColumn
@@ -92,6 +100,7 @@ const CompletedTasksView = ({ tasks, setTasks, pagination, onPageChange }) => {
               tasks={tasksByPriority.medium}
               setTasks={setTasks}
               onTaskClick={handleTaskClick}
+              allTasks={tasks}
               showCompletedCount
             />
             <TaskColumn
@@ -100,6 +109,7 @@ const CompletedTasksView = ({ tasks, setTasks, pagination, onPageChange }) => {
               tasks={tasksByPriority.low}
               setTasks={setTasks}
               onTaskClick={handleTaskClick}
+              allTasks={tasks}
               showCompletedCount
             />
           </div>
