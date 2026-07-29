@@ -35,7 +35,11 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
         goal_time_minutes: task.goal_time_minutes || ''
       })
       setHasUnsavedChanges(false)
-      loadSubtasks()
+      if (!task.parent_task_id) {
+        loadSubtasks()
+      } else {
+        setSubtasks([])
+      }
     }
   }, [task])
 
@@ -174,6 +178,15 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
   const completedSubtasks = subtasks.filter(st => st.status === 'completed').length
   const totalSubtasks = subtasks.length
   const subtaskToDelete = subtasks.find(st => st.id === deleteSubtaskId)
+  const isSubtask = !!task.parent_task_id
+
+  const formatMinutes = (mins) => {
+    if (!mins || mins === 0) return '0m'
+    if (mins < 60) return `${mins}m`
+    return `${Math.floor(mins / 60)}h ${mins % 60}m`
+  }
+
+  const totalSubtaskTime = subtasks.reduce((sum, st) => sum + (st.actual_time_minutes || 0), 0)
 
   return (
     <div 
@@ -213,6 +226,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
                 }}
               />
             ) : (
+              <>
               <h2 
                 className="text-3xl font-bold"
                 style={{
@@ -223,6 +237,15 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
               >
                 {task.title}
               </h2>
+              {isSubtask && allTasks && (
+                <p 
+                  className="text-sm mt-1"
+                  style={{ color: '#a89080' }}
+                >
+                  Subtask of {allTasks.find(t => t.id === task.parent_task_id)?.title || 'Unknown'}
+                </p>
+              )}
+              </>
             )}
           </div>
           <button
@@ -397,7 +420,89 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
             </div>
           </div>
 
-          {/* Subtasks Section */}
+          {/* Time Tracking */}
+          <div 
+            className="rounded-xl p-5"
+            style={{
+              background: 'rgba(0,0,0,0.3)',
+              border: '1px solid rgba(200, 80, 80, 0.2)'
+            }}
+          >
+            <h3 
+              className="text-lg font-bold mb-3"
+              style={{ fontFamily: "'Cinzel', serif", color: '#f5e6d3' }}
+            >
+              ⏱️ Time Tracking
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <span className="text-sm" style={{ color: '#a89080' }}>Worked:</span>
+                <span 
+                  className="font-mono text-lg font-bold"
+                  style={{ color: '#ffa502' }}
+                >
+                  {formatMinutes(task.actual_time_minutes)}
+                </span>
+                {task.goal_time_minutes && (
+                  <>
+                    <span className="text-sm" style={{ color: '#a89080' }}>/</span>
+                    <span 
+                      className="font-mono text-sm"
+                      style={{ color: '#a89080' }}
+                    >
+                      {formatMinutes(task.goal_time_minutes)} goal
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Progress Bar */}
+              {task.goal_time_minutes > 0 && (
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span style={{ color: '#a89080' }}>
+                      {Math.min(100, Math.round(((task.actual_time_minutes || 0) / task.goal_time_minutes) * 100))}%
+                    </span>
+                    <span style={{ color: (task.actual_time_minutes || 0) > task.goal_time_minutes ? '#ff4757' : '#a89080' }}>
+                      {(task.actual_time_minutes || 0) > task.goal_time_minutes
+                        ? `${formatMinutes((task.actual_time_minutes || 0) - task.goal_time_minutes)} overtime`
+                        : `${formatMinutes(task.goal_time_minutes - (task.actual_time_minutes || 0))} remaining`
+                      }
+                    </span>
+                  </div>
+                  <div 
+                    className="w-full h-2 rounded-full overflow-hidden"
+                    style={{ background: 'rgba(0,0,0,0.4)' }}
+                  >
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, ((task.actual_time_minutes || 0) / task.goal_time_minutes) * 100)}%`,
+                        background: (task.actual_time_minutes || 0) > task.goal_time_minutes
+                          ? 'linear-gradient(90deg, #ff4757 0%, #ff6348 100%)'
+                          : 'linear-gradient(90deg, #ffa502 0%, #ff6348 100%)'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Subtask time summary (main tasks only) */}
+              {!isSubtask && totalSubtasks > 0 && (
+                <div 
+                  className="pt-2 mt-2 text-sm"
+                  style={{ borderTop: '1px solid rgba(200, 80, 80, 0.15)' }}
+                >
+                  <span style={{ color: '#a89080' }}>
+                    {completedSubtasks}/{totalSubtasks} subtasks completed · {formatMinutes(totalSubtaskTime)} from subtasks
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Subtasks Section - only for main tasks */}
+          {!isSubtask && (
           <div 
             className="rounded-xl p-5"
             style={{
@@ -499,6 +604,14 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
                     >
                       {subtask.title}
                     </span>
+                    {subtask.actual_time_minutes > 0 && (
+                      <span 
+                        className="text-xs font-mono flex-shrink-0"
+                        style={{ color: '#ffa502' }}
+                      >
+                        ⏱️ {formatMinutes(subtask.actual_time_minutes)}
+                      </span>
+                    )}
                     <button
                       onClick={() => handleDeleteSubtask(subtask.id)}
                       className="text-sm"
@@ -511,6 +624,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
               </div>
             )}
           </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">
