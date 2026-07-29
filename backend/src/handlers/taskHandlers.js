@@ -232,15 +232,17 @@ export const updateTask = async (req, res) => {
       )
     }
 
-    // Roll up subtask time to parent on completion
-    if (status === 'completed') {
+    // Roll up subtask time to parent whenever actual_time_minutes increases
+    if (actual_time_minutes !== undefined && actual_time_minutes > (currentTask.actual_time_minutes || 0)) {
       const { data: fullTask } = await supabaseAdmin
         .from('tasks')
-        .select('parent_task_id, actual_time_minutes')
+        .select('parent_task_id')
         .eq('id', id)
         .single()
 
-      if (fullTask?.parent_task_id && fullTask.actual_time_minutes > 0) {
+      if (fullTask?.parent_task_id) {
+        const addedTime = actual_time_minutes - (currentTask.actual_time_minutes || 0)
+
         const { data: parentTask } = await supabaseAdmin
           .from('tasks')
           .select('actual_time_minutes')
@@ -248,7 +250,7 @@ export const updateTask = async (req, res) => {
           .single()
 
         if (parentTask) {
-          const newParentTime = (parentTask.actual_time_minutes || 0) + fullTask.actual_time_minutes
+          const newParentTime = (parentTask.actual_time_minutes || 0) + addedTime
 
           await supabaseAdmin
             .from('tasks')

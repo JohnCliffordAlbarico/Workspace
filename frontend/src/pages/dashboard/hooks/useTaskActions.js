@@ -81,7 +81,7 @@ export const useTaskActions = (setTasks) => {
     try {
       let sessionMinutes = 0
       if (startedAt) {
-        const elapsed = Math.floor((Date.now() - new Date(startedAt).getTime()) / 60000)
+        const elapsed = Math.ceil((Date.now() - new Date(startedAt).getTime()) / 60000)
         sessionMinutes = Math.max(0, elapsed)
       }
 

@@ -132,6 +132,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
 
       const response = await api.put(`/tasks/${subtaskId}`, updateData)
       setSubtasks(prev => prev.map(st => st.id === subtaskId ? response.data : st))
+      setTasks(prev => prev.map(t => t.id === subtaskId ? response.data : t))
     } catch (error) {
       console.error('Failed to toggle subtask:', error)
     }
