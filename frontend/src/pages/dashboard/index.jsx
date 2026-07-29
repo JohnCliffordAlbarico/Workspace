@@ -36,8 +36,9 @@ const Dashboard = () => {
   })
 
   // Separate active and completed from all tasks
+  // Keep completed subtasks in activeTasks so parent counters work
   const activeTasks = useMemo(() => 
-    allTasks.filter(t => t.status !== 'completed'), 
+    allTasks.filter(t => t.status !== 'completed' || t.parent_task_id), 
     [allTasks]
   )
   
