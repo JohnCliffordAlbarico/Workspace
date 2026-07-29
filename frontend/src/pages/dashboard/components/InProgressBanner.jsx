@@ -17,6 +17,14 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
   const parentTask = task.parent_task_id ? allTasks?.find(t => t.id === task.parent_task_id) : null
 
   const handleComplete = () => {
+    if (!task.parent_task_id && allTasks) {
+      const subtasks = allTasks.filter(t => t.parent_task_id === task.id)
+      const incomplete = subtasks.filter(t => t.status !== 'completed')
+      if (incomplete.length > 0) {
+        alert(`Cannot complete "${task.title}". ${incomplete.length} subtask${incomplete.length > 1 ? 's' : ''} still incomplete: ${incomplete.map(t => t.title).join(', ')}`)
+        return
+      }
+    }
     setShowCompleteConfirm(true)
   }
 

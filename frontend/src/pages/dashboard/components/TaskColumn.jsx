@@ -55,7 +55,6 @@ const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick, allTasks, prio
             color={color} 
             setTasks={setTasks}
             onTaskClick={onTaskClick}
-            allTasks={allTasks}
           />
         ))}
       </div>

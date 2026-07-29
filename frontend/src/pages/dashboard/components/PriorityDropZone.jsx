@@ -28,7 +28,7 @@ const priorityConfig = {
   }
 }
 
-const PriorityDropZone = ({ priority, tasks, setTasks, onTaskClick, allTasks }) => {
+const PriorityDropZone = ({ priority, tasks, setTasks, onTaskClick }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: priority
   })
@@ -86,7 +86,6 @@ const PriorityDropZone = ({ priority, tasks, setTasks, onTaskClick, allTasks }) 
               color={config.bg}
               setTasks={setTasks}
               onTaskClick={onTaskClick}
-              allTasks={allTasks}
             />
           ))
         )}

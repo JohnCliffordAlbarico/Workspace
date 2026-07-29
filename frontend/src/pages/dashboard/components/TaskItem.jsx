@@ -3,11 +3,12 @@ import { useTaskActions } from '../hooks/useTaskActions'
 import { useDraggable } from '@dnd-kit/core'
 import ConfirmationModal from '../modal/ConfirmationModal'
 
-const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, allTasks }) => {
+const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) => {
   const [showIcon, setShowIcon] = useState(false)
   const [showPauseConfirm, setShowPauseConfirm] = useState(false)
+  const [showCompleteConfirm, setShowCompleteConfirm] = useState(false)
   const [showSubtasks, setShowSubtasks] = useState(true)
-  const { startTask, pauseTask, loading } = useTaskActions(setTasks)
+  const { pauseTask, completeTask, loading } = useTaskActions(setTasks)
   
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
@@ -58,27 +59,6 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, allT
     return { hours, mins, total: minutes }
   }, [isCompleted, task.started_at, task.completed_at])
 
-  const handleStart = async (e) => {
-    e.stopPropagation()
-    
-    // Allow starting subtasks even when parent is in progress
-    // Only block if an unrelated task is already in progress
-    const inProgressTask = allTasks.find(t => t.status === 'in_progress' && t.id !== task.id)
-    if (inProgressTask) {
-      // Allow if this task is a subtask of the in-progress task
-      const isChildOfInProgress = task.parent_task_id === inProgressTask.id
-      // Allow if the in-progress task is a subtask of this task
-      const isParentOfInProgress = allTasks.some(t => t.id === inProgressTask.id && t.parent_task_id === task.id)
-      
-      if (!isChildOfInProgress && !isParentOfInProgress) {
-        alert(`Cannot start this task. "${inProgressTask.title}" is already in progress. Please complete or cancel it first.`)
-        return
-      }
-    }
-
-    await startTask(task.id)
-  }
-
   const handlePause = async (e) => {
     e.stopPropagation()
     setShowPauseConfirm(true)
@@ -87,6 +67,23 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, allT
   const handleConfirmPause = async () => {
     await pauseTask(task.id, task.started_at, task.actual_time_minutes)
     setShowPauseConfirm(false)
+  }
+
+  const handleComplete = async (e) => {
+    e.stopPropagation()
+    if (subtasks.length > 0) {
+      const incomplete = subtasks.filter(t => t.status !== 'completed')
+      if (incomplete.length > 0) {
+        alert(`Cannot complete "${task.title}". ${incomplete.length} subtask${incomplete.length > 1 ? 's' : ''} still incomplete: ${incomplete.map(t => t.title).join(', ')}`)
+        return
+      }
+    }
+    setShowCompleteConfirm(true)
+  }
+
+  const handleConfirmComplete = async () => {
+    await completeTask(task.id)
+    setShowCompleteConfirm(false)
   }
 
   const handleCardClick = () => {
@@ -157,34 +154,10 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, allT
             </div>
           )}
           
-          {/* Start Button for Pending Tasks */}
+          {/* Complete Button for Pending Tasks */}
           {isPending && (
             <button
-              onClick={handleStart}
-              disabled={loading}
-              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
-              style={{
-                background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
-                border: 'none',
-                color: '#1a0a0a'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'scale(1.1)'
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 165, 2, 0.5)'
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'scale(1)'
-                e.currentTarget.style.boxShadow = 'none'
-              }}
-            >
-              ▶️
-            </button>
-          )}
-
-          {/* Resume Button for Paused Tasks */}
-          {isPaused && (
-            <button
-              onClick={handleStart}
+              onClick={handleComplete}
               disabled={loading}
               className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
               style={{
@@ -201,12 +174,37 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, allT
                 e.currentTarget.style.boxShadow = 'none'
               }}
             >
-              ▶️
+              ✅
             </button>
           )}
 
-          {/* Pause Button for In Progress Tasks */}
+          {/* Complete Button for Paused Tasks */}
+          {isPaused && (
+            <button
+              onClick={handleComplete}
+              disabled={loading}
+              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
+              style={{
+                background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
+                border: 'none',
+                color: '#1a0a0a'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'scale(1.1)'
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(46, 213, 115, 0.5)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'scale(1)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              ✅
+            </button>
+          )}
+
+          {/* Pause and Complete Buttons for In Progress Tasks */}
           {isInProgress && (
+            <>
             <button
               onClick={handlePause}
               disabled={loading}
@@ -227,6 +225,27 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, allT
             >
               ⏸️
             </button>
+            <button
+              onClick={handleComplete}
+              disabled={loading}
+              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
+              style={{
+                background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
+                border: 'none',
+                color: '#1a0a0a'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'scale(1.1)'
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 165, 2, 0.5)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'scale(1)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              ✅
+            </button>
+            </>
           )}
 
           <div className="flex-1 min-w-0">
@@ -318,6 +337,17 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, allT
         message={`Pause "${task.title}"? Time worked so far will be saved. You can resume later.`}
         confirmText="Yes, Pause"
         cancelText="Keep Working"
+      />
+
+      {/* Complete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showCompleteConfirm}
+        onConfirm={handleConfirmComplete}
+        onCancel={() => setShowCompleteConfirm(false)}
+        title="✅ Complete Task?"
+        message={`Mark "${task.title}" as completed?${task.parent_task_id ? ' Time worked will be added to the parent task.' : ''}`}
+        confirmText="Yes, Complete"
+        cancelText="Not Yet"
       />
     </div>
   )
