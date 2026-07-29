@@ -51,7 +51,11 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
   }
 
   const inProgressTask = useMemo(() => {
-    return tasks.find(t => t.status === 'in_progress' || t.status === 'paused')
+    const inProgress = tasks.filter(t => t.status === 'in_progress' || t.status === 'paused')
+    if (inProgress.length === 0) return null
+    // Prefer subtask over parent for banner display
+    const subtask = inProgress.find(t => t.parent_task_id)
+    return subtask || inProgress[0]
   }, [tasks])
 
   const handleTaskClick = (task) => {
@@ -173,6 +177,7 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
             task={inProgressTask} 
             setTasks={setTasks}
             onTaskClick={handleTaskClick}
+            allTasks={tasks}
           />
         )}
 

@@ -232,6 +232,40 @@ export const updateTask = async (req, res) => {
       )
     }
 
+    // Roll up subtask time to parent on completion
+    if (status === 'completed') {
+      const { data: fullTask } = await supabaseAdmin
+        .from('tasks')
+        .select('parent_task_id, actual_time_minutes')
+        .eq('id', id)
+        .single()
+
+      if (fullTask?.parent_task_id && fullTask.actual_time_minutes > 0) {
+        const { data: parentTask } = await supabaseAdmin
+          .from('tasks')
+          .select('actual_time_minutes')
+          .eq('id', fullTask.parent_task_id)
+          .single()
+
+        if (parentTask) {
+          const newParentTime = (parentTask.actual_time_minutes || 0) + fullTask.actual_time_minutes
+
+          await supabaseAdmin
+            .from('tasks')
+            .update({ actual_time_minutes: newParentTime })
+            .eq('id', fullTask.parent_task_id)
+            .eq('user_id', req.user.id)
+
+          await calculateAndCreateBreakTime(
+            req.user.id,
+            fullTask.parent_task_id,
+            newParentTime,
+            parentTask.actual_time_minutes || 0
+          )
+        }
+      }
+    }
+
     res.json(data)
   } catch (error) {
     res.status(500).json({ error: error.message })

@@ -61,11 +61,19 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, allT
   const handleStart = async (e) => {
     e.stopPropagation()
     
-    // Check if another task is already in progress
+    // Allow starting subtasks even when parent is in progress
+    // Only block if an unrelated task is already in progress
     const inProgressTask = allTasks.find(t => t.status === 'in_progress' && t.id !== task.id)
     if (inProgressTask) {
-      alert(`Cannot start this task. "${inProgressTask.title}" is already in progress. Please complete or cancel it first.`)
-      return
+      // Allow if this task is a subtask of the in-progress task
+      const isChildOfInProgress = task.parent_task_id === inProgressTask.id
+      // Allow if the in-progress task is a subtask of this task
+      const isParentOfInProgress = allTasks.some(t => t.id === inProgressTask.id && t.parent_task_id === task.id)
+      
+      if (!isChildOfInProgress && !isParentOfInProgress) {
+        alert(`Cannot start this task. "${inProgressTask.title}" is already in progress. Please complete or cancel it first.`)
+        return
+      }
     }
 
     await startTask(task.id)
@@ -295,6 +303,7 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, allT
               subtask={subtask}
               color={color}
               onTaskClick={handleSubtaskClick}
+              setTasks={setTasks}
             />
           ))}
         </div>
@@ -315,13 +324,24 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, allT
 })
 
 // Subtask Item Component
-const SubtaskItem = memo(({ subtask, color, onTaskClick }) => {
+const SubtaskItem = memo(({ subtask, color, onTaskClick, setTasks }) => {
+  const { startTask, pauseTask, loading } = useTaskActions(setTasks)
   const isCompleted = subtask.status === 'completed'
   const isPending = subtask.status === 'pending'
   const isInProgress = subtask.status === 'in_progress'
   const isPaused = subtask.status === 'paused'
 
   const statusIcon = isCompleted ? '✅' : isInProgress ? '🔄' : isPaused ? '⏸️' : '⬜'
+
+  const handleStart = async (e) => {
+    e.stopPropagation()
+    await startTask(subtask.id)
+  }
+
+  const handlePause = async (e) => {
+    e.stopPropagation()
+    await pauseTask(subtask.id, subtask.started_at, subtask.actual_time_minutes)
+  }
 
   return (
     <div
@@ -342,7 +362,86 @@ const SubtaskItem = memo(({ subtask, color, onTaskClick }) => {
       }}
     >
       <div className="flex items-center gap-2">
-        <span className="text-sm">{statusIcon}</span>
+        {/* Start Button for Pending Subtasks */}
+        {isPending && (
+          <button
+            onClick={handleStart}
+            disabled={loading}
+            className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
+            style={{
+              background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
+              border: 'none',
+              color: '#1a0a0a',
+              fontSize: '0.65rem'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'scale(1.1)'
+              e.currentTarget.style.boxShadow = '0 3px 10px rgba(255, 165, 2, 0.5)'
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+          >
+            ▶️
+          </button>
+        )}
+
+        {/* Pause Button for In Progress Subtasks */}
+        {isInProgress && (
+          <button
+            onClick={handlePause}
+            disabled={loading}
+            className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
+            style={{
+              background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
+              border: 'none',
+              color: '#1a0a0a',
+              fontSize: '0.65rem'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'scale(1.1)'
+              e.currentTarget.style.boxShadow = '0 3px 10px rgba(46, 213, 115, 0.5)'
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+          >
+            ⏸️
+          </button>
+        )}
+
+        {/* Resume Button for Paused Subtasks */}
+        {isPaused && (
+          <button
+            onClick={handleStart}
+            disabled={loading}
+            className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
+            style={{
+              background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
+              border: 'none',
+              color: '#1a0a0a',
+              fontSize: '0.65rem'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'scale(1.1)'
+              e.currentTarget.style.boxShadow = '0 3px 10px rgba(46, 213, 115, 0.5)'
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+          >
+            ▶️
+          </button>
+        )}
+
+        {/* Status Icon (when no action button) */}
+        {!isPending && !isInProgress && !isPaused && (
+          <span className="text-sm flex-shrink-0">{statusIcon}</span>
+        )}
+
         <span 
           className={`text-sm ${isCompleted ? 'line-through opacity-60' : ''}`}
           style={{ color: '#f5e6d3' }}

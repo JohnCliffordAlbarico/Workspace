@@ -3,7 +3,7 @@ import { useTaskActions } from '../hooks/useTaskActions'
 import { useTaskTimer } from '../hooks/useTaskTimer'
 import ConfirmationModal from '../modal/ConfirmationModal'
 
-const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
+const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
   const { completeTask, pauseTask, cancelTask, startTask, loading } = useTaskActions(setTasks)
   const duration = useTaskTimer(task?.started_at, task?.actual_time_minutes)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
@@ -14,6 +14,7 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
   if (!task) return null
 
   const isPaused = task.status === 'paused'
+  const parentTask = task.parent_task_id ? allTasks?.find(t => t.id === task.parent_task_id) : null
 
   const handleComplete = () => {
     setShowCompleteConfirm(true)
@@ -142,6 +143,14 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
               >
                 {task.title}
               </h3>
+              {parentTask && (
+                <p 
+                  className="text-sm mb-1"
+                  style={{ color: '#a89080' }}
+                >
+                  Subtask of {parentTask.title}
+                </p>
+              )}
               {isPaused ? (
                 <p 
                   className="text-sm font-mono font-semibold"
@@ -342,7 +351,7 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
         onConfirm={handleConfirmCancel}
         onCancel={() => setShowCancelConfirm(false)}
         title="❌ Cancel Task?"
-        message={`Are you sure you want to cancel "${task?.title}"? This will stop tracking time and mark the task as cancelled.`}
+        message={`Are you sure you want to cancel "${task?.title}"${parentTask ? ` (subtask of "${parentTask.title}")` : ''}? This will stop tracking time and mark the task as cancelled.`}
         confirmText="Yes, Cancel Task"
         cancelText="Keep Working"
       />
@@ -353,7 +362,7 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
         onConfirm={handleConfirmComplete}
         onCancel={() => setShowCompleteConfirm(false)}
         title="✅ Complete Task?"
-        message={`Mark "${task?.title}" as completed? The task will be moved to the completed tasks view.`}
+        message={`Mark "${task?.title}" as completed?${parentTask ? ` Time worked will be added to "${parentTask.title}".` : ' The task will be moved to the completed tasks view.'}`}
         confirmText="Yes, Complete"
         cancelText="Not Yet"
       />
@@ -364,7 +373,7 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
         onConfirm={handleConfirmPause}
         onCancel={() => setShowPauseConfirm(false)}
         title="⏸️ Pause Task?"
-        message={`Pause "${task?.title}"? Time worked so far will be saved. You can resume later.`}
+        message={`Pause "${task?.title}"${parentTask ? ` (subtask of "${parentTask.title}")` : ''}? Time worked so far will be saved. You can resume later.`}
         confirmText="Yes, Pause"
         cancelText="Keep Working"
       />
@@ -375,7 +384,7 @@ const InProgressBanner = ({ task, setTasks, onTaskClick }) => {
         onConfirm={handleConfirmResume}
         onCancel={() => setShowResumeConfirm(false)}
         title="▶️ Resume Task?"
-        message={`Resume "${task?.title}"? Timer will restart from where you left off. ${formatMinutes(task.actual_time_minutes || 0)} already worked.`}
+        message={`Resume "${task?.title}"${parentTask ? ` (subtask of "${parentTask.title}")` : ''}? Timer will restart from where you left off. ${formatMinutes(task.actual_time_minutes || 0)} already worked.`}
         confirmText="Yes, Resume"
         cancelText="Not Yet"
       />
