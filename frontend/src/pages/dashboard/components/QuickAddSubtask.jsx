@@ -6,7 +6,6 @@ const QuickAddSubtask = ({ parentTaskId, workspaceId, onSubtaskAdded, onCancel, 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [isAdding, setIsAdding] = useState(false)
-  const [showDescription, setShowDescription] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -109,53 +108,31 @@ const QuickAddSubtask = ({ parentTaskId, workspaceId, onSubtaskAdded, onCancel, 
         </button>
       </div>
 
-      {/* Description toggle */}
-      {!showDescription && (
-        <button
-          type="button"
-          onClick={() => setShowDescription(true)}
-          className="text-xs transition-all duration-200"
-          style={{ color: `${color}aa` }}
-        >
-          + Add description
-        </button>
-      )}
-
       {/* Description input */}
-      {showDescription && (
-        <div className="mt-2">
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Add a description..."
-            disabled={isAdding}
-            rows={2}
-            className="w-full px-3 py-2 rounded-lg text-xs transition-all duration-200 resize-none"
-            style={{
-              background: 'rgba(0, 0, 0, 0.3)',
-              border: `1px solid ${color}30`,
-              color: '#f5e6d3',
-              outline: 'none',
-            }}
-            onFocus={(e) => {
-              e.target.style.border = `1px solid ${color}60`
-              e.target.style.background = 'rgba(0, 0, 0, 0.4)'
-            }}
-            onBlur={(e) => {
-              e.target.style.border = `1px solid ${color}30`
-              e.target.style.background = 'rgba(0, 0, 0, 0.3)'
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => setShowDescription(false)}
-            className="text-xs mt-1 transition-all duration-200"
-            style={{ color: `${color}aa` }}
-          >
-            - Remove description
-          </button>
-        </div>
-      )}
+      <div className="mt-2">
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Add a description..."
+          disabled={isAdding}
+          rows={2}
+          className="w-full px-3 py-2 rounded-lg text-xs transition-all duration-200 resize-none"
+          style={{
+            background: 'rgba(0, 0, 0, 0.3)',
+            border: `1px solid ${color}30`,
+            color: '#f5e6d3',
+            outline: 'none',
+          }}
+          onFocus={(e) => {
+            e.target.style.border = `1px solid ${color}60`
+            e.target.style.background = 'rgba(0, 0, 0, 0.4)'
+          }}
+          onBlur={(e) => {
+            e.target.style.border = `1px solid ${color}30`
+            e.target.style.background = 'rgba(0, 0, 0, 0.3)'
+          }}
+        />
+      </div>
     </form>
   )
 }
