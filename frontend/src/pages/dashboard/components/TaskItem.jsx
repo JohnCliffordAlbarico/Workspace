@@ -436,7 +436,8 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
         isOpen={showIncompleteWarning}
         onClose={() => setShowIncompleteWarning(false)}
         title="⚠️ Incomplete Subtasks"
-        message={`${incompleteSubtasks.length} subtask${incompleteSubtasks.length > 1 ? 's' : ''} still incomplete: ${incompleteSubtasks.map(t => t.title).join(', ')}. Complete all subtasks before marking the task as done.`}
+        message={`Complete all subtasks before marking the task as done.`}
+        items={incompleteSubtasks.map(t => t.title)}
       />
     </div>
   )

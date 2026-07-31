@@ -1,4 +1,4 @@
-const WarningModal = ({ isOpen, onClose, title, message }) => {
+const WarningModal = ({ isOpen, onClose, title, message, items }) => {
   if (!isOpen) return null
 
   return (
@@ -30,12 +30,37 @@ const WarningModal = ({ isOpen, onClose, title, message }) => {
           {title}
         </h3>
 
-        <p 
-          className="mb-6 text-base leading-relaxed"
-          style={{ color: '#a89080' }}
-        >
-          {message}
-        </p>
+        {message && (
+          <p 
+            className="mb-4 text-sm leading-relaxed"
+            style={{ color: '#a89080' }}
+          >
+            {message}
+          </p>
+        )}
+
+        {items && items.length > 0 && (
+          <div 
+            className="mb-6 max-h-48 overflow-y-auto rounded-lg p-3"
+            style={{
+              background: 'rgba(0, 0, 0, 0.3)',
+              border: '1px solid rgba(255, 165, 2, 0.2)'
+            }}
+          >
+            <ul className="space-y-2">
+              {items.map((item, index) => (
+                <li 
+                  key={index}
+                  className="flex items-center gap-2 text-sm"
+                  style={{ color: '#d4b896' }}
+                >
+                  <span style={{ color: '#ff4757' }}>•</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="flex justify-end">
           <button
