@@ -14,6 +14,7 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
   const [incompleteSubtasks, setIncompleteSubtasks] = useState([])
   const [showSubtasks, setShowSubtasks] = useState(true)
   const [showQuickAddSubtask, setShowQuickAddSubtask] = useState(false)
+  const [showAddSubtaskOption, setShowAddSubtaskOption] = useState(false)
   const { pauseTask, completeTask, loading } = useTaskActions(setTasks)
   
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -333,12 +334,12 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
             />
           ))}
           
-          {/* Quick Add Subtask Button */}
+          {/* Toggle Add Subtask Button */}
           {!showQuickAddSubtask && (
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                setShowQuickAddSubtask(true)
+                setShowAddSubtaskOption(!showAddSubtaskOption)
               }}
               className="w-full flex items-center justify-center gap-1 py-2 rounded-lg transition-all duration-200 text-xs"
               style={{
@@ -356,7 +357,35 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
               }}
             >
               <Plus className="w-3 h-3" />
-              Add subtask
+              {showAddSubtaskOption ? 'Cancel' : 'Add subtask'}
+            </button>
+          )}
+
+          {/* Quick Add Subtask Button (shown when toggle is active) */}
+          {showAddSubtaskOption && !showQuickAddSubtask && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowQuickAddSubtask(true)
+                setShowAddSubtaskOption(false)
+              }}
+              className="w-full flex items-center justify-center gap-1 py-2 rounded-lg transition-all duration-200 text-xs"
+              style={{
+                background: `${color}20`,
+                border: `1px solid ${color}40`,
+                color: '#f5e6d3',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = `${color}30`
+                e.currentTarget.style.transform = 'translateY(-1px)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = `${color}20`
+                e.currentTarget.style.transform = 'translateY(0)'
+              }}
+            >
+              <Plus className="w-3 h-3" />
+              Quick add subtask
             </button>
           )}
 

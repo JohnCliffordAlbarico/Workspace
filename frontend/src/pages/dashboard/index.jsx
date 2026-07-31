@@ -5,7 +5,6 @@ import CalendarView from './components/CalendarView'
 import AnalyticsView from './components/AnalyticsView'
 import MainMenuOverlay from './components/MainMenuOverlay'
 import FloatingButterflies from './components/FloatingButterflies'
-import MusicPlayer from '../../components/MusicPlayer'
 import DiaryModal from '../../components/DiaryModal'
 import { useWorkspace } from '../../hooks/useWorkspace'
 import { useTasks } from './hooks/useTasks'
@@ -183,7 +182,6 @@ const Dashboard = () => {
         currentView={currentView}
       />
 
-      <MusicPlayer />
       <DiaryModal />
     </div>
   )

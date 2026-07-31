@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../config/supabase.js'
+import { encrypt, decrypt } from '../utils/crypto.js'
 
 // Get all diary entries for current user
 export const getDiaryEntries = async (req, res) => {
@@ -11,7 +12,13 @@ export const getDiaryEntries = async (req, res) => {
 
     if (error) throw error
 
-    res.json(data || [])
+    // Decrypt content for each entry
+    const decryptedData = (data || []).map(entry => ({
+      ...entry,
+      content: entry.content ? decrypt(entry.content) : null
+    }))
+
+    res.json(decryptedData)
   } catch (error) {
     console.error('Get diary entries error:', error)
     res.status(500).json({ error: error.message })
@@ -36,7 +43,13 @@ export const getDiaryEntry = async (req, res) => {
     }
     if (error) throw error
 
-    res.json(data)
+    // Decrypt content
+    const decryptedData = {
+      ...data,
+      content: data.content ? decrypt(data.content) : null
+    }
+
+    res.json(decryptedData)
   } catch (error) {
     console.error('Get diary entry error:', error)
     res.status(500).json({ error: error.message })
@@ -52,19 +65,28 @@ export const createDiaryEntry = async (req, res) => {
       return res.status(400).json({ error: 'title is required' })
     }
 
+    // Encrypt content before storing
+    const encryptedContent = content ? encrypt(content) : null
+
     const { data, error } = await supabaseAdmin
       .from('diary_entries')
       .insert({
         user_id: req.user.id,
         title,
-        content: content || null
+        content: encryptedContent
       })
       .select()
       .single()
 
     if (error) throw error
 
-    res.status(201).json(data)
+    // Return with decrypted content
+    const decryptedData = {
+      ...data,
+      content: data.content ? decrypt(data.content) : null
+    }
+
+    res.status(201).json(decryptedData)
   } catch (error) {
     console.error('Create diary entry error:', error)
     res.status(500).json({ error: error.message })
@@ -92,7 +114,7 @@ export const updateDiaryEntry = async (req, res) => {
 
     const updateData = {}
     if (title !== undefined) updateData.title = title
-    if (content !== undefined) updateData.content = content
+    if (content !== undefined) updateData.content = content ? encrypt(content) : null
 
     const { data, error } = await supabaseAdmin
       .from('diary_entries')
@@ -104,7 +126,13 @@ export const updateDiaryEntry = async (req, res) => {
 
     if (error) throw error
 
-    res.json(data)
+    // Return with decrypted content
+    const decryptedData = {
+      ...data,
+      content: data.content ? decrypt(data.content) : null
+    }
+
+    res.json(decryptedData)
   } catch (error) {
     console.error('Update diary entry error:', error)
     res.status(500).json({ error: error.message })
