@@ -3,6 +3,8 @@ import { useTaskActions } from '../hooks/useTaskActions'
 import { useDraggable } from '@dnd-kit/core'
 import ConfirmationModal from '../modal/ConfirmationModal'
 import WarningModal from '../modal/WarningModal'
+import QuickAddSubtask from './QuickAddSubtask'
+import { Plus } from 'lucide-react'
 
 const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) => {
   const [showIcon, setShowIcon] = useState(false)
@@ -11,6 +13,7 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false)
   const [incompleteSubtasks, setIncompleteSubtasks] = useState([])
   const [showSubtasks, setShowSubtasks] = useState(true)
+  const [showQuickAddSubtask, setShowQuickAddSubtask] = useState(false)
   const { pauseTask, completeTask, loading } = useTaskActions(setTasks)
   
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -315,7 +318,7 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
       </div>
 
       {/* Subtasks */}
-      {hasSubtasks && showSubtasks && (
+      {showSubtasks && (
         <div 
           className="ml-6 mt-2 space-y-2"
           style={{ borderLeft: `2px solid ${color}40`, paddingLeft: '12px' }}
@@ -329,6 +332,47 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
               setTasks={setTasks}
             />
           ))}
+          
+          {/* Quick Add Subtask Button */}
+          {!showQuickAddSubtask && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowQuickAddSubtask(true)
+              }}
+              className="w-full flex items-center justify-center gap-1 py-2 rounded-lg transition-all duration-200 text-xs"
+              style={{
+                background: `${color}10`,
+                border: `1px dashed ${color}30`,
+                color: `${color}aa`,
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = `${color}20`
+                e.currentTarget.style.borderColor = `${color}50`
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = `${color}10`
+                e.currentTarget.style.borderColor = `${color}30`
+              }}
+            >
+              <Plus className="w-3 h-3" />
+              Add subtask
+            </button>
+          )}
+
+          {/* Quick Add Subtask Form */}
+          {showQuickAddSubtask && (
+            <QuickAddSubtask
+              parentTaskId={task.id}
+              workspaceId={task.workspace_id}
+              onSubtaskAdded={(newSubtask) => {
+                setTasks(prev => [...prev, newSubtask])
+                setShowQuickAddSubtask(false)
+              }}
+              onCancel={() => setShowQuickAddSubtask(false)}
+              color={color}
+            />
+          )}
         </div>
       )}
 
