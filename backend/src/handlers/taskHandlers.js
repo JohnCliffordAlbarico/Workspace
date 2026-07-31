@@ -279,6 +279,16 @@ export const deleteTask = async (req, res) => {
   try {
     const { id } = req.params
 
+    // First, delete all subtasks of this task
+    const { error: subtaskError } = await supabaseAdmin
+      .from('tasks')
+      .delete()
+      .eq('parent_task_id', id)
+      .eq('user_id', req.user.id)
+
+    if (subtaskError) throw subtaskError
+
+    // Then delete the parent task
     const { error } = await supabaseAdmin
       .from('tasks')
       .delete()
