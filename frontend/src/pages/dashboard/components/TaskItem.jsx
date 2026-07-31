@@ -12,7 +12,7 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false)
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false)
   const [incompleteSubtasks, setIncompleteSubtasks] = useState([])
-  const [showSubtasks, setShowSubtasks] = useState(true)
+  const [showSubtasks, setShowSubtasks] = useState(false)
   const [showQuickAddSubtask, setShowQuickAddSubtask] = useState(false)
   const [showAddSubtaskOption, setShowAddSubtaskOption] = useState(false)
   const { pauseTask, completeTask, loading } = useTaskActions(setTasks)
@@ -264,22 +264,26 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
               >
                 {task.title}
               </span>
-              {hasSubtasks && (
-                <span 
-                  className="text-xs px-2 py-0.5 rounded-full cursor-pointer"
-                  style={{ 
-                    background: `${color}40`, 
-                    color,
-                    border: `1px solid ${color}60`
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowSubtasks(!showSubtasks)
-                  }}
-                >
-                  {completedSubtasks}/{subtasks.length}
-                </span>
-              )}
+              <span 
+                className="text-xs px-2 py-0.5 rounded-full cursor-pointer transition-all duration-200"
+                style={{ 
+                  background: showSubtasks ? `${color}50` : `${color}20`, 
+                  color,
+                  border: `1px solid ${showSubtasks ? `${color}70` : `${color}40`}`
+                }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowSubtasks(!showSubtasks)
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = `${color}40`
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = showSubtasks ? `${color}50` : `${color}20`
+                }}
+              >
+                {hasSubtasks ? `${completedSubtasks}/${subtasks.length}` : '📁'}
+              </span>
             </div>
 
             {/* Time information for completed tasks */}

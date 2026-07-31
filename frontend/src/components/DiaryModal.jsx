@@ -661,26 +661,28 @@ const DiaryModal = () => {
           aria-modal="true"
           aria-label="Diary"
         >
-          {/* Close button */}
-          <button
-            onClick={handleClose}
-            className="absolute top-3 right-3 p-1.5 rounded-full transition-all"
-            style={{ 
-              color: '#ff6b6b',
-              background: 'rgba(0,0,0,0.4)',
-              zIndex: 50,
-              border: '1px solid rgba(255,71,87,0.3)'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = 'rgba(255,71,87,0.2)'
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'rgba(0,0,0,0.4)'
-            }}
-            aria-label="Close diary"
-          >
-            <X size={18} />
-          </button>
+          {/* Close button - hidden in detail view to avoid overlap with delete button */}
+          {view !== 'detail' && (
+            <button
+              onClick={handleClose}
+              className="absolute top-3 right-3 p-1.5 rounded-full transition-all"
+              style={{ 
+                color: '#ff6b6b',
+                background: 'rgba(0,0,0,0.4)',
+                zIndex: 50,
+                border: '1px solid rgba(255,71,87,0.3)'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'rgba(255,71,87,0.2)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'rgba(0,0,0,0.4)'
+              }}
+              aria-label="Close diary"
+            >
+              <X size={18} />
+            </button>
+          )}
 
           {/* Global action error (e.g. delete failed) */}
           {actionError && (
