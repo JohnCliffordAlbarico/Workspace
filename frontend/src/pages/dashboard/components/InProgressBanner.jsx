@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { useTaskTimer } from '../hooks/useTaskTimer'
 import ConfirmationModal from '../modal/ConfirmationModal'
+import WarningModal from '../modal/WarningModal'
 
 const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
   const { completeTask, pauseTask, cancelTask, startTask, loading } = useTaskActions(setTasks)
@@ -10,6 +11,8 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false)
   const [showPauseConfirm, setShowPauseConfirm] = useState(false)
   const [showResumeConfirm, setShowResumeConfirm] = useState(false)
+  const [showIncompleteWarning, setShowIncompleteWarning] = useState(false)
+  const [incompleteSubtasks, setIncompleteSubtasks] = useState([])
 
   if (!task) return null
 
@@ -21,7 +24,8 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
       const subtasks = allTasks.filter(t => t.parent_task_id === task.id)
       const incomplete = subtasks.filter(t => t.status !== 'completed')
       if (incomplete.length > 0) {
-        alert(`Cannot complete "${task.title}". ${incomplete.length} subtask${incomplete.length > 1 ? 's' : ''} still incomplete: ${incomplete.map(t => t.title).join(', ')}`)
+        setIncompleteSubtasks(incomplete)
+        setShowIncompleteWarning(true)
         return
       }
     }
@@ -395,6 +399,14 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
         message={`Resume "${task?.title}"${parentTask ? ` (subtask of "${parentTask.title}")` : ''}? Timer will restart from where you left off. ${formatMinutes(task.actual_time_minutes || 0)} already worked.`}
         confirmText="Yes, Resume"
         cancelText="Not Yet"
+      />
+
+      {/* Incomplete Subtasks Warning Modal */}
+      <WarningModal
+        isOpen={showIncompleteWarning}
+        onClose={() => setShowIncompleteWarning(false)}
+        title="⚠️ Incomplete Subtasks"
+        message={`${incompleteSubtasks.length} subtask${incompleteSubtasks.length > 1 ? 's' : ''} still incomplete: ${incompleteSubtasks.map(t => t.title).join(', ')}. Complete all subtasks before marking the task as done.`}
       />
     </div>
   )

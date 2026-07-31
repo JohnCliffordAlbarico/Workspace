@@ -2,11 +2,14 @@ import { useState, useMemo, memo } from 'react'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { useDraggable } from '@dnd-kit/core'
 import ConfirmationModal from '../modal/ConfirmationModal'
+import WarningModal from '../modal/WarningModal'
 
 const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) => {
   const [showIcon, setShowIcon] = useState(false)
   const [showPauseConfirm, setShowPauseConfirm] = useState(false)
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false)
+  const [showIncompleteWarning, setShowIncompleteWarning] = useState(false)
+  const [incompleteSubtasks, setIncompleteSubtasks] = useState([])
   const [showSubtasks, setShowSubtasks] = useState(true)
   const { pauseTask, completeTask, loading } = useTaskActions(setTasks)
   
@@ -74,7 +77,8 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
     if (subtasks.length > 0) {
       const incomplete = subtasks.filter(t => t.status !== 'completed')
       if (incomplete.length > 0) {
-        alert(`Cannot complete "${task.title}". ${incomplete.length} subtask${incomplete.length > 1 ? 's' : ''} still incomplete: ${incomplete.map(t => t.title).join(', ')}`)
+        setIncompleteSubtasks(incomplete)
+        setShowIncompleteWarning(true)
         return
       }
     }
@@ -348,6 +352,14 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
         message={`Mark "${task.title}" as completed?${task.parent_task_id ? ' Time worked will be added to the parent task.' : ''}`}
         confirmText="Yes, Complete"
         cancelText="Not Yet"
+      />
+
+      {/* Incomplete Subtasks Warning Modal */}
+      <WarningModal
+        isOpen={showIncompleteWarning}
+        onClose={() => setShowIncompleteWarning(false)}
+        title="⚠️ Incomplete Subtasks"
+        message={`${incompleteSubtasks.length} subtask${incompleteSubtasks.length > 1 ? 's' : ''} still incomplete: ${incompleteSubtasks.map(t => t.title).join(', ')}. Complete all subtasks before marking the task as done.`}
       />
     </div>
   )
