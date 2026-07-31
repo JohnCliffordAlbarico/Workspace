@@ -358,9 +358,19 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
                 }}
               />
             ) : (
-              <p style={{ color: '#a89080' }}>
+              <div
+                className="w-full px-4 py-3 rounded-lg resize-none whitespace-pre-wrap"
+                style={{
+                  background: 'rgba(0,0,0,0.4)',
+                  border: '1px solid rgba(200, 80, 80, 0.3)',
+                  color: task.description ? '#f5e6d3' : '#a89080',
+                  minHeight: '84px',
+                  pointerEvents: 'none',
+                  cursor: 'default'
+                }}
+              >
                 {task.description || 'No description provided'}
-              </p>
+              </div>
             )}
           </div>
 
