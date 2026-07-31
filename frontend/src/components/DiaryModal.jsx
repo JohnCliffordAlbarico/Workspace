@@ -326,7 +326,8 @@ const NewEntryForm = ({ onBack, onCreate, onUploadCover }) => {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [pendingFile, setPendingFile] = useState(null)
-  const [preview, setPreview] = useState(null)
+  const [preview, setPreview] = useState(() => localStorage.getItem('diary_default_cover'))
+  const [useDefaultCover, setUseDefaultCover] = useState(true)
   const fileRef = useRef(null)
 
   const handleFileChange = (e) => {
@@ -344,10 +345,26 @@ const NewEntryForm = ({ onBack, onCreate, onUploadCover }) => {
     }
     setError('')
     setPendingFile(file)
+    setUseDefaultCover(false)
     const reader = new FileReader()
     reader.onloadend = () => setPreview(reader.result)
     reader.readAsDataURL(file)
     e.target.value = ''
+  }
+
+  const handleRemoveCover = () => {
+    setPendingFile(null)
+    setPreview(null)
+    setUseDefaultCover(false)
+  }
+
+  const handleUseDefaultCover = () => {
+    const defaultCover = localStorage.getItem('diary_default_cover')
+    if (defaultCover) {
+      setPreview(defaultCover)
+      setPendingFile(null)
+      setUseDefaultCover(true)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -365,6 +382,20 @@ const NewEntryForm = ({ onBack, onCreate, onUploadCover }) => {
         } catch (uploadErr) {
           // Entry was saved; just warn about the image
           console.error('Cover upload failed after entry creation:', uploadErr)
+        } finally {
+          setUploading(false)
+        }
+      } else if (useDefaultCover && preview) {
+        // Use the default cover image if no new file was selected
+        // We need to fetch the default cover and upload it
+        setUploading(true)
+        try {
+          const response = await fetch(preview)
+          const blob = await response.blob()
+          const file = new File([blob], 'cover.jpg', { type: blob.type })
+          await onUploadCover(entry.id, file)
+        } catch (uploadErr) {
+          console.error('Default cover upload failed:', uploadErr)
         } finally {
           setUploading(false)
         }
@@ -411,28 +442,51 @@ const NewEntryForm = ({ onBack, onCreate, onUploadCover }) => {
             <>
               <img src={preview} alt="Cover preview" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60" />
+              <div className="absolute bottom-2 right-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="px-2 py-1 rounded text-xs"
+                  style={{ background: 'rgba(0,0,0,0.65)', color: '#f5e6d3' }}
+                >
+                  📷 Change
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRemoveCover}
+                  className="px-2 py-1 rounded text-xs"
+                  style={{ background: 'rgba(255,71,87,0.65)', color: '#f5e6d3' }}
+                >
+                  ✕ Remove
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2"
+              style={{ background: 'linear-gradient(135deg, #2d0f0f 0%, #6b2828 100%)', border: 'none' }}
+            >
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="absolute bottom-2 right-2 px-2 py-1 rounded text-xs"
-                style={{ background: 'rgba(0,0,0,0.65)', color: '#f5e6d3' }}
+                className="flex flex-col items-center justify-center gap-2"
+                aria-label="Add cover image"
               >
-                📷 Change
+                <ImagePlus size={28} style={{ color: 'rgba(200,80,80,0.6)' }} />
+                <p className="text-xs" style={{ color: 'rgba(245,230,211,0.5)' }}>
+                  Add a cover image (optional)
+                </p>
               </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="w-full h-full flex flex-col items-center justify-center gap-2"
-              style={{ background: 'linear-gradient(135deg, #2d0f0f 0%, #6b2828 100%)', border: 'none' }}
-              aria-label="Add cover image"
-            >
-              <ImagePlus size={28} style={{ color: 'rgba(200,80,80,0.6)' }} />
-              <p className="text-xs" style={{ color: 'rgba(245,230,211,0.5)' }}>
-                Add a cover image (optional)
-              </p>
-            </button>
+              {localStorage.getItem('diary_default_cover') && (
+                <button
+                  type="button"
+                  onClick={handleUseDefaultCover}
+                  className="text-xs px-3 py-1 rounded"
+                  style={{ background: 'rgba(200,80,80,0.3)', color: '#f5e6d3' }}
+                >
+                  Use last cover image
+                </button>
+              )}
+            </div>
           )}
           <input
             ref={fileRef}

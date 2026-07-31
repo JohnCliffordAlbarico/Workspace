@@ -29,7 +29,6 @@ const QuickAddSubtask = ({ parentTaskId, workspaceId, onSubtaskAdded, onCancel, 
       onSubtaskAdded(response.data)
       setTitle('')
       setDescription('')
-      setShowDescription(false)
     } catch (error) {
       console.error('Failed to add subtask:', error)
     } finally {

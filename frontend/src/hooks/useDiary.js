@@ -51,6 +51,10 @@ export const useDiary = () => {
     })
     // data = { url, entry }
     setEntries(prev => prev.map(e => (e.id === id ? data.entry : e)))
+    // Save the cover URL as default for future entries
+    if (data.url) {
+      localStorage.setItem('diary_default_cover', data.url)
+    }
     return data
   }
 
