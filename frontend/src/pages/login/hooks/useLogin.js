@@ -24,8 +24,8 @@ export const useLogin = () => {
       localStorage.setItem('token', response.data.token)
       localStorage.setItem('user', JSON.stringify(response.data.user))
       
-      // Navigate to workspace selector
-      navigate('/workspaces')
+      // Navigate to dashboard
+      navigate('/dashboard')
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Please try again.')
     } finally {

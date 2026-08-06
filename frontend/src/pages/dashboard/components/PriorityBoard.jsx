@@ -6,7 +6,6 @@ import TaskModal from '../modal/TaskModal'
 import TaskDetailModal from '../modal/TaskDetailModal'
 import InProgressBanner from './InProgressBanner'
 import QuickAddTask from './QuickAddTask'
-import BreakTimeWidget from './BreakTimeWidget'
 import DigitalClock from './DigitalClock'
 import AllocationProgress from '../../../components/AllocationProgress'
 import { useTasks } from '../hooks/useTasks'
@@ -156,10 +155,29 @@ const PriorityBoard = ({ categories, selectedCategoryId, setSelectedCategoryId, 
           />
         )}
 
-        {/* Break Time Widget */}
-        <BreakTimeWidget />
+        {/* Quick Add Task */}
+        {selectedCategoryId && (
+          <>
+            <h3 
+              className="text-sm uppercase tracking-widest mb-3"
+              style={{ fontFamily: "'Cinzel', serif", color: '#c85050' }}
+            >
+              Add a Task
+            </h3>
+            <QuickAddTask 
+              categoryId={selectedCategoryId}
+              onTaskAdded={handleQuickAdd}
+            />
+          </>
+        )}
 
         {/* Category Tabs */}
+        <h3 
+          className="text-sm uppercase tracking-widest mb-3"
+          style={{ fontFamily: "'Cinzel', serif", color: '#c85050' }}
+        >
+          Focus Areas
+        </h3>
         <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
           {categories.map(category => {
             const progress = getCategoryProgress(category.id)
@@ -200,14 +218,6 @@ const PriorityBoard = ({ categories, selectedCategoryId, setSelectedCategoryId, 
           })}
         </div>
 
-        {/* Quick Add Task */}
-        {selectedCategoryId && (
-          <QuickAddTask 
-            categoryId={selectedCategoryId}
-            onTaskAdded={handleQuickAdd}
-          />
-        )}
-
         {/* Task Modal */}
         <TaskModal 
           isOpen={isModalOpen}
@@ -235,7 +245,14 @@ const PriorityBoard = ({ categories, selectedCategoryId, setSelectedCategoryId, 
         ) : allTasks.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-3 gap-6">
+          <>
+            <h3 
+              className="text-sm uppercase tracking-widest mb-3"
+              style={{ fontFamily: "'Cinzel', serif", color: '#c85050' }}
+            >
+              Task Board
+            </h3>
+            <div className="grid grid-cols-3 gap-6">
             {/* Pending Column */}
             <TaskColumn
               title="Pending"
@@ -270,6 +287,7 @@ const PriorityBoard = ({ categories, selectedCategoryId, setSelectedCategoryId, 
               showCompletedCount
             />
           </div>
+          </>
         )}
       </main>
 

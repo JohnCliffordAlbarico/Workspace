@@ -17,6 +17,7 @@ const FocusCategoryManager = ({ isOpen, onClose }) => {
   const [editingCategory, setEditingCategory] = useState(null)
   const [categoryToDelete, setCategoryToDelete] = useState(null)
   const [categoryToComplete, setCategoryToComplete] = useState(null)
+  const [formError, setFormError] = useState('')
   
   const { 
     categories, 
@@ -41,23 +42,27 @@ const FocusCategoryManager = ({ isOpen, onClose }) => {
 
   const handleCreate = async () => {
     if (!formData.name.trim()) return
+    setFormError('')
     try {
       await createCategory(formData)
       setFormData({ name: '', color: '#6366f1', daily_allocation_minutes: 60 })
       setIsCreating(false)
     } catch (err) {
-      console.error('Failed to create category:', err)
+      const message = err.response?.data?.error || 'Failed to create category'
+      setFormError(message)
     }
   }
 
   const handleUpdate = async () => {
     if (!formData.name.trim() || !editingCategory) return
+    setFormError('')
     try {
       await updateCategory(editingCategory.id, formData)
       setEditingCategory(null)
       setFormData({ name: '', color: '#6366f1', daily_allocation_minutes: 60 })
     } catch (err) {
-      console.error('Failed to update category:', err)
+      const message = err.response?.data?.error || 'Failed to update category'
+      setFormError(message)
     }
   }
 
@@ -98,6 +103,7 @@ const FocusCategoryManager = ({ isOpen, onClose }) => {
     setIsCreating(false)
     setEditingCategory(null)
     setFormData({ name: '', color: '#6366f1', daily_allocation_minutes: 60 })
+    setFormError('')
   }
 
   if (!isOpen) return null
@@ -270,12 +276,29 @@ const FocusCategoryManager = ({ isOpen, onClose }) => {
                     >
                       {editingCategory ? 'Edit Category' : 'New Category'}
                     </h3>
+
+                    {/* Error Message */}
+                    {formError && (
+                      <div 
+                        className="mb-3 p-3 rounded-lg text-sm"
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.15)',
+                          border: '1px solid rgba(239, 68, 68, 0.4)',
+                          color: '#ef4444'
+                        }}
+                      >
+                        {formError}
+                      </div>
+                    )}
                     
                     <input
                       type="text"
                       placeholder="Category name"
                       value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) => {
+                        setFormData(prev => ({ ...prev, name: e.target.value }))
+                        if (formError) setFormError('')
+                      }}
                       className="w-full px-4 py-3 rounded-lg mb-3"
                       style={{
                         background: 'rgba(0, 0, 0, 0.3)',

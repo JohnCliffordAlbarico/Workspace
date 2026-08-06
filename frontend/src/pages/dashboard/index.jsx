@@ -9,7 +9,8 @@ import DiaryModal from '../../components/DiaryModal'
 import FocusCategoryManager from '../../components/FocusCategoryManager'
 import { useFocusCategories } from '../../hooks/useFocusCategories'
 import { useAllocationProgress } from '../../hooks/useAllocationProgress'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import api from '../../config/api'
 
 const Dashboard = () => {
   const { categories, loading: categoriesLoading } = useFocusCategories()
@@ -22,6 +23,24 @@ const Dashboard = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false)
   const [selectedCategoryId, setSelectedCategoryId] = useState(null)
+  const [allTasks, setAllTasks] = useState([])
+  const [tasksLoading, setTasksLoading] = useState(true)
+
+  // Fetch all tasks for calendar/analytics/completed view
+  useEffect(() => {
+    const fetchAllTasks = async () => {
+      try {
+        setTasksLoading(true)
+        const response = await api.get('/tasks')
+        setAllTasks(response.data)
+      } catch (err) {
+        console.error('Failed to fetch tasks:', err)
+      } finally {
+        setTasksLoading(false)
+      }
+    }
+    fetchAllTasks()
+  }, [refreshTrigger, view])
 
   // Set first category as selected when categories load
   useEffect(() => {
@@ -96,9 +115,9 @@ const Dashboard = () => {
   const renderMainContent = () => {
     switch (currentView) {
       case 'calendar':
-        return <CalendarView />
+        return <CalendarView tasks={allTasks} setTasks={setAllTasks} />
       case 'analytics':
-        return <AnalyticsView />
+        return <AnalyticsView tasks={allTasks} />
       case 'dashboard':
       default:
         return view === 'active' ? (
@@ -112,8 +131,10 @@ const Dashboard = () => {
           />
         ) : (
           <CompletedTasksView 
+            tasks={allTasks}
+            setTasks={setAllTasks}
             categories={categories}
-            completedPage={completedPage}
+            pagination={{ page: completedPage, totalPages: 1, total: allTasks.length }}
             onPageChange={handlePageChange}
           />
         )
@@ -141,7 +162,6 @@ const Dashboard = () => {
         setView={setView}
         onMenuClick={() => setIsMenuOpen(true)}
         isMenuOpen={isMenuOpen}
-        onManageCategories={() => setIsCategoryManagerOpen(true)}
       />
       
       {renderMainContent()}
@@ -151,6 +171,7 @@ const Dashboard = () => {
         onClose={() => setIsMenuOpen(false)}
         onSelectView={setCurrentView}
         currentView={currentView}
+        onManageCategories={() => setIsCategoryManagerOpen(true)}
       />
 
       <FocusCategoryManager

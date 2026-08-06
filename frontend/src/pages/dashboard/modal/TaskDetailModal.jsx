@@ -105,7 +105,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
 
     try {
       const response = await api.post('/tasks', {
-        workspace_id: task.workspace_id,
+        category_id: task.category_id,
         parent_task_id: task.id,
         title: subtaskTitle,
         priority: task.priority,

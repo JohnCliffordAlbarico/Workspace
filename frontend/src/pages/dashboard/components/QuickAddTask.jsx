@@ -34,6 +34,9 @@ const QuickAddTask = ({ categoryId, onTaskAdded }) => {
     >
       <div className="flex gap-3 items-center mb-3">
         <div className="flex-1 relative">
+          <label className="block text-xs font-semibold mb-1" style={{ color: '#c85050', fontFamily: "'Cinzel', serif" }}>
+            Task Title
+          </label>
           <input
             type="text"
             value={title}
@@ -86,6 +89,9 @@ const QuickAddTask = ({ categoryId, onTaskAdded }) => {
       
       {/* Minutes Input */}
       <div className="flex items-center gap-2">
+        <label className="text-xs font-semibold whitespace-nowrap" style={{ color: '#c85050', fontFamily: "'Cinzel', serif" }}>
+          Goal Time
+        </label>
         <Clock className="w-4 h-4" style={{ color: '#ffa502' }} />
         <input
           type="number"
@@ -110,9 +116,7 @@ const QuickAddTask = ({ categoryId, onTaskAdded }) => {
             e.target.style.background = 'rgba(0, 0, 0, 0.3)'
           }}
         />
-        <span className="text-xs" style={{ color: '#a89080' }}>
-          Optional - Set goal time to earn break time
-        </span>
+
       </div>
     </form>
   )

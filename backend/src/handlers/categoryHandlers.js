@@ -83,6 +83,19 @@ export const getCategoryStats = async (req, res) => {
 export const createCategory = async (req, res) => {
   const { name, color, daily_allocation_minutes } = req.body
 
+  // Check for duplicate name (active categories only)
+  const { data: existingByName } = await supabaseAdmin
+    .from('focus_categories')
+    .select('id')
+    .eq('user_id', req.user.id)
+    .eq('status', 'active')
+    .ilike('name', name.trim())
+    .limit(1)
+
+  if (existingByName?.length) {
+    return res.status(409).json({ error: 'A category with this name already exists' })
+  }
+
   // Get max position
   const { data: existing } = await supabaseAdmin
     .from('focus_categories')
@@ -98,7 +111,7 @@ export const createCategory = async (req, res) => {
     .from('focus_categories')
     .insert({
       user_id: req.user.id,
-      name,
+      name: name.trim(),
       color: color || '#6366f1',
       daily_allocation_minutes: daily_allocation_minutes || 60,
       position: newPosition,
@@ -115,8 +128,24 @@ export const createCategory = async (req, res) => {
 export const updateCategory = async (req, res) => {
   const { name, color, daily_allocation_minutes, position } = req.body
 
+  // Check for duplicate name if renaming (active categories only)
+  if (name !== undefined) {
+    const { data: existingByName } = await supabaseAdmin
+      .from('focus_categories')
+      .select('id')
+      .eq('user_id', req.user.id)
+      .eq('status', 'active')
+      .ilike('name', name.trim())
+      .neq('id', req.params.id)
+      .limit(1)
+
+    if (existingByName?.length) {
+      return res.status(409).json({ error: 'A category with this name already exists' })
+    }
+  }
+
   const updateData = {}
-  if (name !== undefined) updateData.name = name
+  if (name !== undefined) updateData.name = name.trim()
   if (color !== undefined) updateData.color = color
   if (daily_allocation_minutes !== undefined) updateData.daily_allocation_minutes = daily_allocation_minutes
   if (position !== undefined) updateData.position = position

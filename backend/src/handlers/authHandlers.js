@@ -20,14 +20,25 @@ export const login = async (req, res) => {
     }
 
     // Get user profile from users table
-    const { data: userProfile, error: profileError } = await supabaseAdmin
+    let { data: userProfile, error: profileError } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('id', data.user.id)
-      .single()
+      .maybeSingle()
 
-    if (profileError) {
-      console.error('Profile fetch error:', profileError)
+    // Auto-create profile if missing
+    if (!userProfile) {
+      const { data: newProfile } = await supabaseAdmin
+        .from('users')
+        .insert({
+          id: data.user.id,
+          email: data.user.email,
+          role: 'user'
+        })
+        .select()
+        .single()
+      
+      userProfile = newProfile
     }
 
     res.json({

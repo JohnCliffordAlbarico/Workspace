@@ -5,7 +5,7 @@ import CalendarStats from '../calendar/components/CalendarStats'
 import CalendarFilters from '../calendar/components/CalendarFilters'
 import DayDetailModal from '../calendar/components/DayDetailModal'
 
-const CalendarView = ({ tasks, setTasks, workspace }) => {
+const CalendarView = ({ tasks, setTasks }) => {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)

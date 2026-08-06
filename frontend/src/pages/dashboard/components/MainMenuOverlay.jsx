@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import SettingsModal from '../modal/SettingsModal'
 
-const MainMenuOverlay = ({ isOpen, onClose, onSelectView, currentView }) => {
+const MainMenuOverlay = ({ isOpen, onClose, onSelectView, currentView, onManageCategories }) => {
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   // Close on ESC key
   useEffect(() => {
@@ -39,6 +39,13 @@ const MainMenuOverlay = ({ isOpen, onClose, onSelectView, currentView }) => {
       disabled: false 
     },
     { 
+      id: 'categories', 
+      icon: '📂', 
+      label: 'Manage Categories', 
+      description: 'Organize your focus areas and time allocation',
+      disabled: false 
+    },
+    { 
       id: 'settings', 
       icon: '⚙️', 
       label: 'Settings', 
@@ -52,6 +59,9 @@ const MainMenuOverlay = ({ isOpen, onClose, onSelectView, currentView }) => {
     if (!item?.disabled) {
       if (viewId === 'settings') {
         setShowSettingsModal(true)
+      } else if (viewId === 'categories') {
+        onManageCategories()
+        onClose()
       } else {
         onSelectView(viewId)
         onClose()

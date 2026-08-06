@@ -3,27 +3,32 @@ import TaskColumn from './TaskColumn'
 import EmptyState from './EmptyState'
 import TaskDetailModal from '../modal/TaskDetailModal'
 
-const CompletedTasksView = ({ tasks, setTasks, pagination, onPageChange }) => {
+const CompletedTasksView = ({ tasks, setTasks, categories, pagination, onPageChange }) => {
   const [selectedTask, setSelectedTask] = useState(null)
 
-  // Filter main tasks only - subtasks are displayed nested under their parent
+  // Filter completed main tasks only
   const mainTasks = useMemo(() => 
-    tasks.filter(t => !t.parent_task_id), 
+    tasks.filter(t => !t.parent_task_id && t.status === 'completed'), 
     [tasks]
   )
 
-  const tasksByPriority = {
-    critical: mainTasks.filter(t => t.priority === 'critical'),
-    high: mainTasks.filter(t => t.priority === 'high'),
-    medium: mainTasks.filter(t => t.priority === 'medium'),
-    low: mainTasks.filter(t => t.priority === 'low')
-  }
+  // Group completed tasks by category
+  const tasksByCategory = useMemo(() => {
+    const grouped = {}
+    categories.forEach(cat => {
+      grouped[cat.id] = {
+        ...cat,
+        tasks: mainTasks.filter(t => t.category_id === cat.id)
+      }
+    })
+    return grouped
+  }, [categories, mainTasks])
 
   const handleTaskClick = (task) => {
     setSelectedTask(task)
   }
 
-  const totalCompleted = pagination?.total || tasks.length
+  const totalCompleted = mainTasks.length
 
   return (
     <main className="flex-1 p-8 overflow-auto z-10">
@@ -76,42 +81,18 @@ const CompletedTasksView = ({ tasks, setTasks, pagination, onPageChange }) => {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-6">
-            <TaskColumn
-              title="Critical"
-              color="#ff4757"
-              tasks={tasksByPriority.critical}
-              setTasks={setTasks}
-              onTaskClick={handleTaskClick}
-              allTasks={tasks}
-              showCompletedCount
-            />
-            <TaskColumn
-              title="High Priority"
-              color="#ffa502"
-              tasks={tasksByPriority.high}
-              setTasks={setTasks}
-              onTaskClick={handleTaskClick}
-              allTasks={tasks}
-              showCompletedCount
-            />
-            <TaskColumn
-              title="Medium"
-              color="#7bed9f"
-              tasks={tasksByPriority.medium}
-              setTasks={setTasks}
-              onTaskClick={handleTaskClick}
-              allTasks={tasks}
-              showCompletedCount
-            />
-            <TaskColumn
-              title="Low Priority"
-              color="#70a1ff"
-              tasks={tasksByPriority.low}
-              setTasks={setTasks}
-              onTaskClick={handleTaskClick}
-              allTasks={tasks}
-              showCompletedCount
-            />
+            {Object.values(tasksByCategory).filter(cat => cat.tasks.length > 0).map(category => (
+              <TaskColumn
+                key={category.id}
+                title={category.name}
+                color={category.color}
+                tasks={category.tasks}
+                setTasks={setTasks}
+                onTaskClick={handleTaskClick}
+                allTasks={tasks}
+                showCompletedCount
+              />
+            ))}
           </div>
 
           {/* Pagination Controls */}

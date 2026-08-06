@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import api from '../../../config/api'
 
-const QuickAddSubtask = ({ parentTaskId, workspaceId, onSubtaskAdded, onCancel, color }) => {
+const QuickAddSubtask = ({ parentTaskId, categoryId, onSubtaskAdded, onCancel, color }) => {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [isAdding, setIsAdding] = useState(false)
@@ -15,7 +15,7 @@ const QuickAddSubtask = ({ parentTaskId, workspaceId, onSubtaskAdded, onCancel, 
     setIsAdding(true)
     try {
       const taskData = {
-        workspace_id: workspaceId,
+        category_id: categoryId,
         parent_task_id: parentTaskId,
         title: title.trim(),
         description: description.trim() || null,

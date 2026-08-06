@@ -1,10 +1,10 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Menu, FolderOpen } from 'lucide-react'
+import { LogOut, Menu } from 'lucide-react'
 import ProfileModal from '../modal/ProfileModal'
 import AllocationProgress from '../../../components/AllocationProgress'
 
-const Sidebar = ({ categories, getCategoryProgress, totalAllocated, totalActual, totalPercentage, view, setView, onMenuClick, isMenuOpen, onManageCategories }) => {
+const Sidebar = ({ categories, getCategoryProgress, totalAllocated, totalActual, totalPercentage, view, setView, onMenuClick, isMenuOpen }) => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -26,7 +26,7 @@ const Sidebar = ({ categories, getCategoryProgress, totalAllocated, totalActual,
     <aside 
       className="w-80 flex-shrink-0 p-6 flex flex-col z-10 overflow-y-auto"
       style={{
-        background: 'linear-gradient(180deg, rgba(45, 15, 20, 0.95) 0%, rgba(26, 10, 10, 0.98) 100%)',
+        background: 'linear-gradient(180deg, rgba(45, 15, 20, 0.6) 0%, rgba(26, 10, 10, 0.7) 100%)',
         borderRight: '1px solid rgba(200, 80, 80, 0.2)'
       }}
     >
@@ -271,27 +271,6 @@ const Sidebar = ({ categories, getCategoryProgress, totalAllocated, totalActual,
         )}
       </div>
 
-      {/* Manage Categories Button */}
-      <button
-        onClick={onManageCategories}
-        className="w-full mb-6 px-4 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
-        style={{
-          background: 'rgba(45, 20, 25, 0.6)',
-          border: '1px solid rgba(200, 80, 80, 0.3)',
-          color: '#f5e6d3'
-        }}
-        onMouseOver={(e) => {
-          e.currentTarget.style.background = 'rgba(200, 80, 80, 0.2)'
-          e.currentTarget.style.transform = 'translateY(-2px)'
-        }}
-        onMouseOut={(e) => {
-          e.currentTarget.style.background = 'rgba(45, 20, 25, 0.6)'
-          e.currentTarget.style.transform = 'translateY(0)'
-        }}
-      >
-        <FolderOpen className="w-5 h-5" />
-        Manage Categories
-      </button>
     </aside>
   )
 }

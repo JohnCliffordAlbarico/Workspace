@@ -5,15 +5,42 @@ export const getProfile = async (req, res) => {
   try {
     const userId = req.user.id
     
+    // Try to get existing profile
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', userId)
+      .maybeSingle()
+    
+    // If profile exists, return it
+    if (data) {
+      return res.json(data)
+    }
+    
+    // Profile doesn't exist - create one from auth user metadata
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId)
+    
+    if (authError || !authUser?.user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+    
+    // Create the missing profile row
+    const { data: newProfile, error: insertError } = await supabase
+      .from('users')
+      .insert({
+        id: userId,
+        email: authUser.user.email,
+        role: 'user'
+      })
+      .select()
       .single()
     
-    if (error) throw error
+    if (insertError) {
+      console.error('Profile creation error:', insertError)
+      return res.status(500).json({ error: 'Failed to create user profile' })
+    }
     
-    res.json(data)
+    res.json(newProfile)
   } catch (error) {
     console.error('Get profile error:', error)
     res.status(500).json({ error: error.message })

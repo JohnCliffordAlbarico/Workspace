@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import axios from 'axios'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+import api from '../config/api'
 
 export const useBreakTime = (refresh = 0) => {
   const [breakTimes, setBreakTimes] = useState([])
@@ -12,15 +10,10 @@ export const useBreakTime = (refresh = 0) => {
   const fetchBreakTimes = useCallback(async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('token')
       
       const [breaksRes, availableRes] = await Promise.all([
-        axios.get(`${API_URL}/api/breaktime`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get(`${API_URL}/api/breaktime/available`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        api.get('/breaktime'),
+        api.get('/breaktime/available')
       ])
 
       setBreakTimes(breaksRes.data)
@@ -40,12 +33,7 @@ export const useBreakTime = (refresh = 0) => {
 
   const activateBreak = async (minutesToUse) => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await axios.post(
-        `${API_URL}/api/breaktime/activate`,
-        { minutes_to_use: minutesToUse },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      const response = await api.post('/breaktime/activate', { minutes_to_use: minutesToUse })
       
       await fetchBreakTimes()
       return response.data

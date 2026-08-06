@@ -397,7 +397,7 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
           {showQuickAddSubtask && (
             <QuickAddSubtask
               parentTaskId={task.id}
-              workspaceId={task.workspace_id}
+              categoryId={task.category_id}
               onSubtaskAdded={(newSubtask) => {
                 setTasks(prev => [...prev, newSubtask])
                 setShowQuickAddSubtask(false)
