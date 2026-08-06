@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../../../config/api'
 
-export const useTasks = (workspaceId, options = {}) => {
+export const useTasks = (categoryId, options = {}) => {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -10,14 +10,14 @@ export const useTasks = (workspaceId, options = {}) => {
   const { status, page, limit, refresh } = options
 
   useEffect(() => {
-    if (!workspaceId) {
+    if (!categoryId) {
       setLoading(false)
       return
     }
 
     const fetchTasks = async () => {
       try {
-        const params = { workspaceId }
+        const params = { categoryId }
         if (status) params.status = status
         if (page) params.page = page
         if (limit) params.limit = limit
@@ -41,7 +41,7 @@ export const useTasks = (workspaceId, options = {}) => {
     }
 
     fetchTasks()
-  }, [workspaceId, status, page, limit, refresh])
+  }, [categoryId, status, page, limit, refresh])
 
   return { tasks, setTasks, loading, error, pagination }
 }

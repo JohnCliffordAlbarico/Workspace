@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom'
 import { Flame, Minus } from 'lucide-react'
 import { useAddTask } from '../hooks/useAddTask'
 
-const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
-  const STORAGE_KEY = `task_draft_${workspaceId}`
+const TaskModal = ({ isOpen, onClose, categoryId, categories, setTasks, tasks }) => {
+  const STORAGE_KEY = `task_draft_${categoryId}`
   
   // Load from localStorage on mount
   const [isMinimized, setIsMinimized] = useState(() => {
@@ -112,7 +112,7 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
     }
 
     const taskData = {
-      workspace_id: workspaceId,
+      category_id: categoryId,
       title: formData.title,
       description: formData.description || null,
       priority: formData.priority,
@@ -162,6 +162,8 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
       document.body
     )
   }
+
+  const currentCategory = categories?.find(c => c.id === categoryId)
 
   return createPortal(
     <div 
@@ -215,6 +217,25 @@ const TaskModal = ({ isOpen, onClose, workspaceId, setTasks, tasks }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Category Display */}
+          {currentCategory && (
+            <div 
+              className="px-4 py-3 rounded-xl flex items-center gap-3"
+              style={{
+                background: 'rgba(0,0,0,0.3)',
+                border: `1px solid ${currentCategory.color}40`
+              }}
+            >
+              <div 
+                className="w-4 h-4 rounded-full"
+                style={{ background: currentCategory.color }}
+              />
+              <span style={{ color: '#f5e6d3' }}>
+                Adding to: <strong>{currentCategory.name}</strong>
+              </span>
+            </div>
+          )}
+
           {/* Title */}
           <div>
             <label 

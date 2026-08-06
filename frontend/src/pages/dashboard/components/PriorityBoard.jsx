@@ -8,15 +8,18 @@ import InProgressBanner from './InProgressBanner'
 import QuickAddTask from './QuickAddTask'
 import BreakTimeWidget from './BreakTimeWidget'
 import DigitalClock from './DigitalClock'
-import { usePriorityDrag } from '../hooks/usePriorityDrag'
+import AllocationProgress from '../../../components/AllocationProgress'
+import { useTasks } from '../hooks/useTasks'
 import { useState, useMemo } from 'react'
 import api from '../../../config/api'
 
-const PriorityBoard = ({ tasks, setTasks, workspace }) => {
+const PriorityBoard = ({ categories, selectedCategoryId, setSelectedCategoryId, getCategoryProgress, refreshTrigger, setRefreshTrigger }) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState(null)
   const [activeTask, setActiveTask] = useState(null)
-  const { handleDragEnd, handleDragStart, handleDragCancel, isDragging, error } = usePriorityDrag(setTasks)
+
+  // Fetch all tasks for the selected category
+  const { tasks: allTasks, setTasks: setAllTasks, loading: tasksLoading } = useTasks(selectedCategoryId, { refresh: refreshTrigger })
 
   // Configure sensors for better accessibility and touch support
   const sensors = useSensors(
@@ -36,62 +39,46 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
     })
   )
 
-  // Only show main tasks (no parent_task_id) in the priority columns
-  // Subtasks are displayed nested under their parent in TaskColumn
+  // Only show main tasks (no parent_task_id)
   const mainTasks = useMemo(() => 
-    tasks.filter(t => !t.parent_task_id), 
-    [tasks]
+    allTasks.filter(t => !t.parent_task_id), 
+    [allTasks]
   )
 
-  const tasksByPriority = {
-    critical: mainTasks.filter(t => t.priority === 'critical' && t.status !== 'in_progress' && t.status !== 'paused'),
-    high: mainTasks.filter(t => t.priority === 'high' && t.status !== 'in_progress' && t.status !== 'paused'),
-    medium: mainTasks.filter(t => t.priority === 'medium' && t.status !== 'in_progress' && t.status !== 'paused'),
-    low: mainTasks.filter(t => t.priority === 'low' && t.status !== 'in_progress' && t.status !== 'paused')
-  }
-
   const inProgressTask = useMemo(() => {
-    const inProgress = tasks.filter(t => t.status === 'in_progress' || t.status === 'paused')
+    const inProgress = allTasks.filter(t => t.status === 'in_progress' || t.status === 'paused')
     if (inProgress.length === 0) return null
-    // Prefer subtask over parent for banner display
     const subtask = inProgress.find(t => t.parent_task_id)
     return subtask || inProgress[0]
-  }, [tasks])
+  }, [allTasks])
 
   const handleTaskClick = (task) => {
     setSelectedTask(task)
   }
 
   const onDragStart = (event) => {
-    const task = tasks.find(t => t.id === event.active.id)
-    
-    // Prevent dragging in_progress tasks
-    if (task?.status === 'in_progress') {
-      return
-    }
-    
+    const task = allTasks.find(t => t.id === event.active.id)
+    if (task?.status === 'in_progress') return
     setActiveTask(task)
-    handleDragStart()
   }
 
   const onDragEnd = (event) => {
     setActiveTask(null)
-    handleDragEnd(event)
+    // Handle drag end logic if needed
   }
 
   const onDragCancel = () => {
     setActiveTask(null)
-    handleDragCancel()
   }
 
   const handleQuickAdd = async (title, goalMinutes = null) => {
     try {
       const taskData = {
-        workspace_id: workspace.id,
+        category_id: selectedCategoryId,
         title,
         priority: 'medium',
         status: 'pending',
-        position: tasks.length
+        position: allTasks.length
       }
       
       if (goalMinutes) {
@@ -99,13 +86,15 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
       }
       
       const response = await api.post('/tasks', taskData)
-      
-      setTasks(prev => [...prev, response.data])
+      setAllTasks(prev => [...prev, response.data])
     } catch (error) {
       console.error('Failed to create task:', error)
       throw error
     }
   }
+
+  const currentCategory = categories.find(c => c.id === selectedCategoryId)
+  const categoryProgress = getCategoryProgress(selectedCategoryId)
 
   return (
     <DndContext 
@@ -116,7 +105,7 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
     >
       <main className="flex-1 p-8 overflow-auto z-10">
         {/* Header */}
-        <header className="mb-8 flex justify-between items-center">
+        <header className="mb-6 flex justify-between items-center">
           <div>
             <h1 
               className="text-4xl font-bold mb-2"
@@ -126,10 +115,10 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
                 textShadow: '0 2px 10px rgba(200, 80, 80, 0.3)'
               }}
             >
-              🔥 Yuuko's Task Board
+              ⚡ Focus Board
             </h1>
             <p style={{ color: '#a89080' }}>
-              Managing productivity with elegance
+              Manage your productivity by focus area
             </p>
           </div>
           
@@ -157,46 +146,76 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
           </div>
         </header>
 
-        {/* Error notification */}
-        {error && (
-          <div 
-            className="mb-4 p-4 rounded-lg"
-            style={{
-              background: '#ff475740',
-              border: '1px solid #ff4757',
-              color: '#fff5f5'
-            }}
-          >
-            {error}
-          </div>
-        )}
-
         {/* In Progress Banner */}
         {inProgressTask && (
           <InProgressBanner 
             task={inProgressTask} 
-            setTasks={setTasks}
+            setTasks={setAllTasks}
             onTaskClick={handleTaskClick}
-            allTasks={tasks}
+            allTasks={allTasks}
           />
         )}
 
         {/* Break Time Widget */}
         <BreakTimeWidget />
 
+        {/* Category Tabs */}
+        <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
+          {categories.map(category => {
+            const progress = getCategoryProgress(category.id)
+            return (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategoryId(category.id)}
+                className="flex-shrink-0 px-4 py-3 rounded-xl transition-all duration-300"
+                style={{
+                  background: selectedCategoryId === category.id 
+                    ? 'linear-gradient(135deg, rgba(45, 20, 25, 0.9) 0%, rgba(26, 10, 10, 0.95) 100%)'
+                    : 'rgba(45, 20, 25, 0.4)',
+                  border: selectedCategoryId === category.id 
+                    ? `2px solid ${category.color}`
+                    : '2px solid transparent',
+                  minWidth: '150px'
+                }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div 
+                    className="w-3 h-3 rounded-full"
+                    style={{ background: category.color }}
+                  />
+                  <span 
+                    className="font-semibold text-sm"
+                    style={{ color: '#f5e6d3' }}
+                  >
+                    {category.name}
+                  </span>
+                </div>
+                <AllocationProgress 
+                  actualMinutes={progress.actual_minutes}
+                  dailyAllocation={progress.daily_allocation}
+                  compact
+                />
+              </button>
+            )
+          })}
+        </div>
+
         {/* Quick Add Task */}
-        <QuickAddTask 
-          workspaceId={workspace.id}
-          onTaskAdded={handleQuickAdd}
-        />
+        {selectedCategoryId && (
+          <QuickAddTask 
+            categoryId={selectedCategoryId}
+            onTaskAdded={handleQuickAdd}
+          />
+        )}
 
         {/* Task Modal */}
         <TaskModal 
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          workspaceId={workspace.id}
-          setTasks={setTasks}
-          tasks={tasks}
+          categoryId={selectedCategoryId}
+          categories={categories}
+          setTasks={setAllTasks}
+          tasks={allTasks}
         />
 
         {/* Task Detail Modal */}
@@ -204,54 +223,51 @@ const PriorityBoard = ({ tasks, setTasks, workspace }) => {
           isOpen={!!selectedTask}
           onClose={() => setSelectedTask(null)}
           task={selectedTask}
-          setTasks={setTasks}
-          allTasks={tasks}
+          setTasks={setAllTasks}
+          allTasks={allTasks}
         />
 
-        {/* Task Columns - 2x2 Grid */}
-        {tasks.length === 0 ? (
+        {/* Task Content */}
+        {tasksLoading ? (
+          <div className="text-center py-12" style={{ color: '#a89080' }}>
+            Loading tasks...
+          </div>
+        ) : allTasks.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-3 gap-6">
+            {/* Pending Column */}
             <TaskColumn
-              title="Critical"
-              color="#ff4757"
-              tasks={tasksByPriority.critical}
-              setTasks={setTasks}
+              title="Pending"
+              color="#6b7280"
+              tasks={mainTasks.filter(t => t.status === 'pending')}
+              setTasks={setAllTasks}
               onTaskClick={handleTaskClick}
-              allTasks={tasks}
-              priority="critical"
-              isDragging={isDragging}
+              allTasks={allTasks}
+              status="pending"
             />
+            
+            {/* In Progress Column */}
             <TaskColumn
-              title="High Priority"
-              color="#ffa502"
-              tasks={tasksByPriority.high}
-              setTasks={setTasks}
+              title="In Progress"
+              color="#eab308"
+              tasks={mainTasks.filter(t => t.status === 'in_progress' || t.status === 'paused')}
+              setTasks={setAllTasks}
               onTaskClick={handleTaskClick}
-              allTasks={tasks}
-              priority="high"
-              isDragging={isDragging}
+              allTasks={allTasks}
+              status="in_progress"
             />
+            
+            {/* Completed Column */}
             <TaskColumn
-              title="Medium"
-              color="#7bed9f"
-              tasks={tasksByPriority.medium}
-              setTasks={setTasks}
+              title="Completed"
+              color="#22c55e"
+              tasks={mainTasks.filter(t => t.status === 'completed')}
+              setTasks={setAllTasks}
               onTaskClick={handleTaskClick}
-              allTasks={tasks}
-              priority="medium"
-              isDragging={isDragging}
-            />
-            <TaskColumn
-              title="Low Priority"
-              color="#70a1ff"
-              tasks={tasksByPriority.low}
-              setTasks={setTasks}
-              onTaskClick={handleTaskClick}
-              allTasks={tasks}
-              priority="low"
-              isDragging={isDragging}
+              allTasks={allTasks}
+              status="completed"
+              showCompletedCount
             />
           </div>
         )}

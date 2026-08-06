@@ -2,9 +2,9 @@ import { useDroppable } from '@dnd-kit/core'
 import { useMemo } from 'react'
 import TaskItem from './TaskItem'
 
-const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick, allTasks, priority, isDragging, showCompletedCount = false }) => {
+const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick, allTasks, status, isDragging, showCompletedCount = false }) => {
   const { setNodeRef, isOver } = useDroppable({
-    id: priority
+    id: status
   })
 
   const displayCount = showCompletedCount ? tasks.length : tasks.filter(t => t.status !== 'completed').length

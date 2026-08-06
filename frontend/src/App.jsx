@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useState, useEffect } from 'react'
 import Login from './pages/login'
 import Signup from './pages/signup'
-import Workspaces from './pages/workspaces'
 import Dashboard from './pages/dashboard'
 import ProtectedRoute from './components/ProtectedRoute'
 import SessionExpiredModal from './components/SessionExpiredModal'
@@ -31,14 +30,6 @@ function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route 
-            path="/workspaces" 
-            element={
-              <ProtectedRoute>
-                <Workspaces />
-              </ProtectedRoute>
-            } 
-          />
           <Route 
             path="/dashboard" 
             element={

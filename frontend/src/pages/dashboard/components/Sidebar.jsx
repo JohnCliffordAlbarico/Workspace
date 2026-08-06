@@ -1,9 +1,10 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Menu, ArrowLeftRight } from 'lucide-react'
+import { LogOut, Menu, FolderOpen } from 'lucide-react'
 import ProfileModal from '../modal/ProfileModal'
-import BreakTimeWidget from './BreakTimeWidget'
-const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen, workspace }) => {
+import AllocationProgress from '../../../components/AllocationProgress'
+
+const Sidebar = ({ categories, getCategoryProgress, totalAllocated, totalActual, totalPercentage, view, setView, onMenuClick, isMenuOpen, onManageCategories }) => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -20,15 +21,6 @@ const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen, workspace }) =
     localStorage.removeItem('user')
     navigate('/')
   }
-
-  const stats = useMemo(() => {
-    const completed = tasks.filter(t => t.status === 'completed').length
-    const pending = tasks.filter(t => t.status !== 'completed').length
-    const total = tasks.length
-    const rate = total > 0 ? Math.round((completed / total) * 100) : 0
-
-    return { completed, pending, rate }
-  }, [tasks])
 
   return (
     <aside 
@@ -85,55 +77,6 @@ const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen, workspace }) =
         </div>
       </button>
 
-      {/* Workspace Card */}
-      <div
-        className="rounded-2xl p-4 mb-6 cursor-pointer transition-all duration-300"
-        style={{
-          background: 'linear-gradient(145deg, rgba(45, 15, 20, 0.8) 0%, rgba(26, 10, 10, 0.9) 100%)',
-          border: '1px solid rgba(200, 80, 80, 0.3)',
-        }}
-        onClick={() => navigate('/workspaces')}
-        onMouseOver={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px)'
-          e.currentTarget.style.boxShadow = '0 8px 25px rgba(200, 80, 80, 0.3)'
-        }}
-        onMouseOut={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)'
-          e.currentTarget.style.boxShadow = ''
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
-                boxShadow: '0 4px 12px rgba(200, 80, 80, 0.4)'
-              }}
-            >
-              <span
-                className="text-sm font-bold"
-                style={{ color: '#f5e6d3', fontFamily: "'Cinzel', serif" }}
-              >
-                {workspace?.name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'WS'}
-              </span>
-            </div>
-            <div>
-              <p
-                className="text-sm font-bold"
-                style={{ color: '#f5e6d3', fontFamily: "'Cinzel', serif" }}
-              >
-                {workspace?.name || 'Workspace'}
-              </p>
-              <p className="text-xs" style={{ color: '#a89080' }}>
-                Click to switch
-              </p>
-            </div>
-          </div>
-          <ArrowLeftRight className="w-4 h-4" style={{ color: '#c85050' }} />
-        </div>
-      </div>
-
       {/* Profile Card */}
       <div 
         className="rounded-2xl p-6 mb-6 cursor-pointer transition-all duration-300"
@@ -181,7 +124,7 @@ const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen, workspace }) =
               {user?.display_name || user?.email?.split('@')[0] || 'User'}
             </h2>
             <p className="text-sm" style={{ color: '#c85050' }}>
-              {user?.role === 'admin' ? 'Administrator' : 'Workspace Manager'}
+              {user?.role === 'admin' ? 'Administrator' : 'Focus Manager'}
             </p>
           </div>
           <button
@@ -197,7 +140,7 @@ const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen, workspace }) =
         </div>
         <div className="pt-4" style={{ borderTop: '1px solid rgba(200, 80, 80, 0.2)' }}>
           <p className="text-sm italic text-center" style={{ color: '#d4a574' }}>
-            "Organize your tasks, elevate your productivity"
+            "Focus on what matters, track your progress"
           </p>
         </div>
       </div>
@@ -207,7 +150,6 @@ const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen, workspace }) =
         isOpen={showProfileModal}
         onClose={() => {
           setShowProfileModal(false)
-          // Refresh user data from localStorage
           const userData = localStorage.getItem('user')
           if (userData) {
             setUser(JSON.parse(userData))
@@ -237,7 +179,7 @@ const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen, workspace }) =
                 : '1px solid rgba(200, 80, 80, 0.2)'
             }}
           >
-            🔥 Active
+            ⚡ Active
           </button>
           <button
             onClick={() => setView('completed')}
@@ -257,7 +199,7 @@ const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen, workspace }) =
         </div>
       </div>
 
-      {/* Stats Section */}
+      {/* Today's Progress */}
       <div 
         className="rounded-xl p-5 mb-6"
         style={{
@@ -269,77 +211,87 @@ const Sidebar = ({ tasks, view, setView, onMenuClick, isMenuOpen, workspace }) =
           className="text-sm uppercase tracking-widest mb-4"
           style={{ fontFamily: "'Cinzel', serif", color: '#c85050' }}
         >
-          Statistics
+          Today's Progress
         </h3>
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <span style={{ color: '#a89080' }}>Tasks Completed</span>
-            <span className="text-xl font-bold" style={{ color: '#f5e6d3' }}>
-              {stats.completed}
-            </span>
+        
+        {categories.length === 0 ? (
+          <p className="text-sm" style={{ color: '#a89080' }}>
+            No categories yet
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {categories.map(category => {
+              const progress = getCategoryProgress(category.id)
+              return (
+                <div key={category.id}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div 
+                      className="w-3 h-3 rounded-full"
+                      style={{ background: category.color }}
+                    />
+                    <span className="text-sm font-semibold" style={{ color: '#f5e6d3' }}>
+                      {category.name}
+                    </span>
+                  </div>
+                  <AllocationProgress 
+                    actualMinutes={progress.actual_minutes}
+                    dailyAllocation={progress.daily_allocation}
+                  />
+                </div>
+              )
+            })}
+            
+            {/* Total Progress */}
+            <div 
+              className="pt-4 mt-4"
+              style={{ borderTop: '1px solid rgba(200, 80, 80, 0.2)' }}
+            >
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-semibold" style={{ color: '#f5e6d3' }}>
+                  Total
+                </span>
+                <span className="text-sm" style={{ color: '#a89080' }}>
+                  {totalActual}/{totalAllocated} min
+                </span>
+              </div>
+              <div 
+                className="h-2 rounded-full overflow-hidden"
+                style={{ background: 'rgba(0,0,0,0.4)' }}
+              >
+                <div 
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${totalPercentage}%`,
+                    background: 'linear-gradient(90deg, #8b2942 0%, #c85050 50%, #d4a574 100%)'
+                  }}
+                />
+              </div>
+            </div>
           </div>
-          <div className="flex justify-between items-center">
-            <span style={{ color: '#a89080' }}>Pending Tasks</span>
-            <span className="text-xl font-bold" style={{ color: '#c85050' }}>
-              {stats.pending}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span style={{ color: '#a89080' }}>Completion Rate</span>
-            <span className="text-xl font-bold" style={{ color: '#d4a574' }}>
-              {stats.rate}%
-            </span>
-          </div>
-        </div>
-
-        {/* Progress Bar */}
-        <div 
-          className="mt-4 h-2 rounded-full overflow-hidden"
-          style={{ background: 'rgba(0,0,0,0.4)' }}
-        >
-          <div 
-            className="h-full rounded-full transition-all duration-500"
-            style={{
-              width: `${stats.rate}%`,
-              background: 'linear-gradient(90deg, #8b2942 0%, #c85050 50%, #d4a574 100%)'
-            }}
-          />
-        </div>
+        )}
       </div>
 
-      {/* Priority Legend */}
-      <div 
-        className="rounded-xl p-5 mt-auto"
+      {/* Manage Categories Button */}
+      <button
+        onClick={onManageCategories}
+        className="w-full mb-6 px-4 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
         style={{
           background: 'rgba(45, 20, 25, 0.6)',
-          border: '1px solid rgba(200, 80, 80, 0.15)'
+          border: '1px solid rgba(200, 80, 80, 0.3)',
+          color: '#f5e6d3'
+        }}
+        onMouseOver={(e) => {
+          e.currentTarget.style.background = 'rgba(200, 80, 80, 0.2)'
+          e.currentTarget.style.transform = 'translateY(-2px)'
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.background = 'rgba(45, 20, 25, 0.6)'
+          e.currentTarget.style.transform = 'translateY(0)'
         }}
       >
-        <h3 
-          className="text-sm uppercase tracking-widest mb-3"
-          style={{ fontFamily: "'Cinzel', serif", color: '#c85050' }}
-        >
-          Priority Levels
-        </h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full" style={{ background: '#ff4757' }} />
-            <span style={{ color: '#a89080' }}>Critical - Urgent matters</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full" style={{ background: '#ffa502' }} />
-            <span style={{ color: '#a89080' }}>High - Important tasks</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full" style={{ background: '#7bed9f' }} />
-            <span style={{ color: '#a89080' }}>Medium - Regular duties</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full" style={{ background: '#70a1ff' }} />
-            <span style={{ color: '#a89080' }}>Low - When available</span>
-          </div>
-        </div>
-      </div>
+        <FolderOpen className="w-5 h-5" />
+        Manage Categories
+      </button>
     </aside>
   )
 }

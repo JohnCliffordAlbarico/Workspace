@@ -4,7 +4,7 @@ import dotenv from 'dotenv'
 import compression from 'compression'
 import authRoutes from './src/routes/authRoutes.js'
 import userRoutes from './src/routes/userRoutes.js'
-import workspaceRoutes from './src/routes/workspaceRoutes.js'
+import categoryRoutes from './src/routes/categoryRoutes.js'
 import taskRoutes from './src/routes/taskRoutes.js'
 import musicRoutes from './src/routes/musicRoutes.js'
 import breakTimeRoutes from './src/routes/breakTimeRoutes.js'
@@ -73,7 +73,7 @@ app.get('/health', (req, res) => {
 // Mount routes
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
-app.use('/api/workspaces', workspaceRoutes)
+app.use('/api/categories', categoryRoutes)
 app.use('/api/tasks', taskRoutes)
 app.use('/api/music', musicRoutes)
 app.use('/api/breaktime', breakTimeRoutes)

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Plus, Clock } from 'lucide-react'
 
-const QuickAddTask = ({ workspaceId, onTaskAdded }) => {
+const QuickAddTask = ({ categoryId, onTaskAdded }) => {
   const [title, setTitle] = useState('')
   const [minutes, setMinutes] = useState('')
   const [isAdding, setIsAdding] = useState(false)

@@ -62,17 +62,29 @@ export const validate = (schema) => {
 }
 
 // Common validation schemas
-export const workspaceValidation = {
+export const categoryValidation = {
   name: {
     required: true,
     type: 'string',
     minLength: 1,
-    maxLength: 255
+    maxLength: 100
+  },
+  color: {
+    required: false,
+    type: 'string',
+    custom: (value) => /^#[0-9A-Fa-f]{6}$/.test(value),
+    customMessage: 'color must be a valid hex color (e.g., #6366f1)'
+  },
+  daily_allocation_minutes: {
+    required: false,
+    type: 'number',
+    min: 5,
+    max: 480
   }
 }
 
 export const taskValidation = {
-  workspace_id: {
+  category_id: {
     required: true,
     type: 'string'
   },

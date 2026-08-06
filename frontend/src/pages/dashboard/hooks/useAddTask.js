@@ -9,9 +9,10 @@ export const useAddTask = (setTasks) => {
     try {
       const response = await api.post('/tasks', taskData)
       setTasks(prev => [...prev, response.data])
+      return response.data
     } catch (error) {
       console.error('Failed to add task:', error)
-      alert('Failed to add task. Please try again.')
+      throw error
     } finally {
       setLoading(false)
     }

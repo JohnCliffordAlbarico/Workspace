@@ -15,7 +15,7 @@ import {
 
 const router = express.Router()
 
-// Get all tasks (optionally filtered by workspace)
+// Get all tasks (optionally filtered by category)
 router.get('/', authenticate, asyncHandler(getTasks))
 
 // Get task by ID

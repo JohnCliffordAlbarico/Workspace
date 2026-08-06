@@ -6,47 +6,29 @@ import AnalyticsView from './components/AnalyticsView'
 import MainMenuOverlay from './components/MainMenuOverlay'
 import FloatingButterflies from './components/FloatingButterflies'
 import DiaryModal from '../../components/DiaryModal'
-import { useWorkspace } from '../../hooks/useWorkspace'
-import { useTasks } from './hooks/useTasks'
+import FocusCategoryManager from '../../components/FocusCategoryManager'
+import { useFocusCategories } from '../../hooks/useFocusCategories'
+import { useAllocationProgress } from '../../hooks/useAllocationProgress'
 import { useState, useMemo, useEffect } from 'react'
 
 const Dashboard = () => {
-  const { workspace, loading: workspaceLoading } = useWorkspace()
-  const [view, setView] = useState('active') // 'active' or 'completed'
-  const [currentView, setCurrentView] = useState('dashboard') // 'dashboard', 'calendar', etc.
+  const { categories, loading: categoriesLoading } = useFocusCategories()
+  const { getCategoryProgress, totalAllocated, totalActual, totalPercentage } = useAllocationProgress(categories)
+  
+  const [view, setView] = useState('active')
+  const [currentView, setCurrentView] = useState('dashboard')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [completedPage, setCompletedPage] = useState(1)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false)
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null)
 
-  // Fetch all tasks for sidebar stats and calendar (no pagination)
-  const { tasks: allTasks, setTasks: setAllTasks, loading: allTasksLoading } = useTasks(workspace?.id, { refresh: refreshTrigger })
-  
-  // Fetch paginated completed tasks only when in completed view
-  const { 
-    tasks: paginatedCompletedTasks, 
-    setTasks: setPaginatedCompletedTasks, 
-    loading: paginatedLoading,
-    pagination: completedPagination 
-  } = useTasks(workspace?.id, { 
-    status: 'completed', 
-    page: completedPage, 
-    limit: 20,
-    refresh: refreshTrigger
-  })
-
-  // Separate active and completed from all tasks
-  // Keep completed subtasks in activeTasks so parent counters work
-  const activeTasks = useMemo(() => 
-    allTasks.filter(t => t.status !== 'completed' || t.parent_task_id), 
-    [allTasks]
-  )
-  
-  const allCompletedTasks = useMemo(() => 
-    allTasks.filter(t => t.status === 'completed'), 
-    [allTasks]
-  )
-
-  const tasksLoading = view === 'completed' ? paginatedLoading : allTasksLoading
+  // Set first category as selected when categories load
+  useEffect(() => {
+    if (categories.length > 0 && !selectedCategoryId) {
+      setSelectedCategoryId(categories[0].id)
+    }
+  }, [categories, selectedCategoryId])
 
   // Close menu on ESC key
   useEffect(() => {
@@ -64,41 +46,7 @@ const Dashboard = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // Update handler that syncs both allTasks and paginated tasks
-  const handleTaskUpdate = (updatedTasks) => {
-    if (Array.isArray(updatedTasks)) {
-      // Direct array update
-      if (view === 'completed') {
-        setPaginatedCompletedTasks(updatedTasks)
-      }
-      setAllTasks(updatedTasks)
-    } else if (typeof updatedTasks === 'function') {
-      // Function update (prev => ...)
-      setAllTasks(prevAll => {
-        const newTasks = updatedTasks(prevAll)
-        
-        // Check if any task changed status
-        const statusChanged = newTasks.some((newTask, idx) => {
-          const oldTask = prevAll[idx]
-          return oldTask && newTask.status !== oldTask.status
-        })
-        
-        // If status changed, trigger a refresh of both lists
-        if (statusChanged) {
-          setRefreshTrigger(prev => prev + 1)
-        }
-        
-        return newTasks
-      })
-      
-      // Apply the same updater to paginated completed tasks
-      if (view === 'completed') {
-        setPaginatedCompletedTasks(prev => updatedTasks(prev))
-      }
-    }
-  }
-
-  if (workspaceLoading || tasksLoading) {
+  if (categoriesLoading) {
     return (
       <div 
         className="h-screen w-full flex items-center justify-center"
@@ -107,12 +55,12 @@ const Dashboard = () => {
           fontFamily: "'Crimson Text', serif"
         }}
       >
-        <div style={{ color: '#f5e6d3', fontSize: '1.5rem' }}>Loading...</div>
+        <div style={{ color: '#f5e6d3', fontSize: '1.5rem' }}>Loading categories...</div>
       </div>
     )
   }
 
-  if (!workspace) {
+  if (categories.length === 0) {
     return (
       <div 
         className="h-screen w-full flex items-center justify-center"
@@ -121,7 +69,25 @@ const Dashboard = () => {
           fontFamily: "'Crimson Text', serif"
         }}
       >
-        <div style={{ color: '#f5e6d3', fontSize: '1.5rem' }}>Failed to load workspace</div>
+        <div className="text-center">
+          <div style={{ color: '#f5e6d3', fontSize: '1.5rem', marginBottom: '1rem' }}>
+            No categories yet
+          </div>
+          <button
+            onClick={() => setIsCategoryManagerOpen(true)}
+            className="px-6 py-3 rounded-xl text-base font-semibold transition-all duration-300"
+            style={{
+              background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
+              color: '#f5e6d3'
+            }}
+          >
+            Create Your First Category
+          </button>
+        </div>
+        <FocusCategoryManager
+          isOpen={isCategoryManagerOpen}
+          onClose={() => setIsCategoryManagerOpen(false)}
+        />
       </div>
     )
   }
@@ -130,18 +96,24 @@ const Dashboard = () => {
   const renderMainContent = () => {
     switch (currentView) {
       case 'calendar':
-        return <CalendarView tasks={allTasks} setTasks={setAllTasks} workspace={workspace} />
+        return <CalendarView />
       case 'analytics':
-        return <AnalyticsView tasks={allTasks} />
+        return <AnalyticsView />
       case 'dashboard':
       default:
         return view === 'active' ? (
-          <PriorityBoard tasks={activeTasks} setTasks={setAllTasks} workspace={workspace} />
+          <PriorityBoard 
+            categories={categories}
+            selectedCategoryId={selectedCategoryId}
+            setSelectedCategoryId={setSelectedCategoryId}
+            getCategoryProgress={getCategoryProgress}
+            refreshTrigger={refreshTrigger}
+            setRefreshTrigger={setRefreshTrigger}
+          />
         ) : (
           <CompletedTasksView 
-            tasks={paginatedCompletedTasks} 
-            setTasks={handleTaskUpdate}
-            pagination={completedPagination}
+            categories={categories}
+            completedPage={completedPage}
             onPageChange={handlePageChange}
           />
         )
@@ -160,17 +132,16 @@ const Dashboard = () => {
       <FloatingButterflies />
       
       <Sidebar 
-        tasks={allTasks} 
+        categories={categories}
+        getCategoryProgress={getCategoryProgress}
+        totalAllocated={totalAllocated}
+        totalActual={totalActual}
+        totalPercentage={totalPercentage}
         view={view} 
-        setView={(newView) => {
-          setView(newView)
-          if (newView === 'completed') {
-            setCompletedPage(1) // Reset to first page when switching to completed view
-          }
-        }}
+        setView={setView}
         onMenuClick={() => setIsMenuOpen(true)}
         isMenuOpen={isMenuOpen}
-        workspace={workspace}
+        onManageCategories={() => setIsCategoryManagerOpen(true)}
       />
       
       {renderMainContent()}
@@ -180,6 +151,11 @@ const Dashboard = () => {
         onClose={() => setIsMenuOpen(false)}
         onSelectView={setCurrentView}
         currentView={currentView}
+      />
+
+      <FocusCategoryManager
+        isOpen={isCategoryManagerOpen}
+        onClose={() => setIsCategoryManagerOpen(false)}
       />
 
       <DiaryModal />

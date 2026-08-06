@@ -34,18 +34,18 @@ const calculateAndCreateBreakTime = async (userId, taskId, actualTimeMinutes, pr
   }
 }
 
-// Get all tasks for a workspace
+// Get all tasks for a user (optionally filtered by category)
 export const getTasks = async (req, res) => {
   try {
-    const { workspaceId, status, page, limit } = req.query
+    const { categoryId, status, page, limit } = req.query
 
     let query = supabaseAdmin
       .from('tasks')
       .select('*', { count: 'exact' })
       .eq('user_id', req.user.id)
 
-    if (workspaceId) {
-      query = query.eq('workspace_id', workspaceId)
+    if (categoryId) {
+      query = query.eq('category_id', categoryId)
     }
 
     if (status) {
@@ -133,7 +133,7 @@ export const getSubtasks = async (req, res) => {
 export const createTask = async (req, res) => {
   try {
     const {
-      workspace_id,
+      category_id,
       parent_task_id,
       title,
       description,
@@ -144,14 +144,14 @@ export const createTask = async (req, res) => {
       due_date
     } = req.body
 
-    if (!workspace_id || !title) {
-      return res.status(400).json({ error: 'workspace_id and title are required' })
+    if (!category_id || !title) {
+      return res.status(400).json({ error: 'category_id and title are required' })
     }
 
     const { data, error } = await supabaseAdmin
       .from('tasks')
       .insert({
-        workspace_id,
+        category_id,
         user_id: req.user.id,
         parent_task_id,
         title,
