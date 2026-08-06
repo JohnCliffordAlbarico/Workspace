@@ -14,40 +14,49 @@ import api from '../../config/api'
 
 const Dashboard = () => {
   const { categories, loading: categoriesLoading } = useFocusCategories()
-  const { getCategoryProgress, totalAllocated, totalActual, totalPercentage } = useAllocationProgress(categories)
+  const { getCategoryProgress, totalAllocated, totalActual, totalPercentage, refreshStats } = useAllocationProgress(categories)
   
   const [view, setView] = useState('active')
   const [currentView, setCurrentView] = useState('dashboard')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [completedPage, setCompletedPage] = useState(1)
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [refreshTrigger] = useState(0)
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false)
-  const [selectedCategoryId, setSelectedCategoryId] = useState(null)
   const [allTasks, setAllTasks] = useState([])
-  const [tasksLoading, setTasksLoading] = useState(true)
+  const [allCategories, setAllCategories] = useState([])
 
   // Fetch all tasks for calendar/analytics/completed view
   useEffect(() => {
     const fetchAllTasks = async () => {
       try {
-        setTasksLoading(true)
         const response = await api.get('/tasks')
         setAllTasks(response.data)
       } catch (err) {
         console.error('Failed to fetch tasks:', err)
-      } finally {
-        setTasksLoading(false)
       }
     }
     fetchAllTasks()
   }, [refreshTrigger, view])
 
-  // Set first category as selected when categories load
+  // Fetch all categories (active + completed) for completed view
   useEffect(() => {
-    if (categories.length > 0 && !selectedCategoryId) {
-      setSelectedCategoryId(categories[0].id)
+    if (view !== 'completed') {
+      setAllCategories([])
+      return
     }
-  }, [categories, selectedCategoryId])
+    const fetchAllCategories = async () => {
+      try {
+        const [activeRes, completedRes] = await Promise.all([
+          api.get('/categories'),
+          api.get('/categories/completed')
+        ])
+        setAllCategories([...activeRes.data, ...completedRes.data])
+      } catch (err) {
+        console.error('Failed to fetch categories:', err)
+      }
+    }
+    fetchAllCategories()
+  }, [view])
 
   // Close menu on ESC key
   useEffect(() => {
@@ -123,17 +132,18 @@ const Dashboard = () => {
         return view === 'active' ? (
           <PriorityBoard 
             categories={categories}
-            selectedCategoryId={selectedCategoryId}
-            setSelectedCategoryId={setSelectedCategoryId}
             getCategoryProgress={getCategoryProgress}
+            refreshStats={refreshStats}
             refreshTrigger={refreshTrigger}
-            setRefreshTrigger={setRefreshTrigger}
+            onManageCategories={() => setIsCategoryManagerOpen(true)}
+            allTasks={allTasks}
+            setAllTasks={setAllTasks}
           />
         ) : (
           <CompletedTasksView 
             tasks={allTasks}
             setTasks={setAllTasks}
-            categories={categories}
+            categories={allCategories}
             pagination={{ page: completedPage, totalPages: 1, total: allTasks.length }}
             onPageChange={handlePageChange}
           />
@@ -162,6 +172,7 @@ const Dashboard = () => {
         setView={setView}
         onMenuClick={() => setIsMenuOpen(true)}
         isMenuOpen={isMenuOpen}
+        allTasks={allTasks}
       />
       
       {renderMainContent()}

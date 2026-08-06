@@ -1,13 +1,23 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Menu } from 'lucide-react'
+import { LogOut, Menu, Clock } from 'lucide-react'
 import ProfileModal from '../modal/ProfileModal'
+import AllocationHistoryModal from '../modal/AllocationHistoryModal'
 import AllocationProgress from '../../../components/AllocationProgress'
+import { useTypewriter } from '../../../hooks/useTypewriter'
 
-const Sidebar = ({ categories, getCategoryProgress, totalAllocated, totalActual, totalPercentage, view, setView, onMenuClick, isMenuOpen }) => {
+const Sidebar = memo(({ categories, getCategoryProgress, totalAllocated, totalActual, totalPercentage, view, setView, onMenuClick, isMenuOpen, allTasks }) => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showHistoryModal, setShowHistoryModal] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState(null)
+  const { displayText, isTyping } = useTypewriter({
+    typeSpeed: 80,
+    deleteSpeed: 40,
+    pauseAfterType: 2500,
+    pauseAfterDelete: 500
+  })
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -22,6 +32,16 @@ const Sidebar = ({ categories, getCategoryProgress, totalAllocated, totalActual,
     navigate('/')
   }
 
+  const handleOpenHistory = (category) => {
+    setSelectedCategory(category)
+    setShowHistoryModal(true)
+  }
+
+  const handleCloseHistory = () => {
+    setShowHistoryModal(false)
+    setSelectedCategory(null)
+  }
+
   return (
     <aside 
       className="w-80 flex-shrink-0 p-6 flex flex-col z-10 overflow-y-auto"
@@ -30,16 +50,7 @@ const Sidebar = ({ categories, getCategoryProgress, totalAllocated, totalActual,
         borderRight: '1px solid rgba(200, 80, 80, 0.2)'
       }}
     >
-      <style>{`
-        @keyframes ghostFloat {
-          0%, 100% { transform: translateY(0) scale(1); opacity: 0.7; }
-          50% { transform: translateY(-8px) scale(1.05); opacity: 0.9; }
-        }
-        @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 25px rgba(200, 80, 80, 0.4); }
-          50% { box-shadow: 0 0 45px rgba(200, 80, 80, 0.7); }
-        }
-      `}</style>
+
 
       {/* Menu Icon Button */}
       <button
@@ -139,8 +150,19 @@ const Sidebar = ({ categories, getCategoryProgress, totalAllocated, totalActual,
           </button>
         </div>
         <div className="pt-4" style={{ borderTop: '1px solid rgba(200, 80, 80, 0.2)' }}>
-          <p className="text-sm italic text-center" style={{ color: '#d4a574' }}>
-            "Focus on what matters, track your progress"
+          <p 
+            className="text-sm italic text-center min-h-[40px] flex items-center justify-center"
+            style={{ color: '#d4a574', fontFamily: "'Cinzel', serif" }}
+          >
+            <span>"{displayText}</span>
+            <span 
+              className="inline-block w-[2px] h-[14px] ml-[2px] align-middle"
+              style={{ 
+                background: '#d4a574',
+                animation: isTyping ? 'blink 1s step-end infinite' : 'none'
+              }}
+            />
+            <span>"</span>
           </p>
         </div>
       </div>
@@ -155,6 +177,15 @@ const Sidebar = ({ categories, getCategoryProgress, totalAllocated, totalActual,
             setUser(JSON.parse(userData))
           }
         }}
+      />
+
+      {/* Allocation History Modal */}
+      <AllocationHistoryModal
+        isOpen={showHistoryModal}
+        onClose={handleCloseHistory}
+        categories={categories}
+        tasks={allTasks}
+        initialCategory={selectedCategory}
       />
 
       {/* View Toggle */}
@@ -223,7 +254,17 @@ const Sidebar = ({ categories, getCategoryProgress, totalAllocated, totalActual,
             {categories.map(category => {
               const progress = getCategoryProgress(category.id)
               return (
-                <div key={category.id}>
+                <div
+                  key={category.id}
+                  className="cursor-pointer rounded-lg p-2 -m-2 transition-all duration-200"
+                  onClick={() => handleOpenHistory(category)}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = 'rgba(200, 80, 80, 0.1)'
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = 'transparent'
+                  }}
+                >
                   <div className="flex items-center gap-2 mb-1">
                     <div 
                       className="w-3 h-3 rounded-full"
@@ -267,12 +308,42 @@ const Sidebar = ({ categories, getCategoryProgress, totalAllocated, totalActual,
                 />
               </div>
             </div>
+
+            {/* Allocation History Button */}
+            <div className="mt-4">
+              <button
+                onClick={() => {
+                  if (categories.length > 0) {
+                    handleOpenHistory(categories[0])
+                  }
+                }}
+                className="w-full py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2"
+                style={{
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  border: '1px solid rgba(200, 80, 80, 0.2)',
+                  color: '#a89080'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.5)'
+                  e.currentTarget.style.color = '#f5e6d3'
+                  e.currentTarget.style.borderColor = 'rgba(200, 80, 80, 0.4)'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)'
+                  e.currentTarget.style.color = '#a89080'
+                  e.currentTarget.style.borderColor = 'rgba(200, 80, 80, 0.2)'
+                }}
+              >
+                <Clock className="w-4 h-4" />
+                Allocation History
+              </button>
+            </div>
           </div>
         )}
       </div>
 
     </aside>
   )
-}
+})
 
-export default Sidebar
+export default memo(Sidebar)

@@ -104,20 +104,7 @@ const Signup = () => {
         </div>
       </div>
 
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-15px) rotate(5deg); }
-        }
-        @keyframes ghostFloat {
-          0%, 100% { transform: translateY(0) scale(1); opacity: 0.7; }
-          50% { transform: translateY(-8px) scale(1.05); opacity: 0.9; }
-        }
-        @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 25px rgba(200, 80, 80, 0.4); }
-          50% { box-shadow: 0 0 45px rgba(200, 80, 80, 0.7); }
-        }
-      `}</style>
+
 
       <div className="w-full max-w-md z-10">
         {/* Logo/Header with Ghost Icon */}

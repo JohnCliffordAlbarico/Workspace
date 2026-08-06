@@ -13,7 +13,9 @@ import {
   deleteCategory,
   completeCategory,
   reopenCategory,
-  getCategoryStats
+  getCategoryStats,
+  getAllCategoryStats,
+  getAllocationHistory
 } from '../handlers/categoryHandlers.js'
 
 const router = express.Router()
@@ -24,11 +26,17 @@ router.get('/', authenticate, asyncHandler(getCategories))
 // Get completed categories
 router.get('/completed', authenticate, asyncHandler(getCompletedCategories))
 
+// Batch stats for all categories (must be before /:id routes)
+router.get('/stats', authenticate, asyncHandler(getAllCategoryStats))
+
 // Get category by ID
 router.get('/:id', authenticate, asyncHandler(getCategoryById))
 
 // Get category stats
 router.get('/:id/stats', authenticate, asyncHandler(getCategoryStats))
+
+// Get allocation history
+router.get('/:id/allocation-history', authenticate, asyncHandler(getAllocationHistory))
 
 // Create category
 router.post('/', writeLimiter, authenticate, validate(categoryValidation), auditLog('focus_categories'), asyncHandler(createCategory))

@@ -132,7 +132,7 @@ const CompleteCategoryModal = ({ isOpen, onClose, category, onComplete }) => {
                 <div className="flex justify-between">
                   <span style={{ color: '#a89080' }}>Time Invested</span>
                   <span style={{ color: '#f5e6d3' }}>
-                    {Math.round(stats.stats.actual_minutes / 60 * 10) / 10} hours
+                    {Math.round((stats.stats.lifetime_actual_minutes || stats.stats.actual_minutes) / 60 * 10) / 10} hours
                   </span>
                 </div>
                 <div 

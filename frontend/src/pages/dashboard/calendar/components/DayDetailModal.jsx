@@ -127,13 +127,14 @@ const DayDetailModal = ({ isOpen, onClose, date, tasks }) => {
     return `${hours}h ${mins}m`
   }
 
-  // Calculate actual time spent
+  // Calculate actual time spent (prefer accumulated actual_time_minutes)
   const getActualTime = (task) => {
+    if (task.actual_time_minutes > 0) return task.actual_time_minutes
     if (!task.started_at || !task.completed_at) return null
     const start = new Date(task.started_at)
     const end = new Date(task.completed_at)
     const minutes = Math.floor((end - start) / 60000)
-    return minutes
+    return minutes > 0 ? minutes : null
   }
 
   // Calculate summary stats

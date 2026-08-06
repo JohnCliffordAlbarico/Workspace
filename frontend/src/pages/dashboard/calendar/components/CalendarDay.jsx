@@ -41,16 +41,7 @@ const CalendarDay = ({
         }
       }}
     >
-      <style>{`
-        @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 25px rgba(200, 80, 80, 0.5); }
-          50% { box-shadow: 0 0 40px rgba(200, 80, 80, 0.8); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-5px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+
 
       {/* Day Number */}
       <div 

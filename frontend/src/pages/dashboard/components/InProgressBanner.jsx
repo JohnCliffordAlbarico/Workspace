@@ -4,7 +4,7 @@ import { useTaskTimer } from '../hooks/useTaskTimer'
 import ConfirmationModal from '../modal/ConfirmationModal'
 import WarningModal from '../modal/WarningModal'
 
-const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
+const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks, refreshStats }) => {
   const { completeTask, pauseTask, cancelTask, startTask, loading } = useTaskActions(setTasks)
   const duration = useTaskTimer(task?.started_at, task?.actual_time_minutes)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
@@ -33,7 +33,8 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
   }
 
   const handleConfirmComplete = async () => {
-    await completeTask(task.id)
+    await completeTask(task.id, task.started_at, task.actual_time_minutes)
+    if (refreshStats) refreshStats()
     setShowCompleteConfirm(false)
   }
 
@@ -115,18 +116,13 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
     <div 
       className="mb-6 rounded-2xl p-6 cursor-pointer transition-all duration-300"
       style={{
-        background: 'linear-gradient(145deg, rgba(255, 99, 72, 0.15) 0%, rgba(255, 165, 2, 0.1) 100%)',
-        border: '2px solid rgba(255, 165, 2, 0.4)',
-        boxShadow: '0 4px 20px rgba(255, 165, 2, 0.2)'
+        background: 'linear-gradient(145deg, rgba(139, 41, 66, 0.2) 0%, rgba(200, 80, 80, 0.15) 100%)',
+        border: '2px solid rgba(200, 80, 80, 0.4)',
+        boxShadow: '0 4px 20px rgba(200, 80, 80, 0.2)'
       }}
       onClick={handleClick}
     >
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
-      `}</style>
+
 
       <div className="space-y-4">
         {/* Header Section */}
@@ -137,12 +133,12 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
               style={{
                 background: isPaused
                   ? 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)'
-                  : 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
-                color: '#1a0a0a',
+                  : 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
+                color: '#f5e6d3',
                 animation: isPaused ? 'none' : 'pulse 2s ease-in-out infinite'
               }}
             >
-              {isPaused ? '⏸️ Paused' : '🔄 In Progress'}
+              {isPaused ? '⏸️ Paused' : '👻 Haunting...'}
             </div>
 
             <div className="flex-1">
@@ -173,7 +169,7 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
               ) : duration && (
                 <p 
                   className="text-sm font-mono font-semibold"
-                  style={{ color: '#ffa502' }}
+                  style={{ color: '#d4a574' }}
                 >
                   ⏱️ {duration}
                 </p>
@@ -187,20 +183,20 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
               disabled={loading}
               className="px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
               style={{
-                background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
-                color: '#1a0a0a',
-                border: 'none'
+                background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
+                color: '#f5e6d3',
+                border: '1px solid rgba(200, 80, 80, 0.5)'
               }}
               onMouseOver={(e) => {
                 e.currentTarget.style.transform = 'translateY(-2px)'
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(255, 165, 2, 0.4)'
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(200, 80, 80, 0.4)'
               }}
               onMouseOut={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)'
                 e.currentTarget.style.boxShadow = 'none'
               }}
             >
-              ✅ Complete
+              👻 Complete
             </button>
             {isPaused ? (
               <button
@@ -250,13 +246,13 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
               disabled={loading}
               className="px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
               style={{
-                background: 'rgba(255, 71, 87, 0.2)',
-                border: '1px solid rgba(255, 71, 87, 0.5)',
-                color: '#ff4757'
+                background: 'rgba(200, 80, 80, 0.2)',
+                border: '1px solid rgba(200, 80, 80, 0.5)',
+                color: '#c85050'
               }}
               onMouseOver={(e) => {
                 e.currentTarget.style.transform = 'translateY(-2px)'
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(255, 71, 87, 0.3)'
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(200, 80, 80, 0.3)'
               }}
               onMouseOut={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)'
@@ -278,7 +274,7 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
                   <span style={{ color: '#f5e6d3' }}>
                     Progress: {metrics.percentage}%
                   </span>
-                  <span style={{ color: metrics.isOvertime ? '#ff4757' : '#ffa502' }}>
+                  <span style={{ color: metrics.isOvertime ? '#ff4757' : '#d4a574' }}>
                     {metrics.isOvertime 
                       ? `⚠️ ${Math.abs(metrics.remaining)} min overtime`
                       : `✓ ${metrics.remaining} min remaining`
@@ -295,7 +291,7 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
                       width: `${Math.min(100, metrics.percentage)}%`,
                       background: metrics.isOvertime
                         ? 'linear-gradient(90deg, #ff4757 0%, #ff6348 100%)'
-                        : 'linear-gradient(90deg, #ffa502 0%, #ff6348 100%)'
+                        : 'linear-gradient(90deg, #8b2942 0%, #c85050 50%, #d4a574 100%)'
                     }}
                   />
                 </div>
@@ -313,7 +309,7 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
                 </div>
                 <div 
                   className="font-mono font-bold"
-                  style={{ color: '#ffa502' }}
+                  style={{ color: '#d4a574' }}
                 >
                   {isPaused ? formatMinutes(metrics.elapsed) : duration}
                 </div>
@@ -345,7 +341,7 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
                     </div>
                     <div 
                       className="font-mono font-bold"
-                      style={{ color: metrics.isOvertime ? '#ff4757' : '#ffa502' }}
+                      style={{ color: metrics.isOvertime ? '#ff4757' : '#d4a574' }}
                     >
                       {Math.floor(Math.abs(metrics.remaining) / 60)}h {Math.abs(metrics.remaining) % 60}m
                     </div>
@@ -362,10 +358,10 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
         isOpen={showCancelConfirm}
         onConfirm={handleConfirmCancel}
         onCancel={() => setShowCancelConfirm(false)}
-        title="❌ Cancel Task?"
-        message={`Are you sure you want to cancel "${task?.title}"${parentTask ? ` (subtask of "${parentTask.title}")` : ''}? This will stop tracking time and mark the task as cancelled.`}
-        confirmText="Yes, Cancel Task"
-        cancelText="Keep Working"
+        title="❌ Send to the Void?"
+        message={`Banish "${task?.title}"${parentTask ? ` (subtask of "${parentTask.title}")` : ''} to the spirit realm? Time worked will vanish like smoke~`}
+        confirmText="Yes, Banish"
+        cancelText="Not Yet"
       />
 
       {/* Complete Confirmation Modal */}
@@ -373,9 +369,9 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
         isOpen={showCompleteConfirm}
         onConfirm={handleConfirmComplete}
         onCancel={() => setShowCompleteConfirm(false)}
-        title="✅ Complete Task?"
-        message={`Mark "${task?.title}" as completed?${parentTask ? ` Time worked will be added to "${parentTask.title}".` : ' The task will be moved to the completed tasks view.'}`}
-        confirmText="Yes, Complete"
+        title="👻 Rest in Peace?"
+        message={`Lay "${task?.title}"${parentTask ? ` to rest? Time worked will join "${parentTask.title}"` : ' to rest?'} in the afterlife of completed tasks~`}
+        confirmText="Yes, Rest"
         cancelText="Not Yet"
       />
 
@@ -384,10 +380,10 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
         isOpen={showPauseConfirm}
         onConfirm={handleConfirmPause}
         onCancel={() => setShowPauseConfirm(false)}
-        title="⏸️ Pause Task?"
-        message={`Pause "${task?.title}"${parentTask ? ` (subtask of "${parentTask.title}")` : ''}? Time worked so far will be saved. You can resume later.`}
-        confirmText="Yes, Pause"
-        cancelText="Keep Working"
+        title="⏸️ Put to Sleep?"
+        message={`Suspend "${task?.title}"${parentTask ? ` (subtask of "${parentTask.title}")` : ''}? Time worked so far will be preserved in stasis~`}
+        confirmText="Yes, Sleep"
+        cancelText="Keep Haunting"
       />
 
       {/* Resume Confirmation Modal */}
@@ -395,18 +391,18 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks }) => {
         isOpen={showResumeConfirm}
         onConfirm={handleConfirmResume}
         onCancel={() => setShowResumeConfirm(false)}
-        title="▶️ Resume Task?"
-        message={`Resume "${task?.title}"${parentTask ? ` (subtask of "${parentTask.title}")` : ''}? Timer will restart from where you left off. ${formatMinutes(task.actual_time_minutes || 0)} already worked.`}
-        confirmText="Yes, Resume"
-        cancelText="Not Yet"
+        title="▶️ Awaken?"
+        message={`Resurrect "${task?.title}"${parentTask ? ` (subtask of "${parentTask.title}")` : ''}? The spirit will return from where it left off. ${formatMinutes(task.actual_time_minutes || 0)} already consumed.`}
+        confirmText="Yes, Awaken"
+        cancelText="Let It Sleep"
       />
 
       {/* Incomplete Subtasks Warning Modal */}
       <WarningModal
         isOpen={showIncompleteWarning}
         onClose={() => setShowIncompleteWarning(false)}
-        title="⚠️ Incomplete Subtasks"
-        message={`Complete all subtasks before marking the task as done.`}
+        title="⚠️ Unfinished Business"
+        message={`Complete all restless spirits before laying "${task?.title}" to rest~`}
         items={incompleteSubtasks.map(t => t.title)}
       />
     </div>

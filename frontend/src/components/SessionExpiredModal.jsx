@@ -39,20 +39,7 @@ const SessionExpiredModal = ({ isOpen, onClose }) => {
         animation: 'fadeIn 0.3s ease-out'
       }}
     >
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideDown {
-          from { transform: translateY(-30px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.1); }
-        }
-      `}</style>
+
 
       <div 
         className="w-full max-w-md rounded-2xl p-8"

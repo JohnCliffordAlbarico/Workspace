@@ -4,7 +4,7 @@ import api from '../../../config/api'
 export const useTaskActions = (setTasks) => {
   const [loading, setLoading] = useState(false)
 
-  const toggleTask = async (taskId, currentStatus, skipConfirmation = false) => {
+  const toggleTask = async (taskId, currentStatus, skipConfirmation = false, startedAt = null, previousActualMinutes = 0) => {
     setLoading(true)
     try {
       const newStatus = currentStatus === 'completed' ? 'pending' : 'completed'
@@ -13,6 +13,16 @@ export const useTaskActions = (setTasks) => {
       // Set completed_at timestamp when marking as completed
       if (newStatus === 'completed') {
         updateData.completed_at = new Date().toISOString()
+
+        // Calculate and save session time if task was in_progress
+        if (startedAt) {
+          const sessionMinutes = Math.floor((Date.now() - new Date(startedAt).getTime()) / 60000)
+          updateData.actual_time_minutes = (previousActualMinutes || 0) + Math.max(0, sessionMinutes)
+          updateData.started_at = null
+        }
+      } else {
+        // Reopening a completed task - clear started_at
+        updateData.started_at = null
       }
       
       const response = await api.put(`/tasks/${taskId}`, updateData)
@@ -53,12 +63,19 @@ export const useTaskActions = (setTasks) => {
     }
   }
 
-  const completeTask = async (taskId) => {
+  const completeTask = async (taskId, startedAt = null, previousActualMinutes = 0) => {
     setLoading(true)
     try {
       const updateData = {
         status: 'completed',
         completed_at: new Date().toISOString()
+      }
+
+      // Calculate and save session time if task was in_progress
+      if (startedAt) {
+        const sessionMinutes = Math.floor((Date.now() - new Date(startedAt).getTime()) / 60000)
+        updateData.actual_time_minutes = (previousActualMinutes || 0) + Math.max(0, sessionMinutes)
+        updateData.started_at = null
       }
       
       const response = await api.put(`/tasks/${taskId}`, updateData)
@@ -81,7 +98,7 @@ export const useTaskActions = (setTasks) => {
     try {
       let sessionMinutes = 0
       if (startedAt) {
-        const elapsed = Math.ceil((Date.now() - new Date(startedAt).getTime()) / 60000)
+        const elapsed = Math.floor((Date.now() - new Date(startedAt).getTime()) / 60000)
         sessionMinutes = Math.max(0, elapsed)
       }
 

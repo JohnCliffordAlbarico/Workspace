@@ -12,13 +12,7 @@ const butterflies = [
 const FloatingButterflies = memo(() => {
   return (
     <>
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-15px) rotate(5deg); }
-        }
-      `}</style>
-      
+
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         {butterflies.map((butterfly, index) => (
           <div

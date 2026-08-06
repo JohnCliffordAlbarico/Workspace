@@ -4,10 +4,9 @@ import { useDraggable } from '@dnd-kit/core'
 import ConfirmationModal from '../modal/ConfirmationModal'
 import WarningModal from '../modal/WarningModal'
 import QuickAddSubtask from './QuickAddSubtask'
-import { Plus } from 'lucide-react'
+import { Plus, Play, Pause, Ghost, MoreHorizontal } from 'lucide-react'
 
-const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) => {
-  const [showIcon, setShowIcon] = useState(false)
+const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refreshStats }) => {
   const [showPauseConfirm, setShowPauseConfirm] = useState(false)
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false)
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false)
@@ -15,7 +14,7 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
   const [showSubtasks, setShowSubtasks] = useState(false)
   const [showQuickAddSubtask, setShowQuickAddSubtask] = useState(false)
   const [showAddSubtaskOption, setShowAddSubtaskOption] = useState(false)
-  const { pauseTask, completeTask, loading } = useTaskActions(setTasks)
+  const { startTask, pauseTask, completeTask, loading } = useTaskActions(setTasks)
   
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
@@ -33,7 +32,6 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
   const hasSubtasks = subtasks.length > 0
   const completedSubtasks = subtasks.filter(t => t.status === 'completed').length
 
-  // Memoize style object to prevent re-creation
   const style = useMemo(() => {
     if (transform) {
       return {
@@ -48,23 +46,44 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
     return {
       cursor: loading || isInProgress ? 'not-allowed' : 'grab',
       transition: 'all 0.3s ease-out',
-      opacity: isInProgress ? 0.7 : isPaused ? 0.85 : 1
+      opacity: isCompleted ? 0.7 : 1
     }
-  }, [transform, isDragging, loading, isInProgress])
+  }, [transform, isDragging, loading, isInProgress, isCompleted])
 
-  // Calculate actual time spent for completed tasks - memoized
   const actualTime = useMemo(() => {
-    if (!isCompleted || !task.started_at || !task.completed_at) return null
+    // For tasks with subtasks, always accumulate from subtasks (the actual work)
+    if (hasSubtasks) {
+      const totalMinutes = subtasks.reduce((sum, st) => {
+        if (st.actual_time_minutes > 0) return sum + st.actual_time_minutes
+        if (st.started_at && st.completed_at) {
+          return sum + Math.floor((new Date(st.completed_at) - new Date(st.started_at)) / 60000)
+        }
+        return sum
+      }, 0)
+      return totalMinutes > 0 ? { hours: Math.floor(totalMinutes / 60), mins: totalMinutes % 60, total: totalMinutes } : null
+    }
+
+    // For tasks without subtasks, use own time
+    if (!isCompleted) return null
+
+    const minutes = task.actual_time_minutes > 0
+      ? task.actual_time_minutes
+      : (task.started_at && task.completed_at
+        ? Math.floor((new Date(task.completed_at) - new Date(task.started_at)) / 60000)
+        : null)
     
-    const start = new Date(task.started_at)
-    const end = new Date(task.completed_at)
-    const minutes = Math.floor((end - start) / 60000)
+    if (!minutes || minutes <= 0) return null
     
     const hours = Math.floor(minutes / 60)
     const mins = minutes % 60
     
     return { hours, mins, total: minutes }
-  }, [isCompleted, task.started_at, task.completed_at])
+  }, [isCompleted, hasSubtasks, subtasks, task.actual_time_minutes, task.started_at, task.completed_at])
+
+  const handleStart = async (e) => {
+    e.stopPropagation()
+    await startTask(task.id)
+  }
 
   const handlePause = async (e) => {
     e.stopPropagation()
@@ -90,235 +109,320 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
   }
 
   const handleConfirmComplete = async () => {
-    await completeTask(task.id)
+    await completeTask(task.id, task.started_at, task.actual_time_minutes)
+    if (refreshStats) refreshStats()
     setShowCompleteConfirm(false)
   }
 
   const handleCardClick = () => {
+    if (isCompleted) return
     onTaskClick(task)
   }
 
   const handleSubtaskClick = (e, subtask) => {
     e.stopPropagation()
+    if (isCompleted) return
     onTaskClick(subtask)
   }
   
-  const goalTime = task.goal_time_minutes
+  const formatMinutes = (mins) => {
+    if (!mins) return '0m'
+    if (mins < 60) return `${mins}m`
+    return `${Math.floor(mins / 60)}h ${mins % 60}m`
+  }
 
   return (
     <div className="mb-3">
-      {/* Main Task Card */}
       <div
         ref={setNodeRef}
         {...attributes}
         {...listeners}
-        className="rounded-xl p-4 transition-all duration-300"
+        className="rounded-2xl p-4 transition-all duration-300 backdrop-blur-sm"
         style={{
-          background: `${color}26`,
-          border: `1px solid ${color}66`,
-          animation: 'slideIn 0.3s ease-out forwards',
+          background: 'rgba(30, 12, 15, 0.7)',
+          border: '1px solid rgba(200, 80, 80, 0.15)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+          borderLeft: `3px solid ${color}`,
+          cursor: isCompleted ? 'default' : 'grab',
+          opacity: isCompleted ? 0.6 : 1,
           ...style
         }}
-        onMouseEnter={() => setShowIcon(true)}
-        onMouseLeave={() => setShowIcon(false)}
+        onMouseOver={(e) => {
+          if (!isDragging && !isCompleted) {
+            e.currentTarget.style.borderLeftColor = color
+            e.currentTarget.style.boxShadow = `0 8px 30px rgba(0, 0, 0, 0.4), 0 0 20px ${color}15, inset 0 1px 0 rgba(255, 255, 255, 0.05)`
+            e.currentTarget.style.transform = 'translateY(-2px)'
+          }
+        }}
+        onMouseOut={(e) => {
+          if (!isDragging && !isCompleted) {
+            e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03)'
+            e.currentTarget.style.transform = 'translateY(0)'
+          }
+        }}
         onClick={handleCardClick}
       >
-        <style>{`
-          @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-          }
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-          }
-        `}</style>
 
-        <div className="flex items-start gap-3">
-          {/* In Progress indicator */}
-          {isInProgress && (
-            <div 
-              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
-                animation: 'pulse 2s ease-in-out infinite'
-              }}
-              title="Task in progress - cannot change priority"
+
+        {/* Header: Title + Status Icon */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {isInProgress && (
+              <div 
+                className="flex-shrink-0 w-2 h-2 rounded-full"
+                style={{
+                  background: '#c85050',
+                  animation: 'pulse 2s ease-in-out infinite'
+                }}
+              />
+            )}
+            <span
+              className={`text-base font-semibold truncate ${isCompleted ? 'line-through opacity-60' : ''}`}
+              style={{ color: '#f5e6d3', fontFamily: "'Cinzel', serif" }}
             >
-              ⏱️
-            </div>
+              {task.title}
+            </span>
+          </div>
+          
+          {/* Status indicator / Play button */}
+          {isPending && !hasSubtasks && (
+            <button
+              onClick={handleStart}
+              disabled={loading}
+              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
+              style={{
+                background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
+                color: '#1a0a0a'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'scale(1.1)'
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(46, 213, 115, 0.5)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'scale(1)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              <Play size={14} fill="currentColor" />
+            </button>
           )}
-
-          {/* Paused indicator */}
+          {isPending && hasSubtasks && (
+            <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(168, 144, 128, 0.2)', color: '#a89080' }}>
+              📋 Has subtasks
+            </span>
+          )}
+          {isInProgress && (
+            <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(200, 80, 80, 0.2)', color: '#c85050' }}>
+              👻 Haunting
+            </span>
+          )}
           {isPaused && (
-            <div 
-              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)'
+            <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(123, 237, 159, 0.2)', color: '#7bed9f' }}>
+              ⏸️ Sleeping
+            </span>
+          )}
+          {isCompleted && (
+            <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(123, 237, 159, 0.15)', color: '#7bed9f' }}>
+              👻 Resting
+            </span>
+          )}
+        </div>
+
+        {/* Actual Time (completed tasks or parent tasks with subtask time) */}
+        {actualTime && (
+          <div className="flex items-center gap-1 mb-3 text-xs">
+            <span style={{ color: '#a89080' }}>⏱️ {isCompleted ? 'Worked:' : 'Accumulated:'}</span>
+            <span style={{ color: '#d4a574' }}>{formatMinutes(actualTime.total)}</span>
+          </div>
+        )}
+
+        {/* Subtask count */}
+        {hasSubtasks && (
+          <div className="mb-3">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowSubtasks(!showSubtasks)
               }}
-              title="Task paused - click resume to continue"
+              className="text-xs px-2 py-1 rounded-full transition-all duration-200"
+              style={{ 
+                background: showSubtasks ? `${color}30` : `${color}15`, 
+                color,
+                border: `1px solid ${showSubtasks ? `${color}50` : `${color}30`}`
+              }}
             >
-              ⏸️
-            </div>
+              📁 {completedSubtasks}/{subtasks.length} subtasks
+            </button>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          {isPending && !hasSubtasks && (
+            <button
+              onClick={handleStart}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+              style={{
+                background: 'linear-gradient(135deg, rgba(123, 237, 159, 0.2) 0%, rgba(46, 213, 115, 0.15) 100%)',
+                border: '1px solid rgba(123, 237, 159, 0.3)',
+                color: '#7bed9f'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(123, 237, 159, 0.3) 0%, rgba(46, 213, 115, 0.25) 100%)'
+                e.currentTarget.style.transform = 'translateY(-1px)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(123, 237, 159, 0.2) 0%, rgba(46, 213, 115, 0.15) 100%)'
+                e.currentTarget.style.transform = 'translateY(0)'
+              }}
+            >
+              <Play size={12} fill="currentColor" /> Start
+            </button>
           )}
           
-          {/* Complete Button for Pending Tasks */}
-          {isPending && (
-            <button
-              onClick={handleComplete}
-              disabled={loading}
-              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
-              style={{
-                background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
-                border: 'none',
-                color: '#1a0a0a'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'scale(1.1)'
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(46, 213, 115, 0.5)'
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'scale(1)'
-                e.currentTarget.style.boxShadow = 'none'
-              }}
-            >
-              ✅
-            </button>
-          )}
-
-          {/* Complete Button for Paused Tasks */}
-          {isPaused && (
-            <button
-              onClick={handleComplete}
-              disabled={loading}
-              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
-              style={{
-                background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
-                border: 'none',
-                color: '#1a0a0a'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'scale(1.1)'
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(46, 213, 115, 0.5)'
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'scale(1)'
-                e.currentTarget.style.boxShadow = 'none'
-              }}
-            >
-              ✅
-            </button>
-          )}
-
-          {/* Pause and Complete Buttons for In Progress Tasks */}
-          {isInProgress && (
+          {isPending && hasSubtasks && (
             <>
-            <button
-              onClick={handlePause}
-              disabled={loading}
-              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
-              style={{
-                background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
-                border: 'none',
-                color: '#1a0a0a'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'scale(1.1)'
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(46, 213, 115, 0.5)'
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'scale(1)'
-                e.currentTarget.style.boxShadow = 'none'
-              }}
-            >
-              ⏸️
-            </button>
-            <button
-              onClick={handleComplete}
-              disabled={loading}
-              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
-              style={{
-                background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
-                border: 'none',
-                color: '#1a0a0a'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'scale(1.1)'
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 165, 2, 0.5)'
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'scale(1)'
-                e.currentTarget.style.boxShadow = 'none'
-              }}
-            >
-              ✅
-            </button>
-            </>
-          )}
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span
-                className={`text-base leading-relaxed ${isCompleted ? 'line-through opacity-50' : ''}`}
-                style={{ color: '#f5e6d3' }}
-              >
-                {task.title}
-              </span>
-              <span 
-                className="text-xs px-2 py-0.5 rounded-full cursor-pointer transition-all duration-200"
-                style={{ 
-                  background: showSubtasks ? `${color}50` : `${color}20`, 
-                  color,
-                  border: `1px solid ${showSubtasks ? `${color}70` : `${color}40`}`
-                }}
+              <button
                 onClick={(e) => {
                   e.stopPropagation()
                   setShowSubtasks(!showSubtasks)
                 }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+                style={{
+                  background: showSubtasks ? 'rgba(168, 144, 128, 0.25)' : 'rgba(168, 144, 128, 0.15)',
+                  border: `1px solid ${showSubtasks ? 'rgba(168, 144, 128, 0.5)' : 'rgba(168, 144, 128, 0.3)'}`,
+                  color: '#a89080'
+                }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.background = `${color}40`
+                  e.currentTarget.style.background = 'rgba(168, 144, 128, 0.25)'
+                  e.currentTarget.style.transform = 'translateY(-1px)'
                 }}
                 onMouseOut={(e) => {
-                  e.currentTarget.style.background = showSubtasks ? `${color}50` : `${color}20`
+                  e.currentTarget.style.background = showSubtasks ? 'rgba(168, 144, 128, 0.25)' : 'rgba(168, 144, 128, 0.15)'
+                  e.currentTarget.style.transform = 'translateY(0)'
                 }}
               >
-                {hasSubtasks ? `${completedSubtasks}/${subtasks.length}` : '📁'}
-              </span>
+                {showSubtasks ? '📋 Hide Subtasks' : '📋 View Subtasks'}
+              </button>
+              <button
+                onClick={handleComplete}
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(139, 41, 66, 0.3) 0%, rgba(200, 80, 80, 0.25) 100%)',
+                  border: '1px solid rgba(200, 80, 80, 0.4)',
+                  color: '#c85050'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139, 41, 66, 0.4) 0%, rgba(200, 80, 80, 0.35) 100%)'
+                  e.currentTarget.style.transform = 'translateY(-1px)'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139, 41, 66, 0.3) 0%, rgba(200, 80, 80, 0.25) 100%)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
+              >
+                <Ghost size={12} /> Done
+              </button>
+            </>
+          )}
+          
+          {isInProgress && (
+            <>
+              <button
+                onClick={handlePause}
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255, 165, 2, 0.2) 0%, rgba(255, 99, 72, 0.15) 100%)',
+                  border: '1px solid rgba(255, 165, 2, 0.3)',
+                  color: '#ffa502'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 165, 2, 0.3) 0%, rgba(255, 99, 72, 0.25) 100%)'
+                  e.currentTarget.style.transform = 'translateY(-1px)'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 165, 2, 0.2) 0%, rgba(255, 99, 72, 0.15) 100%)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
+              >
+                <Pause size={12} /> Pause
+              </button>
+              <button
+                onClick={handleComplete}
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(139, 41, 66, 0.3) 0%, rgba(200, 80, 80, 0.25) 100%)',
+                  border: '1px solid rgba(200, 80, 80, 0.4)',
+                  color: '#c85050'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139, 41, 66, 0.4) 0%, rgba(200, 80, 80, 0.35) 100%)'
+                  e.currentTarget.style.transform = 'translateY(-1px)'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139, 41, 66, 0.3) 0%, rgba(200, 80, 80, 0.25) 100%)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
+              >
+                <Ghost size={12} /> Done
+              </button>
+            </>
+          )}
+
+          {isPaused && (
+            <>
+              <button
+                onClick={handleStart}
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(123, 237, 159, 0.2) 0%, rgba(46, 213, 115, 0.15) 100%)',
+                  border: '1px solid rgba(123, 237, 159, 0.3)',
+                  color: '#7bed9f'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(123, 237, 159, 0.3) 0%, rgba(46, 213, 115, 0.25) 100%)'
+                  e.currentTarget.style.transform = 'translateY(-1px)'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(123, 237, 159, 0.2) 0%, rgba(46, 213, 115, 0.15) 100%)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
+              >
+                <Play size={12} fill="currentColor" /> Resume
+              </button>
+              <button
+                onClick={handleComplete}
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(139, 41, 66, 0.3) 0%, rgba(200, 80, 80, 0.25) 100%)',
+                  border: '1px solid rgba(200, 80, 80, 0.4)',
+                  color: '#c85050'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139, 41, 66, 0.4) 0%, rgba(200, 80, 80, 0.35) 100%)'
+                  e.currentTarget.style.transform = 'translateY(-1px)'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139, 41, 66, 0.3) 0%, rgba(200, 80, 80, 0.25) 100%)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
+              >
+                <Ghost size={12} /> Done
+              </button>
+            </>
+          )}
+
+          {isCompleted && (
+            <div className="flex-1 text-center text-xs py-2 rounded-lg" style={{ background: 'rgba(123, 237, 159, 0.1)', color: '#7bed9f' }}>
+              👻 Resting in peace
             </div>
-
-            {/* Time information for completed tasks */}
-            {isCompleted && actualTime && (
-              <div className="flex gap-3 text-xs mt-2">
-                <span 
-                  className="font-mono"
-                  style={{ color: '#ffa502' }}
-                >
-                  ⏱️ {actualTime.hours}h {actualTime.mins}m
-                </span>
-                {goalTime && (
-                  <span 
-                    className="font-mono"
-                    style={{ 
-                      color: actualTime.total <= goalTime ? '#ffa502' : '#ff4757' 
-                    }}
-                  >
-                    {actualTime.total <= goalTime ? '✓' : '⚠️'} 
-                    Goal: {Math.floor(goalTime / 60)}h {goalTime % 60}m
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          <span 
-            className="text-sm transition-opacity duration-200"
-            style={{
-              color: '#a89080',
-              opacity: showIcon ? 1 : 0
-            }}
-          >
-            👁️
-          </span>
+          )}
         </div>
       </div>
 
@@ -338,8 +442,7 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
             />
           ))}
           
-          {/* Toggle Add Subtask Button */}
-          {!showQuickAddSubtask && (
+          {!showQuickAddSubtask && !isCompleted && (
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -351,22 +454,13 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
                 border: `1px dashed ${color}30`,
                 color: `${color}aa`,
               }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = `${color}20`
-                e.currentTarget.style.borderColor = `${color}50`
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = `${color}10`
-                e.currentTarget.style.borderColor = `${color}30`
-              }}
             >
               <Plus className="w-3 h-3" />
               {showAddSubtaskOption ? 'Cancel' : 'Add subtask'}
             </button>
           )}
 
-          {/* Quick Add Subtask Button (shown when toggle is active) */}
-          {showAddSubtaskOption && !showQuickAddSubtask && (
+          {showAddSubtaskOption && !showQuickAddSubtask && !isCompleted && (
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -379,21 +473,12 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
                 border: `1px solid ${color}40`,
                 color: '#f5e6d3',
               }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = `${color}30`
-                e.currentTarget.style.transform = 'translateY(-1px)'
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = `${color}20`
-                e.currentTarget.style.transform = 'translateY(0)'
-              }}
             >
               <Plus className="w-3 h-3" />
               Quick add subtask
             </button>
           )}
 
-          {/* Quick Add Subtask Form */}
           {showQuickAddSubtask && (
             <QuickAddSubtask
               parentTaskId={task.id}
@@ -409,34 +494,54 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
         </div>
       )}
 
-      {/* Pause Confirmation Modal */}
+      {/* Add Subtask Button (when no subtasks exist) */}
+      {!hasSubtasks && !isCompleted && !showSubtasks && (
+        <div className="mt-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowSubtasks(true)
+              setShowQuickAddSubtask(true)
+            }}
+            className="w-full flex items-center justify-center gap-1 py-2 rounded-lg transition-all duration-200 text-xs"
+            style={{
+              background: `${color}10`,
+              border: `1px dashed ${color}30`,
+              color: `${color}aa`,
+            }}
+          >
+            <Plus className="w-3 h-3" />
+            Add subtask
+          </button>
+        </div>
+      )}
+
+      {/* Confirmation Modals */}
       <ConfirmationModal
         isOpen={showPauseConfirm}
         onConfirm={handleConfirmPause}
         onCancel={() => setShowPauseConfirm(false)}
-        title="⏸️ Pause Task?"
-        message={`Pause "${task.title}"? Time worked so far will be saved. You can resume later.`}
-        confirmText="Yes, Pause"
-        cancelText="Keep Working"
+        title="⏸️ Put to Sleep?"
+        message={`Suspend "${task.title}"? Time worked will be preserved in stasis~`}
+        confirmText="Yes, Sleep"
+        cancelText="Keep Haunting"
       />
 
-      {/* Complete Confirmation Modal */}
       <ConfirmationModal
         isOpen={showCompleteConfirm}
         onConfirm={handleConfirmComplete}
         onCancel={() => setShowCompleteConfirm(false)}
-        title="✅ Complete Task?"
-        message={`Mark "${task.title}" as completed?${task.parent_task_id ? ' Time worked will be added to the parent task.' : ''}`}
-        confirmText="Yes, Complete"
+        title="👻 Rest in Peace?"
+        message={`Lay "${task.title}"${task.parent_task_id ? ' to rest? Time worked will join the parent spirit' : ' to rest in the afterlife of completed tasks'}?`}
+        confirmText="Yes, Rest"
         cancelText="Not Yet"
       />
 
-      {/* Incomplete Subtasks Warning Modal */}
       <WarningModal
         isOpen={showIncompleteWarning}
         onClose={() => setShowIncompleteWarning(false)}
-        title="⚠️ Incomplete Subtasks"
-        message={`Complete all subtasks before marking the task as done.`}
+        title="⚠️ Unfinished Business"
+        message={`Complete all restless spirits before laying this task to rest~`}
         items={incompleteSubtasks.map(t => t.title)}
       />
     </div>
@@ -445,13 +550,22 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick }) =>
 
 // Subtask Item Component
 const SubtaskItem = memo(({ subtask, color, onTaskClick, setTasks }) => {
-  const { startTask, pauseTask, loading } = useTaskActions(setTasks)
+  const { startTask, pauseTask, completeTask, loading } = useTaskActions(setTasks)
   const isCompleted = subtask.status === 'completed'
   const isPending = subtask.status === 'pending'
   const isInProgress = subtask.status === 'in_progress'
   const isPaused = subtask.status === 'paused'
 
-  const statusIcon = isCompleted ? '✅' : isInProgress ? '🔄' : isPaused ? '⏸️' : '⬜'
+  const subtaskTime = useMemo(() => {
+    if (!isCompleted) return null
+    const minutes = subtask.actual_time_minutes > 0
+      ? subtask.actual_time_minutes
+      : (subtask.started_at && subtask.completed_at
+        ? Math.floor((new Date(subtask.completed_at) - new Date(subtask.started_at)) / 60000)
+        : null)
+    if (!minutes || minutes <= 0) return null
+    return minutes < 60 ? `${minutes}m` : `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+  }, [isCompleted, subtask.actual_time_minutes, subtask.started_at, subtask.completed_at])
 
   const handleStart = async (e) => {
     e.stopPropagation()
@@ -463,111 +577,115 @@ const SubtaskItem = memo(({ subtask, color, onTaskClick, setTasks }) => {
     await pauseTask(subtask.id, subtask.started_at, subtask.actual_time_minutes)
   }
 
+  const handleComplete = async (e) => {
+    e.stopPropagation()
+    await completeTask(subtask.id, subtask.started_at, subtask.actual_time_minutes)
+  }
+
   return (
     <div
-      className="rounded-lg px-3 py-2 transition-all duration-200 cursor-pointer"
+      className="rounded-xl px-3 py-2.5 transition-all duration-200 cursor-pointer backdrop-blur-sm"
       style={{
-        background: `${color}15`,
-        border: `1px solid ${color}30`,
+        background: 'rgba(30, 12, 15, 0.5)',
+        border: '1px solid rgba(200, 80, 80, 0.1)',
+        borderLeft: `2px solid ${color}80`,
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
         opacity: isCompleted ? 0.6 : 1
       }}
-      onClick={(e) => onTaskClick(e, subtask)}
       onMouseOver={(e) => {
-        e.currentTarget.style.background = `${color}25`
-        e.currentTarget.style.borderColor = `${color}50`
+        e.currentTarget.style.background = 'rgba(40, 18, 20, 0.6)'
+        e.currentTarget.style.borderLeftColor = color
+        e.currentTarget.style.transform = 'translateX(4px)'
       }}
       onMouseOut={(e) => {
-        e.currentTarget.style.background = `${color}15`
-        e.currentTarget.style.borderColor = `${color}30`
+        e.currentTarget.style.background = 'rgba(30, 12, 15, 0.5)'
+        e.currentTarget.style.borderLeftColor = `${color}80`
+        e.currentTarget.style.transform = 'translateX(0)'
       }}
+      onClick={(e) => onTaskClick(e, subtask)}
     >
-      <div className="flex items-center gap-2">
-        {/* Start Button for Pending Subtasks */}
-        {isPending && (
-          <button
-            onClick={handleStart}
-            disabled={loading}
-            className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
-            style={{
-              background: 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)',
-              border: 'none',
-              color: '#1a0a0a',
-              fontSize: '0.65rem'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'scale(1.1)'
-              e.currentTarget.style.boxShadow = '0 3px 10px rgba(255, 165, 2, 0.5)'
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'scale(1)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {isInProgress && (
+            <div 
+              className="flex-shrink-0 w-1.5 h-1.5 rounded-full"
+              style={{ background: '#c85050', animation: 'pulse 2s ease-in-out infinite' }}
+            />
+          )}
+          <span 
+            className={`text-sm truncate ${isCompleted ? 'line-through opacity-60' : ''}`}
+            style={{ color: '#f5e6d3' }}
           >
-            ▶️
-          </button>
-        )}
-
-        {/* Pause Button for In Progress Subtasks */}
-        {isInProgress && (
-          <button
-            onClick={handlePause}
-            disabled={loading}
-            className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
-            style={{
-              background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
-              border: 'none',
-              color: '#1a0a0a',
-              fontSize: '0.65rem'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'scale(1.1)'
-              e.currentTarget.style.boxShadow = '0 3px 10px rgba(46, 213, 115, 0.5)'
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'scale(1)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}
-          >
-            ⏸️
-          </button>
-        )}
-
-        {/* Resume Button for Paused Subtasks */}
-        {isPaused && (
-          <button
-            onClick={handleStart}
-            disabled={loading}
-            className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
-            style={{
-              background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
-              border: 'none',
-              color: '#1a0a0a',
-              fontSize: '0.65rem'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'scale(1.1)'
-              e.currentTarget.style.boxShadow = '0 3px 10px rgba(46, 213, 115, 0.5)'
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'scale(1)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}
-          >
-            ▶️
-          </button>
-        )}
-
-        {/* Status Icon (when no action button) */}
-        {!isPending && !isInProgress && !isPaused && (
-          <span className="text-sm flex-shrink-0">{statusIcon}</span>
-        )}
-
-        <span 
-          className={`text-sm ${isCompleted ? 'line-through opacity-60' : ''}`}
-          style={{ color: '#f5e6d3' }}
-        >
-          {subtask.title}
-        </span>
+            {subtask.title}
+          </span>
+          {isCompleted && subtaskTime && (
+            <span className="text-xs flex-shrink-0" style={{ color: '#d4a574' }}>
+              ⏱️ {subtaskTime}
+            </span>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-1 ml-2">
+          {isPending && (
+            <button
+              onClick={handleStart}
+              disabled={loading}
+              className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
+              style={{
+                background: 'rgba(123, 237, 159, 0.2)',
+                border: '1px solid rgba(123, 237, 159, 0.3)',
+                color: '#7bed9f'
+              }}
+            >
+              <Play size={10} fill="currentColor" />
+            </button>
+          )}
+          {isInProgress && (
+            <button
+              onClick={handlePause}
+              disabled={loading}
+              className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
+              style={{
+                background: 'rgba(255, 165, 2, 0.2)',
+                border: '1px solid rgba(255, 165, 2, 0.3)',
+                color: '#ffa502'
+              }}
+            >
+              <Pause size={10} />
+            </button>
+          )}
+          {isPaused && (
+            <button
+              onClick={handleStart}
+              disabled={loading}
+              className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
+              style={{
+                background: 'rgba(123, 237, 159, 0.2)',
+                border: '1px solid rgba(123, 237, 159, 0.3)',
+                color: '#7bed9f'
+              }}
+            >
+              <Play size={10} fill="currentColor" />
+            </button>
+          )}
+          {(isPending || isPaused || isInProgress) && (
+            <button
+              onClick={handleComplete}
+              disabled={loading}
+              className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
+              style={{
+                background: 'rgba(200, 80, 80, 0.2)',
+                border: '1px solid rgba(200, 80, 80, 0.3)',
+                color: '#c85050'
+              }}
+            >
+              <Ghost size={10} />
+            </button>
+          )}
+          {isCompleted && (
+            <span className="text-xs" style={{ color: '#7bed9f' }}>👻</span>
+          )}
+        </div>
       </div>
     </div>
   )

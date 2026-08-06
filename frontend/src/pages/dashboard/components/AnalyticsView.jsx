@@ -51,18 +51,21 @@ const AnalyticsView = ({ tasks }) => {
     // Total tasks completed
     const totalCompleted = completedTasks.length
 
-    // Total time spent
+    // Total time spent (prefer accumulated actual_time_minutes)
     const totalTimeMinutes = completedTasks.reduce((sum, task) => {
+      if (task.actual_time_minutes > 0) return sum + task.actual_time_minutes
       if (!task.started_at || !task.completed_at) return sum
       const start = new Date(task.started_at)
       const end = new Date(task.completed_at)
       return sum + Math.floor((end - start) / 60000)
     }, 0)
 
-    // On-time vs overtime
-    const tasksWithGoals = completedTasks.filter(t => t.goal_time_minutes && t.started_at && t.completed_at)
+    // On-time vs overtime (prefer actual_time_minutes)
+    const tasksWithGoals = completedTasks.filter(t => t.goal_time_minutes && ((t.actual_time_minutes > 0) || (t.started_at && t.completed_at)))
     const onTimeCount = tasksWithGoals.filter(t => {
-      const actual = Math.floor((new Date(t.completed_at) - new Date(t.started_at)) / 60000)
+      const actual = t.actual_time_minutes > 0
+        ? t.actual_time_minutes
+        : Math.floor((new Date(t.completed_at) - new Date(t.started_at)) / 60000)
       return actual <= t.goal_time_minutes
     }).length
     const overtimeCount = tasksWithGoals.length - onTimeCount
@@ -75,10 +78,13 @@ const AnalyticsView = ({ tasks }) => {
       low: completedTasks.filter(t => t.priority === 'low').length
     }
 
-    // Average completion time
+    // Average completion time (prefer actual_time_minutes)
     const avgCompletionTime = tasksWithGoals.length > 0
       ? Math.floor(tasksWithGoals.reduce((sum, t) => {
-          return sum + Math.floor((new Date(t.completed_at) - new Date(t.started_at)) / 60000)
+          const actual = t.actual_time_minutes > 0
+            ? t.actual_time_minutes
+            : Math.floor((new Date(t.completed_at) - new Date(t.started_at)) / 60000)
+          return sum + actual
         }, 0) / tasksWithGoals.length)
       : 0
 

@@ -6,7 +6,7 @@ export const getProfile = async (req, res) => {
     const userId = req.user.id
     
     // Try to get existing profile
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('id', userId)
@@ -24,8 +24,8 @@ export const getProfile = async (req, res) => {
       return res.status(404).json({ error: 'User not found' })
     }
     
-    // Create the missing profile row
-    const { data: newProfile, error: insertError } = await supabase
+    // Create the missing profile row (use admin to bypass RLS)
+    const { data: newProfile, error: insertError } = await supabaseAdmin
       .from('users')
       .insert({
         id: userId,

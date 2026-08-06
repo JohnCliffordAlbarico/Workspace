@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { Clock } from 'lucide-react'
 
-const DigitalClock = () => {
+const DigitalClock = memo(() => {
   const [time, setTime] = useState(new Date())
 
   useEffect(() => {
@@ -9,7 +9,6 @@ const DigitalClock = () => {
       setTime(new Date())
     }, 1000)
 
-    // Cleanup interval on unmount
     return () => clearInterval(timer)
   }, [])
 
@@ -30,11 +29,26 @@ const DigitalClock = () => {
     })
   }
 
+  const getTimeUntilMidnight = () => {
+    const now = new Date()
+    const midnight = new Date(now)
+    midnight.setHours(24, 0, 0, 0)
+    const diff = midnight - now
+
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m till reset`
+    }
+    return `${minutes}m till reset`
+  }
+
   return (
     <div 
       className="flex flex-col items-end"
       style={{
-        fontFamily: "'Inter', sans-serif"
+        fontFamily: "'Cinzel', serif"
       }}
     >
       <div className="flex items-center gap-1.5">
@@ -57,8 +71,16 @@ const DigitalClock = () => {
       >
         {formatDate(time)}
       </div>
+      <div 
+        className="text-xs mt-0.5 tabular-nums"
+        style={{ 
+          color: '#d4a574'
+        }}
+      >
+        ⏱ {getTimeUntilMidnight()}
+      </div>
     </div>
   )
-}
+})
 
-export default DigitalClock
+export default memo(DigitalClock)

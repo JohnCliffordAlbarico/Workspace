@@ -123,16 +123,18 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
 
   const handleToggleSubtask = async (subtaskId, currentStatus) => {
     try {
+      const subtask = subtasks.find(st => st.id === subtaskId)
       const newStatus = currentStatus === 'completed' ? 'pending' : 'completed'
-      const updateData = { status: newStatus }
       
       if (newStatus === 'completed') {
-        updateData.completed_at = new Date().toISOString()
+        // Use toggleTask to properly save session time
+        await toggleTask(subtaskId, currentStatus, false, subtask?.started_at, subtask?.actual_time_minutes)
+      } else {
+        // Reopening - just change status
+        const response = await api.put(`/tasks/${subtaskId}`, { status: newStatus })
+        setSubtasks(prev => prev.map(st => st.id === subtaskId ? response.data : st))
+        setTasks(prev => prev.map(t => t.id === subtaskId ? response.data : t))
       }
-
-      const response = await api.put(`/tasks/${subtaskId}`, updateData)
-      setSubtasks(prev => prev.map(st => st.id === subtaskId ? response.data : st))
-      setTasks(prev => prev.map(t => t.id === subtaskId ? response.data : t))
     } catch (error) {
       console.error('Failed to toggle subtask:', error)
     }
@@ -163,7 +165,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
   }
 
   const handleToggleComplete = async () => {
-    await toggleTask(task.id, task.status, true)
+    await toggleTask(task.id, task.status, true, task.started_at, task.actual_time_minutes)
     onClose()
   }
 

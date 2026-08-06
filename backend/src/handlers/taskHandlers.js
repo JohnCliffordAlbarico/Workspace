@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../config/supabase.js'
+import { encrypt, decrypt } from '../utils/crypto.js'
 
 // Helper function to calculate and create break time entries
 const calculateAndCreateBreakTime = async (userId, taskId, actualTimeMinutes, previousTimeMinutes = 0) => {
@@ -67,8 +68,14 @@ export const getTasks = async (req, res) => {
 
       if (error) throw error
 
+      const decrypted = data.map(task => ({
+        ...task,
+        title: decrypt(task.title),
+        description: decrypt(task.description)
+      }))
+
       return res.json({
-        data,
+        data: decrypted,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -83,7 +90,13 @@ export const getTasks = async (req, res) => {
 
     if (error) throw error
 
-    res.json(data)
+    const decrypted = data.map(task => ({
+      ...task,
+      title: decrypt(task.title),
+      description: decrypt(task.description)
+    }))
+
+    res.json(decrypted)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -103,7 +116,11 @@ export const getTaskById = async (req, res) => {
 
     if (error) throw error
 
-    res.json(data)
+    res.json({
+      ...data,
+      title: decrypt(data.title),
+      description: decrypt(data.description)
+    })
   } catch (error) {
     res.status(404).json({ error: 'Task not found' })
   }
@@ -123,7 +140,13 @@ export const getSubtasks = async (req, res) => {
 
     if (error) throw error
 
-    res.json(data)
+    const decrypted = data.map(task => ({
+      ...task,
+      title: decrypt(task.title),
+      description: decrypt(task.description)
+    }))
+
+    res.json(decrypted)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -154,8 +177,8 @@ export const createTask = async (req, res) => {
         category_id,
         user_id: req.user.id,
         parent_task_id,
-        title,
-        description,
+        title: encrypt(title),
+        description: description ? encrypt(description) : null,
         priority,
         status,
         position,
@@ -167,7 +190,11 @@ export const createTask = async (req, res) => {
 
     if (error) throw error
 
-    res.status(201).json(data)
+    res.status(201).json({
+      ...data,
+      title: decrypt(data.title),
+      description: decrypt(data.description)
+    })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -201,8 +228,8 @@ export const updateTask = async (req, res) => {
     if (fetchError) throw fetchError
 
     const updateData = {}
-    if (title !== undefined) updateData.title = title
-    if (description !== undefined) updateData.description = description
+    if (title !== undefined) updateData.title = encrypt(title)
+    if (description !== undefined) updateData.description = description ? encrypt(description) : null
     if (priority !== undefined) updateData.priority = priority
     if (status !== undefined) updateData.status = status
     if (position !== undefined) updateData.position = position
@@ -268,7 +295,11 @@ export const updateTask = async (req, res) => {
       }
     }
 
-    res.json(data)
+    res.json({
+      ...data,
+      title: decrypt(data.title),
+      description: decrypt(data.description)
+    })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

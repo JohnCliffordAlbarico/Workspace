@@ -27,8 +27,6 @@ const TaskModal = ({ isOpen, onClose, categoryId, categories, setTasks, tasks })
       priority: 'medium',
       status: 'pending',
       days_until_due: '',
-      goal_hours: '',
-      goal_minutes: '',
       parent_task_id: ''
     }
   })
@@ -58,8 +56,6 @@ const TaskModal = ({ isOpen, onClose, categoryId, categories, setTasks, tasks })
         priority: 'medium',
         status: 'pending',
         days_until_due: '',
-        goal_hours: '',
-        goal_minutes: '',
         parent_task_id: ''
       })
       localStorage.removeItem(STORAGE_KEY)
@@ -103,14 +99,6 @@ const TaskModal = ({ isOpen, onClose, categoryId, categories, setTasks, tasks })
       due_date = dueDate.toISOString()
     }
 
-    // Calculate goal_time_minutes from hours and minutes
-    let goal_time_minutes = null
-    const hours = parseInt(formData.goal_hours) || 0
-    const minutes = parseInt(formData.goal_minutes) || 0
-    if (hours > 0 || minutes > 0) {
-      goal_time_minutes = (hours * 60) + minutes
-    }
-
     const taskData = {
       category_id: categoryId,
       title: formData.title,
@@ -118,7 +106,6 @@ const TaskModal = ({ isOpen, onClose, categoryId, categories, setTasks, tasks })
       priority: formData.priority,
       status: formData.status,
       due_date: due_date,
-      goal_time_minutes: goal_time_minutes,
       parent_task_id: formData.parent_task_id || null
     }
 
@@ -325,9 +312,8 @@ const TaskModal = ({ isOpen, onClose, categoryId, categories, setTasks, tasks })
             </select>
           </div>
 
-          {/* Days Until Due and Goal Time Row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
+          {/* Days Until Due */}
+          <div>
               <label 
                 className="block mb-2 text-sm font-semibold"
                 style={{ color: '#f5e6d3' }}
@@ -349,63 +335,6 @@ const TaskModal = ({ isOpen, onClose, categoryId, categories, setTasks, tasks })
                 }}
               />
             </div>
-
-            <div>
-              <label 
-                className="block mb-2 text-sm font-semibold"
-                style={{ color: '#f5e6d3' }}
-              >
-                Goal Time
-              </label>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    name="goal_hours"
-                    value={formData.goal_hours}
-                    onChange={handleChange}
-                    placeholder="Hours"
-                    min="0"
-                    className="flex-1 px-4 py-2 rounded-xl text-base outline-none"
-                    style={{
-                      background: 'rgba(0,0,0,0.4)',
-                      border: '1px solid rgba(200, 80, 80, 0.3)',
-                      color: '#f5e6d3'
-                    }}
-                  />
-                  <span 
-                    className="text-sm font-semibold"
-                    style={{ color: '#a89080', minWidth: '50px' }}
-                  >
-                    hours
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    name="goal_minutes"
-                    value={formData.goal_minutes}
-                    onChange={handleChange}
-                    placeholder="Minutes"
-                    min="0"
-                    max="59"
-                    className="flex-1 px-4 py-2 rounded-xl text-base outline-none"
-                    style={{
-                      background: 'rgba(0,0,0,0.4)',
-                      border: '1px solid rgba(200, 80, 80, 0.3)',
-                      color: '#f5e6d3'
-                    }}
-                  />
-                  <span 
-                    className="text-sm font-semibold"
-                    style={{ color: '#a89080', minWidth: '50px' }}
-                  >
-                    minutes
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Parent Task (Subtask) */}
           {availableParentTasks.length > 0 && (

@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { Plus, Clock } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
-const QuickAddTask = ({ categoryId, onTaskAdded }) => {
+const QuickAddTask = ({ onTaskAdded }) => {
   const [title, setTitle] = useState('')
-  const [minutes, setMinutes] = useState('')
   const [isAdding, setIsAdding] = useState(false)
 
   const handleSubmit = async (e) => {
@@ -13,9 +12,8 @@ const QuickAddTask = ({ categoryId, onTaskAdded }) => {
 
     setIsAdding(true)
     try {
-      await onTaskAdded(title.trim(), minutes ? parseInt(minutes) : null)
+      await onTaskAdded(title.trim())
       setTitle('')
-      setMinutes('')
     } catch (error) {
       console.error('Failed to add task:', error)
     } finally {
@@ -85,38 +83,6 @@ const QuickAddTask = ({ categoryId, onTaskAdded }) => {
           <Plus className="w-5 h-5" />
           <span className="font-semibold">Add</span>
         </button>
-      </div>
-      
-      {/* Minutes Input */}
-      <div className="flex items-center gap-2">
-        <label className="text-xs font-semibold whitespace-nowrap" style={{ color: '#c85050', fontFamily: "'Cinzel', serif" }}>
-          Goal Time
-        </label>
-        <Clock className="w-4 h-4" style={{ color: '#ffa502' }} />
-        <input
-          type="number"
-          value={minutes}
-          onChange={(e) => setMinutes(e.target.value)}
-          placeholder="Goal time (minutes)"
-          min="1"
-          disabled={isAdding}
-          className="flex-1 px-3 py-2 rounded-lg text-sm transition-all duration-200"
-          style={{
-            background: 'rgba(0, 0, 0, 0.3)',
-            border: '1px solid rgba(200, 80, 80, 0.2)',
-            color: '#f5e6d3',
-            outline: 'none',
-          }}
-          onFocus={(e) => {
-            e.target.style.border = '1px solid rgba(200, 80, 80, 0.5)'
-            e.target.style.background = 'rgba(0, 0, 0, 0.4)'
-          }}
-          onBlur={(e) => {
-            e.target.style.border = '1px solid rgba(200, 80, 80, 0.2)'
-            e.target.style.background = 'rgba(0, 0, 0, 0.3)'
-          }}
-        />
-
       </div>
     </form>
   )

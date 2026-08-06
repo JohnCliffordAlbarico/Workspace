@@ -1,0 +1,431 @@
+import { createPortal } from 'react-dom'
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths } from 'date-fns'
+import { useEffect, useState, useMemo } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+
+const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCategory }) => {
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [activeTab, setActiveTab] = useState('all')
+
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape' && isOpen) onClose()
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [isOpen, onClose])
+
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentDate(new Date())
+      setActiveTab(initialCategory?.id || 'all')
+    }
+  }, [isOpen, initialCategory])
+
+  const formatLocalDate = (date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  const formatMinutes = (min) => {
+    const h = Math.floor(min / 60)
+    const m = min % 60
+    return h > 0 ? `${h}h ${m}m` : `${m}m`
+  }
+
+  const getBarColor = (percentage) => {
+    if (percentage >= 100) return '#7bed9f'
+    if (percentage >= 50) return '#ffa502'
+    if (percentage > 0) return '#ff6b6b'
+    return 'rgba(200, 80, 80, 0.2)'
+  }
+
+  // Compute per-day data for all categories
+  const allCategoryDayData = useMemo(() => {
+    if (!categories?.length || !tasks) return {}
+
+    const monthStart = startOfMonth(currentDate)
+    const monthEnd = endOfMonth(currentDate)
+    const calStart = startOfWeek(monthStart)
+    const calEnd = endOfWeek(monthEnd)
+    const days = eachDayOfInterval({ start: calStart, end: calEnd })
+
+    const data = {}
+    days.forEach(day => {
+      const dateStr = formatLocalDate(day)
+      const catData = {}
+
+      categories.forEach(cat => {
+        const categoryTasks = tasks.filter(t => t.category_id === cat.id)
+        const completedToday = categoryTasks.filter(t => {
+          if (!t.completed_at) return false
+          return formatLocalDate(new Date(t.completed_at)) === dateStr
+        })
+        const actualMinutes = completedToday.reduce((sum, t) => sum + (t.actual_time_minutes || 0), 0)
+        const allocatedMinutes = cat.daily_allocation_minutes || 0
+        const percentage = allocatedMinutes > 0 ? Math.min(100, Math.round((actualMinutes / allocatedMinutes) * 100)) : 0
+
+        catData[cat.id] = { actualMinutes, allocatedMinutes, percentage, taskCount: completedToday.length, color: cat.color, name: cat.name }
+      })
+
+      data[dateStr] = catData
+    })
+
+    return data
+  }, [categories, tasks, currentDate])
+
+  // Compute stats for a given tab (all or specific category)
+  const getStats = (tabId) => {
+    const values = Object.values(allCategoryDayData)
+
+    if (tabId === 'all') {
+      let totalActual = 0
+      let totalAllocated = 0
+      let daysWithData = 0
+      let daysMet = 0
+
+      values.forEach(dayCats => {
+        const cats = Object.values(dayCats)
+        const dayActual = cats.reduce((sum, c) => sum + c.actualMinutes, 0)
+        const dayAllocated = cats.reduce((sum, c) => sum + c.allocatedMinutes, 0)
+        totalActual += dayActual
+        totalAllocated += dayAllocated
+        if (dayActual > 0) daysWithData++
+        if (dayAllocated > 0 && dayActual >= dayAllocated) daysMet++
+      })
+
+      return {
+        totalActual,
+        totalAllocated,
+        daysWithData,
+        daysMet,
+        avgPerDay: daysWithData > 0 ? Math.round(totalActual / daysWithData) : 0
+      }
+    }
+
+    // Specific category
+    let totalActual = 0
+    let totalAllocated = 0
+    let daysWithData = 0
+    let daysMet = 0
+
+    values.forEach(dayCats => {
+      const cat = dayCats[tabId]
+      if (!cat) return
+      totalActual += cat.actualMinutes
+      totalAllocated += cat.allocatedMinutes
+      if (cat.actualMinutes > 0) daysWithData++
+      if (cat.allocatedMinutes > 0 && cat.actualMinutes >= cat.allocatedMinutes) daysMet++
+    })
+
+    const cat = categories?.find(c => c.id === tabId)
+    return {
+      totalActual,
+      totalAllocated: cat?.daily_allocation_minutes || 0,
+      daysWithData,
+      daysMet,
+      avgPerDay: daysWithData > 0 ? Math.round(totalActual / daysWithData) : 0
+    }
+  }
+
+  const stats = useMemo(() => getStats(activeTab), [activeTab, allCategoryDayData, categories])
+
+  if (!isOpen || !categories?.length) return null
+
+  const monthStart = startOfMonth(currentDate)
+  const monthEnd = endOfMonth(currentDate)
+  const calendarStart = startOfWeek(monthStart)
+  const calendarEnd = endOfWeek(monthEnd)
+  const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
+  const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  const tabs = [{ id: 'all', name: 'All', color: '#d4a574' }, ...categories]
+
+  return createPortal(
+    <div
+      className="fixed inset-0 flex items-center justify-center p-4"
+      style={{
+        background: 'rgba(0, 0, 0, 0.8)',
+        backdropFilter: 'blur(8px)',
+        zIndex: 10000
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-5xl rounded-2xl p-8 max-h-[90vh] overflow-y-auto"
+        style={{
+          background: 'linear-gradient(145deg, rgba(45, 20, 25, 0.95) 0%, rgba(26, 10, 10, 0.98) 100%)',
+          border: '2px solid rgba(200, 80, 80, 0.3)',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h2
+            className="text-2xl font-bold"
+            style={{
+              fontFamily: "'Cinzel', serif",
+              color: '#f5e6d3',
+              textShadow: '0 2px 10px rgba(200, 80, 80, 0.3)'
+            }}
+          >
+            Allocation History
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-2xl transition-all duration-200"
+            style={{ color: '#c85050' }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'rotate(90deg)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'rotate(0deg)'}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Tab Switcher */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          {tabs.map(tab => {
+            const isActive = activeTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className="px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap flex items-center gap-2"
+                style={{
+                  background: isActive
+                    ? 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)'
+                    : 'rgba(0,0,0,0.3)',
+                  color: isActive ? '#f5e6d3' : '#a89080',
+                  border: isActive
+                    ? '1px solid rgba(200, 80, 80, 0.5)'
+                    : '1px solid rgba(200, 80, 80, 0.2)'
+                }}
+              >
+                {tab.id !== 'all' && (
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: tab.color }} />
+                )}
+                {tab.name}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Monthly Summary */}
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          {[
+            { label: 'Total Worked', value: formatMinutes(stats.totalActual), color: '#ffa502' },
+            { label: 'Daily Target', value: formatMinutes(stats.totalAllocated), color: '#70a1ff' },
+            { label: 'Days Met Target', value: `${stats.daysMet}`, color: '#7bed9f' },
+            { label: 'Avg / Day', value: formatMinutes(stats.avgPerDay), color: '#d4a574' }
+          ].map((stat, i) => (
+            <div
+              key={i}
+              className="p-4 rounded-xl text-center"
+              style={{
+                background: 'rgba(0, 0, 0, 0.3)',
+                border: `1px solid ${stat.color}30`
+              }}
+            >
+              <div className="text-xs uppercase tracking-wider mb-1" style={{ color: '#a89080' }}>
+                {stat.label}
+              </div>
+              <div className="text-xl font-bold" style={{ color: stat.color, fontFamily: "'Cinzel', serif" }}>
+                {stat.value}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Month Navigation */}
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => setCurrentDate(prev => subMonths(prev, 1))}
+            className="p-2 rounded-lg transition-all duration-200"
+            style={{ color: '#c85050' }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(200, 80, 80, 0.2)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h3
+            className="text-lg font-bold"
+            style={{ fontFamily: "'Cinzel', serif", color: '#f5e6d3' }}
+          >
+            {format(currentDate, 'MMMM yyyy')}
+          </h3>
+          <button
+            onClick={() => setCurrentDate(prev => addMonths(prev, 1))}
+            className="p-2 rounded-lg transition-all duration-200"
+            style={{ color: '#c85050' }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(200, 80, 80, 0.2)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Calendar Grid */}
+        <div
+          className="rounded-xl overflow-hidden mb-6"
+          style={{
+            background: 'rgba(45, 20, 25, 0.4)',
+            border: '1px solid rgba(200, 80, 80, 0.2)'
+          }}
+        >
+          {/* Day Headers */}
+          <div className="grid grid-cols-7 gap-px" style={{ background: 'rgba(200, 80, 80, 0.1)' }}>
+            {dayHeaders.map(day => (
+              <div
+                key={day}
+                className="p-2 text-center font-semibold"
+                style={{
+                  background: 'rgba(45, 20, 25, 0.8)',
+                  color: '#c85050',
+                  fontFamily: "'Cinzel', serif",
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Day Cells */}
+          <div className="grid grid-cols-7 gap-px" style={{ background: 'rgba(200, 80, 80, 0.1)' }}>
+            {days.map(day => {
+              const dateStr = formatLocalDate(day)
+              const dayCats = allCategoryDayData[dateStr] || {}
+              const isCurrentMonth = isSameMonth(day, currentDate)
+              const today = isToday(day)
+
+              // Compute display data based on active tab
+              let displayBars = []
+              let hasAnyWork = false
+
+              if (activeTab === 'all') {
+                Object.values(dayCats).forEach(cat => {
+                  if (cat.allocatedMinutes > 0 || cat.actualMinutes > 0) {
+                    displayBars.push(cat)
+                    if (cat.actualMinutes > 0) hasAnyWork = true
+                  }
+                })
+              } else {
+                const cat = dayCats[activeTab]
+                if (cat && (cat.allocatedMinutes > 0 || cat.actualMinutes > 0)) {
+                  displayBars.push(cat)
+                  if (cat.actualMinutes > 0) hasAnyWork = true
+                }
+              }
+
+              return (
+                <div
+                  key={day.toISOString()}
+                  className="min-h-[100px] p-2 transition-all duration-200"
+                  style={{
+                    background: today
+                      ? 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)'
+                      : hasAnyWork
+                      ? 'rgba(45, 20, 25, 0.8)'
+                      : 'rgba(45, 20, 25, 0.6)',
+                    opacity: isCurrentMonth ? 1 : 0.4,
+                    border: today ? '2px solid #c85050' : 'none',
+                    boxShadow: today ? '0 0 15px rgba(200, 80, 80, 0.4)' : 'none'
+                  }}
+                >
+                  {/* Day Number */}
+                  <div
+                    className="text-sm font-bold mb-1"
+                    style={{
+                      fontFamily: "'Cinzel', serif",
+                      color: today ? '#fff' : '#f5e6d3'
+                    }}
+                  >
+                    {format(day, 'd')}
+                  </div>
+
+                  {/* Allocation Bars */}
+                  {isCurrentMonth && displayBars.length > 0 && (
+                    <div className="space-y-1.5 mt-1">
+                      {displayBars.map((cat, i) => {
+                        const barColor = getBarColor(cat.percentage)
+                        return (
+                          <div key={i}>
+                            {activeTab === 'all' && (
+                              <div className="flex items-center gap-1 mb-0.5">
+                                <div className="w-1.5 h-1.5 rounded-full" style={{ background: cat.color }} />
+                                <span className="text-[9px] font-semibold" style={{ color: cat.color }}>
+                                  {cat.name}
+                                </span>
+                              </div>
+                            )}
+                            <div
+                              className="h-1.5 rounded-full overflow-hidden"
+                              style={{ background: 'rgba(0,0,0,0.4)' }}
+                            >
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${cat.percentage}%`,
+                                  background: barColor
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-[9px] mt-0.5">
+                              <span style={{ color: barColor }}>
+                                {formatMinutes(cat.actualMinutes)}
+                              </span>
+                              <span style={{ color: '#a89080' }}>
+                                {formatMinutes(cat.allocatedMinutes)}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-6 mb-6 justify-center">
+          {[
+            { color: '#7bed9f', label: '100%+' },
+            { color: '#ffa502', label: '50-99%' },
+            { color: '#ff6b6b', label: '<50%' },
+            { color: 'rgba(200, 80, 80, 0.2)', label: 'No work' }
+          ].map((item, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded" style={{ background: item.color }} />
+              <span className="text-xs" style={{ color: '#a89080' }}>{item.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="w-full py-3 rounded-lg text-center transition-all duration-300"
+          style={{
+            background: 'rgba(200, 80, 80, 0.2)',
+            border: '1px solid rgba(200, 80, 80, 0.3)',
+            color: '#f5e6d3'
+          }}
+          onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(200, 80, 80, 0.3)' }}
+          onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(200, 80, 80, 0.2)' }}
+        >
+          Close (ESC)
+        </button>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
+export default AllocationHistoryModal

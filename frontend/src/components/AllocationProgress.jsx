@@ -1,4 +1,6 @@
-const AllocationProgress = ({ actualMinutes, dailyAllocation, compact = false }) => {
+import { memo } from 'react'
+
+const AllocationProgress = memo(({ actualMinutes, dailyAllocation, compact = false }) => {
   const percentage = dailyAllocation > 0 
     ? Math.min(100, Math.round((actualMinutes / dailyAllocation) * 100))
     : 0
@@ -53,6 +55,6 @@ const AllocationProgress = ({ actualMinutes, dailyAllocation, compact = false })
       </div>
     </div>
   )
-}
+})
 
-export default AllocationProgress
+export default memo(AllocationProgress)

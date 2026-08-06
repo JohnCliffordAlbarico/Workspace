@@ -63,5 +63,110 @@ input[type="number"]:hover::-webkit-outer-spin-button {
   opacity: 1;
 }
 
+/* Global Animations */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 25px rgba(200, 80, 80, 0.5); }
+  50% { box-shadow: 0 0 40px rgba(200, 80, 80, 0.8); }
+}
 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ghostFloat {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.7; }
+  50% { transform: translateY(-8px) scale(1.05); opacity: 0.9; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(2deg); }
+  66% { transform: translateY(5px) rotate(-1deg); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Diary book-open animation */
+@keyframes bookSlideLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes bookSlideRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.book-entry > div:first-child {
+  animation: bookSlideLeft 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.book-entry > div:last-child {
+  animation: bookSlideRight 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.08s both;
+}
+
+/* Floating butterflies */
+@keyframes flutter1 {
+  0%   { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 0; }
+  10%  { opacity: 0.7; }
+  50%  { transform: translate(80px, -120px) rotate(15deg) scale(1.1); opacity: 0.5; }
+  90%  { opacity: 0.3; }
+  100% { transform: translate(150px, -250px) rotate(-10deg) scale(0.8); opacity: 0; }
+}
+
+@keyframes flutter2 {
+  0%   { transform: translate(0, 0) rotate(0deg) scale(0.9); opacity: 0; }
+  15%  { opacity: 0.6; }
+  50%  { transform: translate(-100px, -100px) rotate(-20deg) scale(1); opacity: 0.4; }
+  85%  { opacity: 0.2; }
+  100% { transform: translate(-180px, -220px) rotate(12deg) scale(0.7); opacity: 0; }
+}
+
+@keyframes flutter3 {
+  0%   { transform: translate(0, 0) rotate(5deg) scale(1); opacity: 0; }
+  12%  { opacity: 0.5; }
+  50%  { transform: translate(50px, -150px) rotate(-8deg) scale(1.05); opacity: 0.35; }
+  88%  { opacity: 0.15; }
+  100% { transform: translate(-30px, -280px) rotate(18deg) scale(0.6); opacity: 0; }
+}
+
+@keyframes wingFlap {
+  0%, 100% { transform: scaleX(1); }
+  50%      { transform: scaleX(0.6); }
+}
+
+.diary-butterfly {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
+  font-size: 1.1rem;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 0 4px rgba(200, 50, 50, 0.4));
+}
+
+.diary-butterfly span {
+  display: inline-block;
+  animation: wingFlap 0.3s ease-in-out infinite;
+}
+
+.diary-butterfly:nth-child(1) { left: 10%; bottom: 5%; animation: flutter1 6s ease-in-out 0s infinite; color: #ff6b6b; }
+.diary-butterfly:nth-child(2) { left: 30%; bottom: 0%; animation: flutter2 7s ease-in-out 1.2s infinite; color: #c85050; }
+.diary-butterfly:nth-child(3) { left: 55%; bottom: 8%; animation: flutter3 5.5s ease-in-out 0.6s infinite; color: #e74c3c; }
+.diary-butterfly:nth-child(4) { left: 75%; bottom: 3%; animation: flutter1 8s ease-in-out 2s infinite; color: #ff4757; }
+.diary-butterfly:nth-child(5) { left: 90%; bottom: 10%; animation: flutter2 6.5s ease-in-out 0.3s infinite; color: #ff6b81; }
+.diary-butterfly:nth-child(6) { left: 45%; bottom: 2%; animation: flutter3 7.5s ease-in-out 1.8s infinite; color: #d63031; }
 

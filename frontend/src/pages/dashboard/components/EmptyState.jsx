@@ -1,13 +1,7 @@
 const EmptyState = () => {
   return (
     <div className="text-center py-16">
-      <style>{`
-        @keyframes ghostFloat {
-          0%, 100% { transform: translateY(0) scale(1); opacity: 0.7; }
-          50% { transform: translateY(-8px) scale(1.05); opacity: 0.9; }
-        }
-      `}</style>
-      
+
       <div 
         className="text-6xl mb-4"
         style={{ animation: 'ghostFloat 3s ease-in-out infinite' }}

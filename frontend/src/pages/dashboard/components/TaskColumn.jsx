@@ -1,11 +1,11 @@
 import { useDroppable } from '@dnd-kit/core'
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, memo } from 'react'
 import { ChevronDown } from 'lucide-react'
 import TaskItem from './TaskItem'
 
 const TASKS_PER_PAGE = 10
 
-const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick, allTasks, status, isDragging, showCompletedCount = false }) => {
+const TaskColumn = memo(({ title, color, tasks, setTasks, onTaskClick, allTasks, status, isDragging, showCompletedCount = false }) => {
   const [visibleCount, setVisibleCount] = useState(TASKS_PER_PAGE)
   const { setNodeRef, isOver } = useDroppable({
     id: status
@@ -105,6 +105,6 @@ const TaskColumn = ({ title, color, tasks, setTasks, onTaskClick, allTasks, stat
       </div>
     </section>
   )
-}
+})
 
-export default TaskColumn
+export default memo(TaskColumn)

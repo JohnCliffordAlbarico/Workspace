@@ -79,16 +79,7 @@ const MainMenuOverlay = ({ isOpen, onClose, onSelectView, currentView, onManageC
         animation: 'fadeIn 0.3s ease-out'
       }}
     >
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(30px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-      `}</style>
+
 
       <div 
         className="max-w-4xl w-full mx-8 p-8 rounded-2xl"
