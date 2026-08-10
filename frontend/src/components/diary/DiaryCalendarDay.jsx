@@ -1,6 +1,7 @@
+import React from 'react'
 import { format } from 'date-fns'
 
-const DiaryCalendarDay = ({
+const DiaryCalendarDay = React.memo(({
   date,
   isCurrentMonth,
   isToday,
@@ -10,10 +11,15 @@ const DiaryCalendarDay = ({
 }) => {
   const dayNumber = format(date, 'd')
 
+  const handleClick = () => {
+    onClick(date)
+  }
+
   return (
     <div
-      onClick={onClick}
-      className="min-h-[90px] p-2 transition-all duration-300"
+      onClick={handleClick}
+      className="min-h-[90px] p-2 transition-all duration-300 diary-day-cell"
+      data-has-entries={hasEntries || undefined}
       style={{
         background: isToday
           ? 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)'
@@ -25,20 +31,6 @@ const DiaryCalendarDay = ({
         border: isToday ? '2px solid #c85050' : 'none',
         boxShadow: isToday ? '0 0 25px rgba(200, 80, 80, 0.5)' : 'none',
         animation: isToday ? 'pulseGlow 3s ease-in-out infinite' : 'none'
-      }}
-      onMouseOver={(e) => {
-        if (hasEntries) {
-          e.currentTarget.style.transform = 'scale(1.05)'
-          e.currentTarget.style.boxShadow = '0 8px 25px rgba(200, 80, 80, 0.5)'
-          e.currentTarget.style.zIndex = '10'
-        }
-      }}
-      onMouseOut={(e) => {
-        if (hasEntries) {
-          e.currentTarget.style.transform = 'scale(1)'
-          e.currentTarget.style.boxShadow = isToday ? '0 0 25px rgba(200, 80, 80, 0.5)' : 'none'
-          e.currentTarget.style.zIndex = '1'
-        }
       }}
     >
       {/* Day Number */}
@@ -82,6 +74,8 @@ const DiaryCalendarDay = ({
       )}
     </div>
   )
-}
+})
+
+DiaryCalendarDay.displayName = 'DiaryCalendarDay'
 
 export default DiaryCalendarDay

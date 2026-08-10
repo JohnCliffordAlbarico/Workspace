@@ -272,3 +272,13 @@ input[type="number"]:hover::-webkit-outer-spin-button {
   animation: blink 1s step-end infinite;
 }
 
+/* Diary calendar day hover - replaces inline onMouseOver/onMouseOut handlers */
+.diary-day-cell[data-has-entries] {
+  cursor: pointer;
+}
+.diary-day-cell[data-has-entries]:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 25px rgba(200, 80, 80, 0.5);
+  z-index: 10;
+}
+

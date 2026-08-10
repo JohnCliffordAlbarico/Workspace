@@ -1,38 +1,42 @@
+import React, { useMemo } from 'react'
 import {
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
+  startOfMonth, endOfMonth,
+  startOfWeek, endOfWeek,
   eachDayOfInterval,
-  isSameMonth,
-  isToday
+  isSameMonth, isToday
 } from 'date-fns'
 import DiaryCalendarDay from './DiaryCalendarDay'
 
-const DiaryCalendarGrid = ({ currentDate, entries, onDateClick }) => {
-  const monthStart = startOfMonth(currentDate)
-  const monthEnd = endOfMonth(currentDate)
-  const calendarStart = startOfWeek(monthStart)
-  const calendarEnd = endOfWeek(monthEnd)
+const formatLocalDate = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
-  const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
-
+const DiaryCalendarGrid = ({ currentDate, entriesByDate, onDateClick }) => {
   const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-  const formatLocalDate = (date) => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
-
-  const getEntriesForDate = (date) => {
-    const dateStr = formatLocalDate(date)
-    return entries.filter(e => {
-      if (!e.created_at) return false
-      return formatLocalDate(new Date(e.created_at)) === dateStr
+  // Memoize everything together — days array + entry lookups, recomputes only when currentDate or entriesByDate change
+  const dayInfos = useMemo(() => {
+    const monthStart = startOfMonth(currentDate)
+    const monthEnd = endOfMonth(currentDate)
+    const calendarStart = startOfWeek(monthStart)
+    const calendarEnd = endOfWeek(monthEnd)
+    const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
+    return days.map(day => {
+      const dateStr = formatLocalDate(day)
+      const dayEntries = entriesByDate.get(dateStr)
+      return {
+        day,
+        dateStr,
+        hasEntries: !!dayEntries,
+        entriesCount: dayEntries ? dayEntries.length : 0,
+        isCurrentMonth: isSameMonth(day, currentDate),
+        isToday: isToday(day)
+      }
     })
-  }
+  }, [entriesByDate, currentDate])
 
   return (
     <div
@@ -69,25 +73,20 @@ const DiaryCalendarGrid = ({ currentDate, entries, onDateClick }) => {
         className="grid grid-cols-7 gap-px"
         style={{ background: 'rgba(200, 80, 80, 0.1)' }}
       >
-        {days.map(day => {
-          const entriesForDay = getEntriesForDate(day)
-          const hasEntries = entriesForDay.length > 0
-
-          return (
-            <DiaryCalendarDay
-              key={day.toISOString()}
-              date={day}
-              isCurrentMonth={isSameMonth(day, currentDate)}
-              isToday={isToday(day)}
-              hasEntries={hasEntries}
-              entriesCount={entriesForDay.length}
-              onClick={() => onDateClick(day)}
-            />
-          )
-        })}
+        {dayInfos.map(info => (
+          <DiaryCalendarDay
+            key={info.dateStr}
+            date={info.day}
+            isCurrentMonth={info.isCurrentMonth}
+            isToday={info.isToday}
+            hasEntries={info.hasEntries}
+            entriesCount={info.entriesCount}
+            onClick={onDateClick}
+          />
+        ))}
       </div>
     </div>
   )
 }
 
-export default DiaryCalendarGrid
+export default React.memo(DiaryCalendarGrid)

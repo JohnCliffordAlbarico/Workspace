@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import api from '../config/api'
 
 export const useDiary = () => {
   const [entries, setEntries] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
   const fetchEntries = useCallback(async () => {
@@ -19,10 +19,6 @@ export const useDiary = () => {
       setLoading(false)
     }
   }, [])
-
-  useEffect(() => {
-    fetchEntries()
-  }, [fetchEntries])
 
   // All mutation helpers let errors propagate so the UI can catch and display them
 

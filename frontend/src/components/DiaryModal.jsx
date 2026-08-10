@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { X, Plus, ChevronLeft, BookOpen } from 'lucide-react'
 import { format, endOfMonth } from 'date-fns'
 import { useDiary } from '../hooks/useDiary'
@@ -26,6 +26,11 @@ const DiaryModal = () => {
     createEntry, updateEntry, deleteEntry, uploadCover, deleteCover
   } = useDiary()
 
+  // Fix #1: Only fetch diary entries when the modal is open (not on dashboard mount)
+  useEffect(() => {
+    if (isOpen) fetchEntries()
+  }, [isOpen, fetchEntries])
+
   // ESC key navigation
   useEffect(() => {
     const handleEsc = (e) => {
@@ -38,27 +43,40 @@ const DiaryModal = () => {
     return () => window.removeEventListener('keydown', handleEsc)
   }, [isOpen, view, selectedEntry])
 
-  const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
-  const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
-  const handleToday = () => setCurrentDate(new Date())
+  // Fix #3: Stable callbacks so child components don't re-render unnecessarily
+  const handlePrevMonth = useCallback(() => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1)), [])
+  const handleNextMonth = useCallback(() => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1)), [])
+  const handleToday = useCallback(() => setCurrentDate(new Date()), [])
 
-  const handleDateClick = (date) => {
+  const handleDateClick = useCallback((date) => {
     setSelectedDate(date)
     setSelectedEntry(null)
     setView('day')
-  }
+  }, [])
+
+  // Fix #2: Pre-index entries by date — O(1) lookups instead of O(N) scans per day
+  const entriesByDate = useMemo(() => {
+    const map = new Map()
+    for (const entry of entries) {
+      if (!entry.created_at) continue
+      const key = formatLocalDate(new Date(entry.created_at))
+      if (!map.has(key)) map.set(key, [])
+      map.get(key).push(entry)
+    }
+    return map
+  }, [entries])
 
   // Auto-select single entry for the day
   useEffect(() => {
     if (view !== 'day' || !selectedDate) return
     const dateStr = formatLocalDate(selectedDate)
-    const matching = entries.filter(e => e.created_at && formatLocalDate(new Date(e.created_at)) === dateStr)
+    const matching = entriesByDate.get(dateStr) || []
     if (matching.length === 1) {
       setSelectedEntry(matching[0])
     } else {
       setSelectedEntry(null)
     }
-  }, [view, selectedDate, entries])
+  }, [view, selectedDate, entriesByDate])
 
   const handleSelectEntry = (entry) => {
     setSelectedEntry(entry)
@@ -109,20 +127,27 @@ const DiaryModal = () => {
 
   const monthlyStats = useMemo(() => {
     const monthEnd = endOfMonth(currentDate)
-    const monthStr = format(currentDate, 'yyyy-MM')
-    const entriesThisMonth = entries.filter(e => e.created_at && format(new Date(e.created_at), 'yyyy-MM') === monthStr)
     const daysInMonth = monthEnd.getDate()
-    const daysWithEntries = new Set(entriesThisMonth.map(e => format(new Date(e.created_at), 'yyyy-MM-dd'))).size
-    return {
-      totalEntries: entriesThisMonth.length,
-      daysWithEntries,
-      avgPerDay: entriesThisMonth.length > 0 ? (entriesThisMonth.length / daysInMonth).toFixed(1) : 0
+    const monthPrefix = format(currentDate, 'yyyy-MM')
+    let totalEntries = 0
+    const daysWithEntriesSet = new Set()
+    for (const [dateStr, dayEntries] of entriesByDate) {
+      if (dateStr.startsWith(monthPrefix)) {
+        totalEntries += dayEntries.length
+        daysWithEntriesSet.add(dateStr)
+      }
     }
-  }, [currentDate, entries])
+    return {
+      totalEntries,
+      daysWithEntries: daysWithEntriesSet.size,
+      avgPerDay: totalEntries > 0 ? (totalEntries / daysInMonth).toFixed(1) : 0
+    }
+  }, [currentDate, entriesByDate])
 
-  const entriesForDate = selectedDate
-    ? entries.filter(e => e.created_at && formatLocalDate(new Date(e.created_at)) === formatLocalDate(selectedDate))
-    : []
+  const entriesForDate = useMemo(() => {
+    if (!selectedDate) return []
+    return entriesByDate.get(formatLocalDate(selectedDate)) || []
+  }, [selectedDate, entriesByDate])
 
   return (
     <>
@@ -186,7 +211,7 @@ const DiaryModal = () => {
                 <div className="flex-1 overflow-y-auto px-6 py-4">
                   {loading ? <p className="text-center py-12 text-sm" style={{ color: '#a89080' }}>Loading entries...</p>
                     : fetchError ? <p className="text-center py-12 text-sm" style={{ color: '#ff6b6b' }}>{fetchError}</p>
-                    : <DiaryCalendarGrid currentDate={currentDate} entries={entries} onDateClick={handleDateClick} />}
+                    : <DiaryCalendarGrid currentDate={currentDate} entriesByDate={entriesByDate} onDateClick={handleDateClick} />}
                 </div>
               </div>
             )}
