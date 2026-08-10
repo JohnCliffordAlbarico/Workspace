@@ -35,7 +35,7 @@ const AllocationProgress = memo(({ actualMinutes, dailyAllocation, compact = fal
     <div className="w-full">
       <div className="flex justify-between items-center mb-1">
         <span className="text-xs" style={{ color: '#a89080' }}>
-          {actualMinutes}/{dailyAllocation} min
+          ⏱ {actualMinutes}/{dailyAllocation} min
         </span>
         <span className="text-xs font-semibold" style={{ color: getProgressColor() }}>
           {percentage}%

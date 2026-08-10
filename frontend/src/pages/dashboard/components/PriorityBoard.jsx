@@ -287,9 +287,9 @@ const PriorityBoard = memo(({ categories, getCategoryProgress, refreshStats, ref
                           onClick={() => setShowCompleted(prev => ({ ...prev, [category.id]: !prev[category.id] }))}
                           className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-200"
                           style={{
-                            background: 'rgba(123, 237, 159, 0.1)',
-                            border: '1px solid rgba(123, 237, 159, 0.2)',
-                            color: '#7bed9f'
+                            background: 'rgba(200, 180, 160, 0.08)',
+                            border: '1px solid rgba(200, 180, 160, 0.2)',
+                            color: 'rgba(200, 180, 160, 0.6)'
                           }}
                         >
                           {showCompleted[category.id] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
