@@ -326,14 +326,22 @@ export const updateTask = async (req, res) => {
 
       const nextPosition = (maxPosTask?.position ?? -1) + 1
 
-      // Create the next occurrence — title/description are already encrypted from the original
+      // Format the next due date for the title suffix
+      const nextDate = new Date(nextDueDate)
+      const dateSuffix = nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+      // Decrypt the original title, append the date, and re-encrypt
+      const originalTitle = decrypt(data.title)
+      const nextTitle = `${originalTitle} - ${dateSuffix}`
+
+      // Create the next occurrence
       const { data: newTask, error: createError } = await supabaseAdmin
         .from('tasks')
         .insert({
           category_id: data.category_id,
           user_id: data.user_id,
           parent_task_id: null,  // Recurring tasks don't recurse subtasks
-          title: data.title,     // Already encrypted
+          title: encrypt(nextTitle),  // Encrypted with date appended
           description: data.description,  // Already encrypted
           priority: data.priority,
           status: 'pending',

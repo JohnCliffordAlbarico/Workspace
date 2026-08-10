@@ -37,7 +37,8 @@ const FocusCategoryManager = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     name: '',
     color: '#6366f1',
-    daily_allocation_minutes: 60
+    daily_allocation_minutes: 60,
+    recurrence_pattern: 'none'
   })
 
   const handleCreate = async () => {
@@ -45,7 +46,7 @@ const FocusCategoryManager = ({ isOpen, onClose }) => {
     setFormError('')
     try {
       await createCategory(formData)
-      setFormData({ name: '', color: '#6366f1', daily_allocation_minutes: 60 })
+      setFormData({ name: '', color: '#6366f1', daily_allocation_minutes: 60, recurrence_pattern: 'none' })
       setIsCreating(false)
     } catch (err) {
       const message = err.response?.data?.error || 'Failed to create category'
@@ -59,7 +60,7 @@ const FocusCategoryManager = ({ isOpen, onClose }) => {
     try {
       await updateCategory(editingCategory.id, formData)
       setEditingCategory(null)
-      setFormData({ name: '', color: '#6366f1', daily_allocation_minutes: 60 })
+      setFormData({ name: '', color: '#6366f1', daily_allocation_minutes: 60, recurrence_pattern: 'none' })
     } catch (err) {
       const message = err.response?.data?.error || 'Failed to update category'
       setFormError(message)
@@ -94,7 +95,8 @@ const FocusCategoryManager = ({ isOpen, onClose }) => {
     setFormData({
       name: category.name,
       color: category.color,
-      daily_allocation_minutes: category.daily_allocation_minutes
+      daily_allocation_minutes: category.daily_allocation_minutes,
+      recurrence_pattern: category.recurrence_pattern || 'none'
     })
     setIsCreating(false)
   }
@@ -102,7 +104,7 @@ const FocusCategoryManager = ({ isOpen, onClose }) => {
   const cancelForm = () => {
     setIsCreating(false)
     setEditingCategory(null)
-    setFormData({ name: '', color: '#6366f1', daily_allocation_minutes: 60 })
+    setFormData({ name: '', color: '#6366f1', daily_allocation_minutes: 60, recurrence_pattern: 'none' })
     setFormError('')
   }
 
@@ -208,6 +210,19 @@ const FocusCategoryManager = ({ isOpen, onClose }) => {
                             <div>
                               <p className="font-semibold" style={{ color: '#f5e6d3' }}>
                                 {category.name}
+                                {category.recurrence_pattern && category.recurrence_pattern !== 'none' && (
+                                  <span
+                                    className="ml-2 text-xs px-1.5 py-0.5 rounded-full"
+                                    style={{
+                                      background: 'rgba(112, 161, 255, 0.15)',
+                                      border: '1px solid rgba(112, 161, 255, 0.3)',
+                                      color: '#70a1ff',
+                                      fontSize: '10px'
+                                    }}
+                                  >
+                                    🔄 {category.recurrence_pattern}
+                                  </span>
+                                )}
                               </p>
                               <p className="text-sm" style={{ color: '#a89080' }}>
                                 {category.daily_allocation_minutes} min/day
@@ -347,6 +362,27 @@ const FocusCategoryManager = ({ isOpen, onClose }) => {
                           color: '#f5e6d3'
                         }}
                       />
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-sm mb-2" style={{ color: '#a89080' }}>
+                        🔄 Auto-generate tasks
+                      </label>
+                      <select
+                        value={formData.recurrence_pattern}
+                        onChange={(e) => setFormData(prev => ({ ...prev, recurrence_pattern: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-lg"
+                        style={{
+                          background: 'rgba(0, 0, 0, 0.3)',
+                          border: '1px solid rgba(200, 80, 80, 0.2)',
+                          color: '#f5e6d3'
+                        }}
+                      >
+                        <option value="none">Off</option>
+                        <option value="daily">📅 Daily</option>
+                        <option value="weekly">📆 Weekly</option>
+                        <option value="monthly">🗓️ Monthly</option>
+                      </select>
                     </div>
 
                     <div className="flex gap-3">

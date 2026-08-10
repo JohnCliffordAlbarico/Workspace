@@ -20,7 +20,7 @@ const SortableCategory = memo(({
   id, category, categoryTasks, completedTasks, progress,
   allTasks, setAllTasks, onTaskClick, refreshStats,
   showCompleted, setShowCompleted, completedPage, setCompletedPage,
-  onQuickAdd
+  onQuickAdd, onOpenModal
 }) => {
   const {
     attributes, listeners, setNodeRef, transform, transition, isDragging
@@ -155,9 +155,25 @@ const SortableCategory = memo(({
       </div>
 
       {/* Quick Add */}
-      <QuickAddTask
-        onTaskAdded={(title) => onQuickAdd(category.id, title)}
-      />
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <QuickAddTask
+            onTaskAdded={(title) => onQuickAdd(category.id, title)}
+          />
+        </div>
+        <button
+          onClick={() => onOpenModal(category.id)}
+          className="flex-shrink-0 px-3 rounded-lg text-xs font-semibold transition-all duration-200"
+          style={{
+            background: 'rgba(200, 80, 80, 0.15)',
+            border: '1px solid rgba(200, 80, 80, 0.3)',
+            color: '#c85050'
+          }}
+          title="Open full task form"
+        >
+          ✨
+        </button>
+      </div>
     </div>
   )
 })
@@ -167,7 +183,18 @@ SortableCategory.displayName = 'SortableCategory'
 // ─── PriorityBoard ───────────────────────────────────────────────────────
 const PriorityBoard = memo(({ categories, getCategoryProgress, refreshStats, refreshTrigger, allTasks, setAllTasks }) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [modalCategoryId, setModalCategoryId] = useState(null)
   const [selectedTask, setSelectedTask] = useState(null)
+
+  const handleOpenModal = (categoryId) => {
+    setModalCategoryId(categoryId)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setModalCategoryId(null)
+  }
   const [activeTask, setActiveTask] = useState(null)
   const [activeCategory, setActiveCategory] = useState(null)
   const [localCategories, setLocalCategories] = useState(categories)
@@ -366,9 +393,10 @@ const PriorityBoard = memo(({ categories, getCategoryProgress, refreshStats, ref
         )}
 
         {/* Task Modal */}
-        <TaskModal 
+        <TaskModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={handleCloseModal}
+          categoryId={modalCategoryId}
           categories={categories}
           setTasks={setAllTasks}
           tasks={allTasks}
@@ -442,6 +470,7 @@ const PriorityBoard = memo(({ categories, getCategoryProgress, refreshStats, ref
                       completedPage={completedPage}
                       setCompletedPage={setCompletedPage}
                       onQuickAdd={handleQuickAdd}
+                      onOpenModal={handleOpenModal}
                     />
                   </div>
                 )

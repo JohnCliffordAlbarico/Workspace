@@ -11,6 +11,7 @@ import breakTimeRoutes from './src/routes/breakTimeRoutes.js'
 import diaryRoutes from './src/routes/diaryRoutes.js'
 import { apiLimiter } from './src/middleware/rateLimiter.js'
 import { errorHandler, notFoundHandler } from './src/middleware/errorHandler.js'
+import { startCategoryScheduler } from './src/utils/categoryScheduler.js'
 
 dotenv.config()
 
@@ -88,4 +89,5 @@ const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
   console.log(`Server running on port http://localhost:${PORT}`)
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
+  startCategoryScheduler()
 })
