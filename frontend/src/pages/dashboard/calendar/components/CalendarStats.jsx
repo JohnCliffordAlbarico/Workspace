@@ -34,19 +34,23 @@ const CalendarStats = ({ currentDate, tasks }) => {
   const stats = useMemo(() => {
     const monthStart = startOfMonth(currentDate)
     const monthEnd = endOfMonth(currentDate)
-    const monthStr = format(currentDate, 'yyyy-MM')
+    // Use UTC to match backend's UTC-based day boundary
+    const now = new Date()
+    const monthStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`
 
-    // Tasks completed this month
+    // Tasks completed this month (UTC)
     const completedThisMonth = tasks.filter(t => {
       if (!t.completed_at) return false
-      const completedMonth = format(new Date(t.completed_at), 'yyyy-MM')
+      const d = new Date(t.completed_at)
+      const completedMonth = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
       return completedMonth === monthStr
     })
 
     // Tasks due this month
     const dueThisMonth = tasks.filter(t => {
       if (!t.due_date) return false
-      const dueMonth = format(new Date(t.due_date), 'yyyy-MM')
+      const d = new Date(t.due_date)
+      const dueMonth = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
       return dueMonth === monthStr && t.status !== 'completed'
     })
 
@@ -62,7 +66,8 @@ const CalendarStats = ({ currentDate, tasks }) => {
     // Break time earned and used this month
     const breakTimesThisMonth = breakTimes.filter(bt => {
       if (!bt.created_at) return false
-      const createdMonth = format(new Date(bt.created_at), 'yyyy-MM')
+      const d = new Date(bt.created_at)
+      const createdMonth = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
       return createdMonth === monthStr
     })
 
@@ -75,7 +80,8 @@ const CalendarStats = ({ currentDate, tasks }) => {
     const dayTaskCounts = {}
     completedThisMonth.forEach(task => {
       if (!task.completed_at) return
-      const day = format(new Date(task.completed_at), 'yyyy-MM-dd')
+      const d = new Date(task.completed_at)
+      const day = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
       dayTaskCounts[day] = (dayTaskCounts[day] || 0) + 1
     })
     
@@ -86,7 +92,8 @@ const CalendarStats = ({ currentDate, tasks }) => {
 
     // Completion rate
     const totalTasks = tasks.filter(t => {
-      const createdMonth = format(new Date(t.created_at), 'yyyy-MM')
+      const d = new Date(t.created_at)
+      const createdMonth = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
       return createdMonth === monthStr
     }).length
     const completionRate = totalTasks > 0 
