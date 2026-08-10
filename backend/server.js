@@ -29,10 +29,11 @@ app.use(compression({
   }
 }))
 
-// CORS configuration
-const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? [process.env.FRONTEND_URL_PROD]
-  : [process.env.FRONTEND_URL_DEV]
+// CORS configuration — allow both dev and prod origins
+const allowedOrigins = [
+  process.env.FRONTEND_URL_PROD,
+  process.env.FRONTEND_URL_DEV
+].filter(Boolean)
 
 app.use(cors({
   origin: allowedOrigins,
@@ -89,5 +90,6 @@ const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
   console.log(`Server running on port http://localhost:${PORT}`)
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
+  console.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`)
   startCategoryScheduler()
 })
