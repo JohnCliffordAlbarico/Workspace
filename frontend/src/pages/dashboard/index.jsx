@@ -130,12 +130,11 @@ const Dashboard = () => {
       case 'dashboard':
       default:
         return view === 'active' ? (
-          <PriorityBoard 
+          <PriorityBoard
             categories={categories}
             getCategoryProgress={getCategoryProgress}
             refreshStats={refreshStats}
             refreshTrigger={refreshTrigger}
-            onManageCategories={() => setIsCategoryManagerOpen(true)}
             allTasks={allTasks}
             setAllTasks={setAllTasks}
           />

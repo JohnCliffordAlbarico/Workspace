@@ -9,7 +9,7 @@ import QuickAddTask from './QuickAddTask'
 import DigitalClock from './DigitalClock'
 import AllocationProgress from '../../../components/AllocationProgress'
 import { useState, useMemo, useCallback, useEffect, memo } from 'react'
-import { Plus, ChevronDown, ChevronUp, GripVertical } from 'lucide-react'
+import { ChevronDown, ChevronUp, GripVertical } from 'lucide-react'
 import api from '../../../config/api'
 import { useRealtime } from '../../../hooks/useRealtime'
 
@@ -165,7 +165,7 @@ const SortableCategory = memo(({
 SortableCategory.displayName = 'SortableCategory'
 
 // ─── PriorityBoard ───────────────────────────────────────────────────────
-const PriorityBoard = memo(({ categories, getCategoryProgress, refreshStats, refreshTrigger, onManageCategories, allTasks, setAllTasks }) => {
+const PriorityBoard = memo(({ categories, getCategoryProgress, refreshStats, refreshTrigger, allTasks, setAllTasks }) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState(null)
   const [activeTask, setActiveTask] = useState(null)
@@ -450,42 +450,6 @@ const PriorityBoard = memo(({ categories, getCategoryProgress, refreshStats, ref
                 )
               })}
             </SortableContext>
-
-            {/* Add New Category Column */}
-            <button
-              onClick={onManageCategories}
-              className="rounded-2xl p-4 flex flex-col items-center justify-center transition-all duration-300 flex-shrink-0"
-              style={{
-                background: 'rgba(45, 20, 25, 0.3)',
-                border: '2px dashed rgba(200, 80, 80, 0.3)',
-                minHeight: '400px',
-                cursor: 'pointer',
-                flex: '1 1 calc(33.333% - 1rem)',
-                minWidth: '300px',
-                maxWidth: 'calc(100% / 3)'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = 'rgba(45, 20, 25, 0.5)'
-                e.currentTarget.style.borderColor = 'rgba(200, 80, 80, 0.5)'
-                e.currentTarget.style.transform = 'translateY(-2px)'
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = 'rgba(45, 20, 25, 0.3)'
-                e.currentTarget.style.borderColor = 'rgba(200, 80, 80, 0.3)'
-                e.currentTarget.style.transform = 'translateY(0)'
-              }}
-            >
-              <Plus 
-                className="w-8 h-8 mb-2" 
-                style={{ color: '#c85050' }}
-              />
-              <span 
-                className="font-semibold"
-                style={{ color: '#c85050', fontFamily: "'Cinzel', serif" }}
-              >
-                Add New Category
-              </span>
-            </button>
           </div>
         )}
       </main>
