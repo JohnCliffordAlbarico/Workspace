@@ -212,20 +212,22 @@ const PriorityBoard = memo(({ categories, getCategoryProgress, refreshStats, ref
           </div>
         ) : (
           /* Category Columns */
-          <div className="flex gap-6 overflow-x-auto pb-4">
+          <div className="flex flex-wrap gap-6 pb-4">
             {categories.map(category => {
               const categoryTasks = tasksByCategory[category.id] || []
               const progress = getCategoryProgress(category.id)
-              
+
               return (
-                <div 
+                <div
                   key={category.id}
                   className="rounded-2xl p-4 flex flex-col flex-shrink-0"
                   style={{
                     background: 'linear-gradient(145deg, rgba(45, 20, 25, 0.6) 0%, rgba(26, 10, 10, 0.8) 100%)',
                     border: `1px solid ${category.color}40`,
                     minHeight: '400px',
-                    flex: '0 0 calc((100% - 2 * 1.5rem) / 3)'
+                    flex: '1 1 calc(33.333% - 1rem)',
+                    minWidth: '300px',
+                    maxWidth: 'calc(100% / 3)'
                   }}
                 >
                   {/* Category Header */}
@@ -351,7 +353,9 @@ const PriorityBoard = memo(({ categories, getCategoryProgress, refreshStats, ref
                 border: '2px dashed rgba(200, 80, 80, 0.3)',
                 minHeight: '400px',
                 cursor: 'pointer',
-                flex: '0 0 calc((100% - 2 * 1.5rem) / 3)'
+                flex: '1 1 calc(33.333% - 1rem)',
+                minWidth: '300px',
+                maxWidth: 'calc(100% / 3)'
               }}
               onMouseOver={(e) => {
                 e.currentTarget.style.background = 'rgba(45, 20, 25, 0.5)'
