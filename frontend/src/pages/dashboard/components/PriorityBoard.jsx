@@ -409,7 +409,7 @@ const PriorityBoard = memo(({ categories, getCategoryProgress, refreshStats, ref
           </div>
         ) : (
           /* Category Columns */
-          <div className="flex flex-wrap gap-6 pb-4">
+          <div className="grid grid-cols-3 gap-6 pb-4 max-lg:grid-cols-2 max-md:grid-cols-1">
             <SortableContext
               items={localCategories.map(c => `category-${c.id}`)}
             >
@@ -420,14 +420,11 @@ const PriorityBoard = memo(({ categories, getCategoryProgress, refreshStats, ref
                 return (
                   <div
                     key={category.id}
-                    className="rounded-2xl flex flex-col flex-shrink-0"
+                    className="rounded-2xl flex flex-col"
                     style={{
                       background: 'linear-gradient(145deg, rgba(45, 20, 25, 0.6) 0%, rgba(26, 10, 10, 0.8) 100%)',
                       border: `1px solid ${category.color}40`,
-                      minHeight: '400px',
-                      flex: '1 1 calc(33.333% - 1rem)',
-                      minWidth: '300px',
-                      maxWidth: 'calc(100% / 3)'
+                      minHeight: '400px'
                     }}
                   >
                     <SortableCategory
