@@ -26,22 +26,47 @@ export const useAllocationProgress = (categories) => {
     fetchStats()
   }, [fetchStats])
 
-  // Auto-refresh when day rolls over (single timeout to midnight instead of polling)
+  // Auto-refresh when day rolls over — resilient against background tabs
   useEffect(() => {
-    const scheduleMidnightRefresh = () => {
+    // Track the "day key" we last fetched for (cheap string comparison, no API call unless day changed)
+    let lastDayKey = new Date().toDateString()
+
+    const checkDayChange = () => {
+      const currentDayKey = new Date().toDateString()
+      if (currentDayKey !== lastDayKey) {
+        lastDayKey = currentDayKey
+        fetchStats()
+      }
+    }
+
+    // Poll every 30 seconds — lightweight local comparison, only calls API on day change
+    const intervalId = setInterval(checkDayChange, 30_000)
+
+    // Refresh when user returns to the tab (catches missed midnight)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkDayChange()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    // Bonus: precise midnight timeout for instant refresh
+    const scheduleMidnight = () => {
       const now = new Date()
       const midnight = new Date(now)
       midnight.setHours(24, 0, 0, 0)
-      const msUntilMidnight = midnight - now
-
       return setTimeout(() => {
-        fetchStats()
-        timerId = scheduleMidnightRefresh()
-      }, msUntilMidnight + 1000)
+        checkDayChange()
+        midnightTimer = scheduleMidnight()
+      }, midnight - now + 1000)
     }
+    let midnightTimer = scheduleMidnight()
 
-    let timerId = scheduleMidnightRefresh()
-    return () => clearTimeout(timerId)
+    return () => {
+      clearInterval(intervalId)
+      clearTimeout(midnightTimer)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [fetchStats])
 
   const getCategoryProgress = useCallback((categoryId) => {

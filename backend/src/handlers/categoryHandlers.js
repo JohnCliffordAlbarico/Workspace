@@ -82,9 +82,9 @@ export const getAllCategoryStats = async (req, res) => {
     tasks.filter(t => t.parent_task_id).map(t => t.parent_task_id)
   )
 
-  // Today boundaries
+  // Today boundaries (UTC to match stored completed_at timestamps)
   const now = new Date()
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString()
+  const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)).toISOString()
 
   // Compute stats per category
   const statsMap = {}
@@ -151,9 +151,9 @@ export const getCategoryStats = async (req, res) => {
   const completedTasks = tasks.filter(t => t.status === 'completed').length
   const totalTasks = tasks.length
 
-  // Get today's start (midnight local time)
+  // Get today's start (midnight UTC to match stored completed_at timestamps)
   const now = new Date()
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+  const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0))
   const startOfDayISO = startOfDay.toISOString()
 
   // Get leaf tasks completed today for daily actual minutes
