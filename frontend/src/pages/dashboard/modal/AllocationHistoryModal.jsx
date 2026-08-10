@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths } from 'date-fns'
 import { useEffect, useState, useMemo } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Timer, Target, CheckCircle, TrendingUp } from 'lucide-react'
 
 const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCategory }) => {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -186,53 +186,69 @@ const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCat
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {tabs.map(tab => {
-            const isActive = activeTab === tab.id
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className="px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap flex items-center gap-2"
-                style={{
-                  background: isActive
-                    ? 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)'
-                    : 'rgba(0,0,0,0.3)',
-                  color: isActive ? '#f5e6d3' : '#a89080',
-                  border: isActive
-                    ? '1px solid rgba(200, 80, 80, 0.5)'
-                    : '1px solid rgba(200, 80, 80, 0.2)'
-                }}
-              >
-                {tab.id !== 'all' && (
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: tab.color }} />
-                )}
-                {tab.name}
-              </button>
-            )
-          })}
+        <div className="relative mb-6">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {tabs.map(tab => {
+              const isActive = activeTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className="px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap flex items-center gap-2"
+                  style={{
+                    background: isActive
+                      ? 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)'
+                      : 'rgba(0,0,0,0.3)',
+                    color: isActive ? '#f5e6d3' : '#a89080',
+                    border: isActive
+                      ? '1px solid rgba(200, 80, 80, 0.5)'
+                      : '1px solid rgba(200, 80, 80, 0.2)'
+                  }}
+                >
+                  {tab.id !== 'all' && (
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: tab.color }} />
+                  )}
+                  {tab.name}
+                </button>
+              )
+            })}
+          </div>
+          <div
+            className="absolute right-0 top-0 bottom-0 w-12 pointer-events-none"
+            style={{
+              background: 'linear-gradient(to right, transparent, rgba(45, 20, 25, 0.95))',
+              borderRadius: '0 8px 8px 0'
+            }}
+          />
         </div>
 
         {/* Monthly Summary */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-4 gap-3 mb-6">
           {[
-            { label: 'Total Worked', value: formatMinutes(stats.totalActual), color: '#ffa502' },
-            { label: 'Daily Target', value: formatMinutes(stats.totalAllocated), color: '#70a1ff' },
-            { label: 'Days Met Target', value: `${stats.daysMet}`, color: '#7bed9f' },
-            { label: 'Avg / Day', value: formatMinutes(stats.avgPerDay), color: '#d4a574' }
+            { label: 'Total Worked', value: formatMinutes(stats.totalActual), color: '#ffa502', icon: Timer },
+            { label: 'Daily Target', value: formatMinutes(stats.totalAllocated), color: '#70a1ff', icon: Target },
+            { label: 'Days Met Target', value: `${stats.daysMet}`, color: '#7bed9f', icon: CheckCircle },
+            { label: 'Avg / Day', value: formatMinutes(stats.avgPerDay), color: '#d4a574', icon: TrendingUp }
           ].map((stat, i) => (
             <div
               key={i}
-              className="p-4 rounded-xl text-center"
+              className="p-4 rounded-xl text-center relative overflow-hidden"
               style={{
                 background: 'rgba(0, 0, 0, 0.3)',
                 border: `1px solid ${stat.color}30`
               }}
             >
-              <div className="text-xs uppercase tracking-wider mb-1" style={{ color: '#a89080' }}>
+              <div
+                className="absolute inset-0 opacity-10"
+                style={{
+                  background: `radial-gradient(circle at 50% 120%, ${stat.color}, transparent 70%)`
+                }}
+              />
+              <stat.icon size={16} className="mx-auto mb-1.5" style={{ color: stat.color, opacity: 0.7 }} />
+              <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: '#a89080' }}>
                 {stat.label}
               </div>
-              <div className="text-xl font-bold" style={{ color: stat.color, fontFamily: "'Cinzel', serif" }}>
+              <div className="text-lg font-bold" style={{ color: stat.color, fontFamily: "'Cinzel', serif" }}>
                 {stat.value}
               </div>
             </div>
@@ -321,10 +337,15 @@ const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCat
                 }
               }
 
+              // Combined stats for "All" view
+              const totalActual = displayBars.reduce((sum, c) => sum + c.actualMinutes, 0)
+              const totalAllocated = displayBars.reduce((sum, c) => sum + c.allocatedMinutes, 0)
+              const combinedPct = totalAllocated > 0 ? Math.min(100, Math.round((totalActual / totalAllocated) * 100)) : 0
+
               return (
                 <div
                   key={day.toISOString()}
-                  className="min-h-[100px] p-2 transition-all duration-200"
+                  className="min-h-[120px] p-2.5 transition-all duration-200"
                   style={{
                     background: today
                       ? 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)'
@@ -338,7 +359,7 @@ const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCat
                 >
                   {/* Day Number */}
                   <div
-                    className="text-sm font-bold mb-1"
+                    className="text-base font-bold mb-1.5"
                     style={{
                       fontFamily: "'Cinzel', serif",
                       color: today ? '#fff' : '#f5e6d3'
@@ -347,44 +368,76 @@ const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCat
                     {format(day, 'd')}
                   </div>
 
-                  {/* Allocation Bars */}
-                  {isCurrentMonth && displayBars.length > 0 && (
-                    <div className="space-y-1.5 mt-1">
-                      {displayBars.map((cat, i) => {
-                        const barColor = getBarColor(cat.percentage)
-                        return (
-                          <div key={i}>
-                            {activeTab === 'all' && (
-                              <div className="flex items-center gap-1 mb-0.5">
-                                <div className="w-1.5 h-1.5 rounded-full" style={{ background: cat.color }} />
-                                <span className="text-[9px] font-semibold" style={{ color: cat.color }}>
-                                  {cat.name}
-                                </span>
-                              </div>
-                            )}
-                            <div
-                              className="h-1.5 rounded-full overflow-hidden"
-                              style={{ background: 'rgba(0,0,0,0.4)' }}
-                            >
-                              <div
-                                className="h-full rounded-full transition-all duration-500"
-                                style={{
-                                  width: `${cat.percentage}%`,
-                                  background: barColor
-                                }}
-                              />
-                            </div>
-                            <div className="flex justify-between text-[9px] mt-0.5">
-                              <span style={{ color: barColor }}>
-                                {formatMinutes(cat.actualMinutes)}
-                              </span>
-                              <span style={{ color: '#a89080' }}>
-                                {formatMinutes(cat.allocatedMinutes)}
-                              </span>
-                            </div>
-                          </div>
-                        )
-                      })}
+                  {/* "All" tab — compact dots + combined bar */}
+                  {isCurrentMonth && activeTab === 'all' && displayBars.length > 0 && (
+                    <div className="mt-1">
+                      {/* Category color dots */}
+                      <div className="flex flex-wrap gap-1 mb-1.5">
+                        {displayBars.slice(0, 5).map((cat, i) => (
+                          <div
+                            key={i}
+                            className="w-2 h-2 rounded-full"
+                            style={{ background: cat.color }}
+                            title={cat.name}
+                          />
+                        ))}
+                        {displayBars.length > 5 && (
+                          <span className="text-[9px]" style={{ color: '#a89080' }}>+{displayBars.length - 5}</span>
+                        )}
+                      </div>
+                      {/* Combined progress bar */}
+                      <div
+                        className="h-2 rounded-full overflow-hidden"
+                        style={{ background: 'rgba(0,0,0,0.4)' }}
+                      >
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${combinedPct}%`,
+                            background: getBarColor(combinedPct)
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] mt-1">
+                        <span style={{ color: getBarColor(combinedPct) }}>
+                          {formatMinutes(totalActual)}
+                        </span>
+                        <span style={{ color: '#a89080' }}>
+                          {formatMinutes(totalAllocated)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Specific category — detailed bar */}
+                  {isCurrentMonth && activeTab !== 'all' && displayBars.length > 0 && (
+                    <div className="mt-1">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <div className="w-2 h-2 rounded-full" style={{ background: displayBars[0].color }} />
+                        <span className="text-[10px] font-semibold truncate" style={{ color: displayBars[0].color }}>
+                          {displayBars[0].name}
+                        </span>
+                      </div>
+                      <div
+                        className="h-2 rounded-full overflow-hidden"
+                        style={{ background: 'rgba(0,0,0,0.4)' }}
+                      >
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${displayBars[0].percentage}%`,
+                            background: getBarColor(displayBars[0].percentage)
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] mt-1">
+                        <span style={{ color: getBarColor(displayBars[0].percentage) }}>
+                          {formatMinutes(displayBars[0].actualMinutes)}
+                        </span>
+                        <span style={{ color: '#a89080' }}>
+                          / {formatMinutes(displayBars[0].allocatedMinutes)}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>

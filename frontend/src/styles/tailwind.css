@@ -282,3 +282,12 @@ input[type="number"]:hover::-webkit-outer-spin-button {
   z-index: 10;
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
