@@ -1,7 +1,139 @@
 import { createPortal } from 'react-dom'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths } from 'date-fns'
-import { useEffect, useState, useMemo, useRef } from 'react'
+import { useEffect, useState, useMemo, useRef, memo } from 'react'
 import { ChevronLeft, ChevronRight, Timer, Target, CheckCircle, TrendingUp } from 'lucide-react'
+
+// Moved outside component — no deps on props/state
+const formatLocalDate = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const formatMinutes = (min) => {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return h > 0 ? `${h}h ${m}m` : `${m}m`
+}
+
+const getBarColor = (percentage) => {
+  if (percentage >= 100) return '#7bed9f'
+  if (percentage >= 50) return '#ffa502'
+  if (percentage > 0) return '#ff6b6b'
+  return 'rgba(200, 80, 80, 0.2)'
+}
+
+// Memoized day cell component
+const DayCell = memo(({ day, currentDate, activeTab, dayData }) => {
+  const isCurrentMonth = isSameMonth(day, currentDate)
+  const today = isToday(day)
+  const dateStr = formatLocalDate(day)
+  const dayCats = dayData[dateStr] || {}
+
+  let displayBars = []
+  let hasAnyWork = false
+
+  if (activeTab === 'all') {
+    Object.values(dayCats).forEach(cat => {
+      if (cat.allocatedMinutes > 0 || cat.actualMinutes > 0) {
+        displayBars.push(cat)
+        if (cat.actualMinutes > 0) hasAnyWork = true
+      }
+    })
+  } else {
+    const cat = dayCats[activeTab]
+    if (cat && (cat.allocatedMinutes > 0 || cat.actualMinutes > 0)) {
+      displayBars.push(cat)
+      if (cat.actualMinutes > 0) hasAnyWork = true
+    }
+  }
+
+  const totalActual = displayBars.reduce((sum, c) => sum + c.actualMinutes, 0)
+  const totalAllocated = displayBars.reduce((sum, c) => sum + c.allocatedMinutes, 0)
+  const combinedPct = totalAllocated > 0 ? Math.min(100, Math.round((totalActual / totalAllocated) * 100)) : 0
+
+  return (
+    <div
+      className="min-h-[120px] p-2.5"
+      style={{
+        background: today
+          ? 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)'
+          : hasAnyWork
+          ? 'rgba(45, 20, 25, 0.8)'
+          : 'rgba(45, 20, 25, 0.6)',
+        opacity: isCurrentMonth ? 1 : 0.4,
+        border: today ? '2px solid #c85050' : 'none',
+        boxShadow: today ? '0 0 15px rgba(200, 80, 80, 0.4)' : 'none'
+      }}
+    >
+      <div
+        className="text-base font-bold mb-1.5"
+        style={{
+          fontFamily: "'Cinzel', serif",
+          color: today ? '#fff' : '#f5e6d3'
+        }}
+      >
+        {format(day, 'd')}
+      </div>
+
+      {/* "All" tab — compact dots + combined bar */}
+      {isCurrentMonth && activeTab === 'all' && displayBars.length > 0 && (
+        <div className="mt-1">
+          <div className="flex flex-wrap gap-1 mb-1.5">
+            {displayBars.slice(0, 5).map((cat, i) => (
+              <div
+                key={i}
+                className="w-2 h-2 rounded-full"
+                style={{ background: cat.color }}
+                title={cat.name}
+              />
+            ))}
+            {displayBars.length > 5 && (
+              <span className="text-[9px]" style={{ color: '#a89080' }}>+{displayBars.length - 5}</span>
+            )}
+          </div>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.4)' }}>
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${combinedPct}%`, background: getBarColor(combinedPct) }}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] mt-1">
+            <span style={{ color: getBarColor(combinedPct) }}>{formatMinutes(totalActual)}</span>
+            <span style={{ color: '#a89080' }}>{formatMinutes(totalAllocated)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Specific category — detailed bar */}
+      {isCurrentMonth && activeTab !== 'all' && displayBars.length > 0 && (
+        <div className="mt-1">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <div className="w-2 h-2 rounded-full" style={{ background: displayBars[0].color }} />
+            <span className="text-[10px] font-semibold truncate" style={{ color: displayBars[0].color }}>
+              {displayBars[0].name}
+            </span>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.4)' }}>
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${displayBars[0].percentage}%`, background: getBarColor(displayBars[0].percentage) }}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] mt-1">
+            <span style={{ color: getBarColor(displayBars[0].percentage) }}>
+              {formatMinutes(displayBars[0].actualMinutes)}
+            </span>
+            <span style={{ color: '#a89080' }}>
+              / {formatMinutes(displayBars[0].allocatedMinutes)}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+})
 
 const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCategory }) => {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -23,34 +155,29 @@ const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCat
     }
   }, [isOpen, initialCategory])
 
-  const formatLocalDate = (date) => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
+  // Pre-compute tasks grouped by category + date (O(n) once, not O(days×cats×tasks))
+  const tasksByCategoryDate = useMemo(() => {
+    if (!tasks) return {}
+    const map = {}
+    tasks.forEach(t => {
+      if (!t.completed_at) return
+      const catId = t.category_id
+      const dateStr = formatLocalDate(new Date(t.completed_at))
+      if (!map[catId]) map[catId] = {}
+      if (!map[catId][dateStr]) map[catId][dateStr] = { totalMinutes: 0, count: 0 }
+      map[catId][dateStr].totalMinutes += (t.actual_time_minutes || 0)
+      map[catId][dateStr].count++
+    })
+    return map
+  }, [tasks])
 
-  const formatMinutes = (min) => {
-    const h = Math.floor(min / 60)
-    const m = min % 60
-    return h > 0 ? `${h}h ${m}m` : `${m}m`
-  }
-
-  const getBarColor = (percentage) => {
-    if (percentage >= 100) return '#7bed9f'
-    if (percentage >= 50) return '#ffa502'
-    if (percentage > 0) return '#ff6b6b'
-    return 'rgba(200, 80, 80, 0.2)'
-  }
-
-  // Compute per-day data for all categories
+  // Compute per-day data using the pre-computed map
   const allCategoryDayData = useMemo(() => {
-    if (!categories?.length || !tasks) return {}
+    if (!categories?.length) return {}
 
     const monthStart = startOfMonth(currentDate)
-    const monthEnd = endOfMonth(currentDate)
     const calStart = startOfWeek(monthStart)
-    const calEnd = endOfWeek(monthEnd)
+    const calEnd = endOfWeek(endOfMonth(currentDate))
     const days = eachDayOfInterval({ start: calStart, end: calEnd })
 
     const data = {}
@@ -59,34 +186,26 @@ const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCat
       const catData = {}
 
       categories.forEach(cat => {
-        const categoryTasks = tasks.filter(t => t.category_id === cat.id)
-        const completedToday = categoryTasks.filter(t => {
-          if (!t.completed_at) return false
-          return formatLocalDate(new Date(t.completed_at)) === dateStr
-        })
-        const actualMinutes = completedToday.reduce((sum, t) => sum + (t.actual_time_minutes || 0), 0)
+        const dayData = tasksByCategoryDate[cat.id]?.[dateStr]
+        const actualMinutes = dayData?.totalMinutes || 0
         const allocatedMinutes = cat.daily_allocation_minutes || 0
         const percentage = allocatedMinutes > 0 ? Math.min(100, Math.round((actualMinutes / allocatedMinutes) * 100)) : 0
 
-        catData[cat.id] = { actualMinutes, allocatedMinutes, percentage, taskCount: completedToday.length, color: cat.color, name: cat.name }
+        catData[cat.id] = { actualMinutes, allocatedMinutes, percentage, taskCount: dayData?.count || 0, color: cat.color, name: cat.name }
       })
 
       data[dateStr] = catData
     })
 
     return data
-  }, [categories, tasks, currentDate])
+  }, [categories, tasksByCategoryDate, currentDate])
 
-  // Compute stats for a given tab (all or specific category)
-  const getStats = (tabId) => {
+  // Memoized stats
+  const stats = useMemo(() => {
     const values = Object.values(allCategoryDayData)
 
-    if (tabId === 'all') {
-      let totalActual = 0
-      let totalAllocated = 0
-      let daysWithData = 0
-      let daysMet = 0
-
+    if (activeTab === 'all') {
+      let totalActual = 0, totalAllocated = 0, daysWithData = 0, daysMet = 0
       values.forEach(dayCats => {
         const cats = Object.values(dayCats)
         const dayActual = cats.reduce((sum, c) => sum + c.actualMinutes, 0)
@@ -96,52 +215,33 @@ const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCat
         if (dayActual > 0) daysWithData++
         if (dayAllocated > 0 && dayActual >= dayAllocated) daysMet++
       })
-
-      return {
-        totalActual,
-        totalAllocated,
-        daysWithData,
-        daysMet,
-        avgPerDay: daysWithData > 0 ? Math.round(totalActual / daysWithData) : 0
-      }
+      return { totalActual, totalAllocated, daysWithData, daysMet, avgPerDay: daysWithData > 0 ? Math.round(totalActual / daysWithData) : 0 }
     }
 
-    // Specific category
-    let totalActual = 0
-    let totalAllocated = 0
-    let daysWithData = 0
-    let daysMet = 0
-
+    let totalActual = 0, totalAllocated = 0, daysWithData = 0, daysMet = 0
     values.forEach(dayCats => {
-      const cat = dayCats[tabId]
+      const cat = dayCats[activeTab]
       if (!cat) return
       totalActual += cat.actualMinutes
       totalAllocated += cat.allocatedMinutes
       if (cat.actualMinutes > 0) daysWithData++
       if (cat.allocatedMinutes > 0 && cat.actualMinutes >= cat.allocatedMinutes) daysMet++
     })
+    const cat = categories?.find(c => c.id === activeTab)
+    return { totalActual, totalAllocated: cat?.daily_allocation_minutes || 0, daysWithData, daysMet, avgPerDay: daysWithData > 0 ? Math.round(totalActual / daysWithData) : 0 }
+  }, [activeTab, allCategoryDayData, categories])
 
-    const cat = categories?.find(c => c.id === tabId)
-    return {
-      totalActual,
-      totalAllocated: cat?.daily_allocation_minutes || 0,
-      daysWithData,
-      daysMet,
-      avgPerDay: daysWithData > 0 ? Math.round(totalActual / daysWithData) : 0
-    }
-  }
-
-  const stats = useMemo(() => getStats(activeTab), [activeTab, allCategoryDayData, categories])
+  // Memoize calendar days
+  const calendarDays = useMemo(() => {
+    const monthStart = startOfMonth(currentDate)
+    const calStart = startOfWeek(monthStart)
+    const calEnd = endOfWeek(endOfMonth(currentDate))
+    return eachDayOfInterval({ start: calStart, end: calEnd })
+  }, [currentDate])
 
   if (!isOpen || !categories?.length) return null
 
-  const monthStart = startOfMonth(currentDate)
-  const monthEnd = endOfMonth(currentDate)
-  const calendarStart = startOfWeek(monthStart)
-  const calendarEnd = endOfWeek(monthEnd)
-  const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
   const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
   const tabs = [{ id: 'all', name: 'All', color: '#d4a574' }, ...categories]
 
   return createPortal(
@@ -333,137 +433,15 @@ const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCat
 
           {/* Day Cells */}
           <div className="grid grid-cols-7 gap-px" style={{ background: 'rgba(200, 80, 80, 0.1)' }}>
-            {days.map(day => {
-              const dateStr = formatLocalDate(day)
-              const dayCats = allCategoryDayData[dateStr] || {}
-              const isCurrentMonth = isSameMonth(day, currentDate)
-              const today = isToday(day)
-
-              // Compute display data based on active tab
-              let displayBars = []
-              let hasAnyWork = false
-
-              if (activeTab === 'all') {
-                Object.values(dayCats).forEach(cat => {
-                  if (cat.allocatedMinutes > 0 || cat.actualMinutes > 0) {
-                    displayBars.push(cat)
-                    if (cat.actualMinutes > 0) hasAnyWork = true
-                  }
-                })
-              } else {
-                const cat = dayCats[activeTab]
-                if (cat && (cat.allocatedMinutes > 0 || cat.actualMinutes > 0)) {
-                  displayBars.push(cat)
-                  if (cat.actualMinutes > 0) hasAnyWork = true
-                }
-              }
-
-              // Combined stats for "All" view
-              const totalActual = displayBars.reduce((sum, c) => sum + c.actualMinutes, 0)
-              const totalAllocated = displayBars.reduce((sum, c) => sum + c.allocatedMinutes, 0)
-              const combinedPct = totalAllocated > 0 ? Math.min(100, Math.round((totalActual / totalAllocated) * 100)) : 0
-
-              return (
-                <div
-                  key={day.toISOString()}
-                  className="min-h-[120px] p-2.5 transition-all duration-200"
-                  style={{
-                    background: today
-                      ? 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)'
-                      : hasAnyWork
-                      ? 'rgba(45, 20, 25, 0.8)'
-                      : 'rgba(45, 20, 25, 0.6)',
-                    opacity: isCurrentMonth ? 1 : 0.4,
-                    border: today ? '2px solid #c85050' : 'none',
-                    boxShadow: today ? '0 0 15px rgba(200, 80, 80, 0.4)' : 'none'
-                  }}
-                >
-                  {/* Day Number */}
-                  <div
-                    className="text-base font-bold mb-1.5"
-                    style={{
-                      fontFamily: "'Cinzel', serif",
-                      color: today ? '#fff' : '#f5e6d3'
-                    }}
-                  >
-                    {format(day, 'd')}
-                  </div>
-
-                  {/* "All" tab — compact dots + combined bar */}
-                  {isCurrentMonth && activeTab === 'all' && displayBars.length > 0 && (
-                    <div className="mt-1">
-                      {/* Category color dots */}
-                      <div className="flex flex-wrap gap-1 mb-1.5">
-                        {displayBars.slice(0, 5).map((cat, i) => (
-                          <div
-                            key={i}
-                            className="w-2 h-2 rounded-full"
-                            style={{ background: cat.color }}
-                            title={cat.name}
-                          />
-                        ))}
-                        {displayBars.length > 5 && (
-                          <span className="text-[9px]" style={{ color: '#a89080' }}>+{displayBars.length - 5}</span>
-                        )}
-                      </div>
-                      {/* Combined progress bar */}
-                      <div
-                        className="h-2 rounded-full overflow-hidden"
-                        style={{ background: 'rgba(0,0,0,0.4)' }}
-                      >
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${combinedPct}%`,
-                            background: getBarColor(combinedPct)
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-[10px] mt-1">
-                        <span style={{ color: getBarColor(combinedPct) }}>
-                          {formatMinutes(totalActual)}
-                        </span>
-                        <span style={{ color: '#a89080' }}>
-                          {formatMinutes(totalAllocated)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Specific category — detailed bar */}
-                  {isCurrentMonth && activeTab !== 'all' && displayBars.length > 0 && (
-                    <div className="mt-1">
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <div className="w-2 h-2 rounded-full" style={{ background: displayBars[0].color }} />
-                        <span className="text-[10px] font-semibold truncate" style={{ color: displayBars[0].color }}>
-                          {displayBars[0].name}
-                        </span>
-                      </div>
-                      <div
-                        className="h-2 rounded-full overflow-hidden"
-                        style={{ background: 'rgba(0,0,0,0.4)' }}
-                      >
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${displayBars[0].percentage}%`,
-                            background: getBarColor(displayBars[0].percentage)
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-[10px] mt-1">
-                        <span style={{ color: getBarColor(displayBars[0].percentage) }}>
-                          {formatMinutes(displayBars[0].actualMinutes)}
-                        </span>
-                        <span style={{ color: '#a89080' }}>
-                          / {formatMinutes(displayBars[0].allocatedMinutes)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+            {calendarDays.map(day => (
+              <DayCell
+                key={day.toISOString()}
+                day={day}
+                currentDate={currentDate}
+                activeTab={activeTab}
+                dayData={allCategoryDayData}
+              />
+            ))}
           </div>
         </div>
 
