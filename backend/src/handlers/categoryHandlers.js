@@ -410,3 +410,43 @@ export const getAllocationHistory = async (req, res) => {
   if (error) return res.status(500).json({ error: error.message })
   res.json(data)
 }
+
+// PUT /api/categories/reorder - Bulk update category positions
+export const reorderCategories = async (req, res) => {
+  const { order } = req.body // [{ id, position }, ...]
+
+  if (!Array.isArray(order) || order.length === 0) {
+    return res.status(400).json({ error: 'order must be a non-empty array of { id, position }' })
+  }
+
+  // Validate all IDs belong to this user
+  const ids = order.map(o => o.id)
+  const { data: owned, error: fetchError } = await supabaseAdmin
+    .from('focus_categories')
+    .select('id')
+    .eq('user_id', req.user.id)
+    .in('id', ids)
+
+  if (fetchError) return res.status(500).json({ error: fetchError.message })
+  if (owned.length !== ids.length) {
+    return res.status(403).json({ error: 'One or more categories do not belong to you' })
+  }
+
+  // Batch update positions using individual updates (Supabase doesn't support bulk update)
+  const updates = order.map(({ id, position }) =>
+    supabaseAdmin
+      .from('focus_categories')
+      .update({ position })
+      .eq('id', id)
+      .eq('user_id', req.user.id)
+  )
+
+  const results = await Promise.allSettled(updates)
+  const failures = results.filter(r => r.status === 'rejected')
+  if (failures.length) {
+    console.error('Reorder failures:', failures)
+    return res.status(500).json({ error: 'Failed to reorder some categories' })
+  }
+
+  res.json({ success: true })
+}

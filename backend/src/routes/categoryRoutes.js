@@ -15,7 +15,8 @@ import {
   reopenCategory,
   getCategoryStats,
   getAllCategoryStats,
-  getAllocationHistory
+  getAllocationHistory,
+  reorderCategories
 } from '../handlers/categoryHandlers.js'
 
 const router = express.Router()
@@ -28,6 +29,9 @@ router.get('/completed', authenticate, asyncHandler(getCompletedCategories))
 
 // Batch stats for all categories (must be before /:id routes)
 router.get('/stats', authenticate, asyncHandler(getAllCategoryStats))
+
+// Reorder categories (must be before /:id routes)
+router.put('/reorder', writeLimiter, authenticate, auditLog('focus_categories'), asyncHandler(reorderCategories))
 
 // Get category by ID
 router.get('/:id', authenticate, asyncHandler(getCategoryById))
