@@ -1,11 +1,12 @@
 import { createPortal } from 'react-dom'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths } from 'date-fns'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Timer, Target, CheckCircle, TrendingUp } from 'lucide-react'
 
 const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCategory }) => {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [activeTab, setActiveTab] = useState('all')
+  const tabsScrollRef = useRef(null)
 
   useEffect(() => {
     const handleEsc = (e) => {
@@ -186,8 +187,23 @@ const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCat
         </div>
 
         {/* Tab Switcher */}
-        <div className="relative mb-6">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex items-center gap-2 mb-6">
+          <button
+            onClick={() => {
+              const el = tabsScrollRef.current
+              if (el) el.scrollBy({ left: -150, behavior: 'smooth' })
+            }}
+            className="flex-shrink-0 p-1.5 rounded-lg transition-all duration-200"
+            style={{ color: '#c85050' }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(200, 80, 80, 0.2)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div
+            ref={tabsScrollRef}
+            className="flex-1 flex gap-2 overflow-x-auto pb-1"
+          >
             {tabs.map(tab => {
               const isActive = activeTab === tab.id
               return (
@@ -213,13 +229,18 @@ const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCat
               )
             })}
           </div>
-          <div
-            className="absolute right-0 top-0 bottom-0 w-12 pointer-events-none"
-            style={{
-              background: 'linear-gradient(to right, transparent, rgba(45, 20, 25, 0.95))',
-              borderRadius: '0 8px 8px 0'
+          <button
+            onClick={() => {
+              const el = tabsScrollRef.current
+              if (el) el.scrollBy({ left: 150, behavior: 'smooth' })
             }}
-          />
+            className="flex-shrink-0 p-1.5 rounded-lg transition-all duration-200"
+            style={{ color: '#c85050' }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(200, 80, 80, 0.2)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Monthly Summary */}
