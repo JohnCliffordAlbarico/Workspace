@@ -13,7 +13,10 @@ export const useAllocationProgress = (categories) => {
 
     try {
       setLoading(true)
-      const response = await api.get('/categories/stats')
+      // Send browser's local midnight so backend uses the same day boundary
+      const now = new Date()
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString()
+      const response = await api.get('/categories/stats', { params: { today } })
       setStats(response.data)
     } catch (err) {
       console.error('Failed to fetch allocation stats:', err)

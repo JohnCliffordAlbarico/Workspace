@@ -82,9 +82,8 @@ export const getAllCategoryStats = async (req, res) => {
     tasks.filter(t => t.parent_task_id).map(t => t.parent_task_id)
   )
 
-  // Today boundaries (UTC to match stored completed_at timestamps)
-  const now = new Date()
-  const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)).toISOString()
+  // Today boundaries — use frontend's local midnight if provided, else server local time
+  const startOfDay = req.query.today || new Date().toISOString()
 
   // Compute stats per category
   const statsMap = {}
@@ -151,10 +150,8 @@ export const getCategoryStats = async (req, res) => {
   const completedTasks = tasks.filter(t => t.status === 'completed').length
   const totalTasks = tasks.length
 
-  // Get today's start (midnight UTC to match stored completed_at timestamps)
-  const now = new Date()
-  const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0))
-  const startOfDayISO = startOfDay.toISOString()
+  // Get today's start — use frontend's local midnight if provided
+  const startOfDayISO = req.query.today || new Date().toISOString()
 
   // Get leaf tasks completed today for daily actual minutes
   const { data: todayTasks, error: todayError } = await supabaseAdmin

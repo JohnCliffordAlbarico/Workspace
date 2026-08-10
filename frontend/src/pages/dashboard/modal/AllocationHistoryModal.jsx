@@ -4,11 +4,10 @@ import { useEffect, useState, useMemo, useRef, memo } from 'react'
 import { ChevronLeft, ChevronRight, Timer, Target, CheckCircle, TrendingUp } from 'lucide-react'
 
 // Moved outside component — no deps on props/state
-// Uses UTC to match backend's UTC-based day boundary
-const formatUTCDate = (date) => {
-  const year = date.getUTCFullYear()
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(date.getUTCDate()).padStart(2, '0')
+const formatLocalDate = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
@@ -29,7 +28,7 @@ const getBarColor = (percentage) => {
 const DayCell = memo(({ day, currentDate, activeTab, dayData }) => {
   const isCurrentMonth = isSameMonth(day, currentDate)
   const today = isToday(day)
-  const dateStr = formatUTCDate(day)
+  const dateStr = formatLocalDate(day)
   const dayCats = dayData[dateStr] || {}
 
   let displayBars = []
@@ -163,7 +162,7 @@ const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCat
     tasks.forEach(t => {
       if (!t.completed_at) return
       const catId = t.category_id
-      const dateStr = formatUTCDate(new Date(t.completed_at))
+      const dateStr = formatLocalDate(new Date(t.completed_at))
       if (!map[catId]) map[catId] = {}
       if (!map[catId][dateStr]) map[catId][dateStr] = { totalMinutes: 0, count: 0 }
       map[catId][dateStr].totalMinutes += (t.actual_time_minutes || 0)
@@ -183,7 +182,7 @@ const AllocationHistoryModal = ({ isOpen, onClose, categories, tasks, initialCat
 
     const data = {}
     days.forEach(day => {
-      const dateStr = formatUTCDate(day)
+      const dateStr = formatLocalDate(day)
       const catData = {}
 
       categories.forEach(cat => {
