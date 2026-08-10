@@ -147,6 +147,20 @@ const DigitalClock = memo(() => {
             }}
           />
         </div>
+
+        {/* Diary reminder - shows when 2 hours or less until midnight */}
+        {countdown.hours <= 2 && (
+          <div
+            className="mt-2 text-center animate-pulse"
+            style={{
+              fontSize: '9px',
+              color: '#d4a574',
+              letterSpacing: '0.5px'
+            }}
+          >
+            ✍️ Write your diary entry now!
+          </div>
+        )}
       </div>
 
       {/* Keyframes injected once */}
