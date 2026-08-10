@@ -4,7 +4,7 @@ import { LogOut, Menu, Clock } from 'lucide-react'
 import ProfileModal from '../modal/ProfileModal'
 import AllocationHistoryModal from '../modal/AllocationHistoryModal'
 import AllocationProgress from '../../../components/AllocationProgress'
-import { useTypewriter } from '../../../hooks/useTypewriter'
+import Typewriter from '../../../components/Typewriter'
 
 const Sidebar = memo(({ categories, getCategoryProgress, totalAllocated, totalActual, totalPercentage, view, setView, onMenuClick, isMenuOpen, allTasks }) => {
   const navigate = useNavigate()
@@ -12,12 +12,6 @@ const Sidebar = memo(({ categories, getCategoryProgress, totalAllocated, totalAc
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState(null)
-  const { displayText, isTyping } = useTypewriter({
-    typeSpeed: 80,
-    deleteSpeed: 40,
-    pauseAfterType: 2500,
-    pauseAfterDelete: 500
-  })
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -150,20 +144,7 @@ const Sidebar = memo(({ categories, getCategoryProgress, totalAllocated, totalAc
           </button>
         </div>
         <div className="pt-4" style={{ borderTop: '1px solid rgba(200, 80, 80, 0.2)' }}>
-          <p 
-            className="text-sm italic text-center min-h-[40px] flex items-center justify-center"
-            style={{ color: '#d4a574', fontFamily: "'Cinzel', serif" }}
-          >
-            <span>"{displayText}</span>
-            <span 
-              className="inline-block w-[2px] h-[14px] ml-[2px] align-middle"
-              style={{ 
-                background: '#d4a574',
-                animation: isTyping ? 'blink 1s step-end infinite' : 'none'
-              }}
-            />
-            <span>"</span>
-          </p>
+          <Typewriter />
         </div>
       </div>
 

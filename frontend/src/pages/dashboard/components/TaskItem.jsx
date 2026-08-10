@@ -137,7 +137,7 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
         ref={setNodeRef}
         {...attributes}
         {...listeners}
-        className="rounded-2xl p-4 transition-all duration-300 backdrop-blur-sm"
+        className="task-card rounded-2xl p-4 backdrop-blur-sm"
         style={{
           background: 'rgba(30, 12, 15, 0.7)',
           border: '1px solid rgba(200, 80, 80, 0.15)',
@@ -146,19 +146,6 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
           cursor: isCompleted ? 'default' : 'grab',
           opacity: isCompleted ? 0.6 : 1,
           ...style
-        }}
-        onMouseOver={(e) => {
-          if (!isDragging && !isCompleted) {
-            e.currentTarget.style.borderLeftColor = color
-            e.currentTarget.style.boxShadow = `0 8px 30px rgba(0, 0, 0, 0.4), 0 0 20px ${color}15, inset 0 1px 0 rgba(255, 255, 255, 0.05)`
-            e.currentTarget.style.transform = 'translateY(-2px)'
-          }
-        }}
-        onMouseOut={(e) => {
-          if (!isDragging && !isCompleted) {
-            e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03)'
-            e.currentTarget.style.transform = 'translateY(0)'
-          }
         }}
         onClick={handleCardClick}
       >
@@ -189,18 +176,10 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
             <button
               onClick={handleStart}
               disabled={loading}
-              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
+              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 btn-lift"
               style={{
                 background: 'linear-gradient(135deg, #7bed9f 0%, #2ed573 100%)',
                 color: '#1a0a0a'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'scale(1.1)'
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(46, 213, 115, 0.5)'
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'scale(1)'
-                e.currentTarget.style.boxShadow = 'none'
               }}
             >
               <Play size={14} fill="currentColor" />
@@ -262,19 +241,11 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
             <button
               onClick={handleStart}
               disabled={loading}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold btn-lift"
               style={{
                 background: 'linear-gradient(135deg, rgba(123, 237, 159, 0.2) 0%, rgba(46, 213, 115, 0.15) 100%)',
                 border: '1px solid rgba(123, 237, 159, 0.3)',
                 color: '#7bed9f'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(123, 237, 159, 0.3) 0%, rgba(46, 213, 115, 0.25) 100%)'
-                e.currentTarget.style.transform = 'translateY(-1px)'
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(123, 237, 159, 0.2) 0%, rgba(46, 213, 115, 0.15) 100%)'
-                e.currentTarget.style.transform = 'translateY(0)'
               }}
             >
               <Play size={12} fill="currentColor" /> Start
@@ -288,19 +259,11 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
                   e.stopPropagation()
                   setShowSubtasks(!showSubtasks)
                 }}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold btn-lift"
                 style={{
                   background: showSubtasks ? 'rgba(168, 144, 128, 0.25)' : 'rgba(168, 144, 128, 0.15)',
                   border: `1px solid ${showSubtasks ? 'rgba(168, 144, 128, 0.5)' : 'rgba(168, 144, 128, 0.3)'}`,
                   color: '#a89080'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'rgba(168, 144, 128, 0.25)'
-                  e.currentTarget.style.transform = 'translateY(-1px)'
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = showSubtasks ? 'rgba(168, 144, 128, 0.25)' : 'rgba(168, 144, 128, 0.15)'
-                  e.currentTarget.style.transform = 'translateY(0)'
                 }}
               >
                 {showSubtasks ? '📋 Hide Subtasks' : '📋 View Subtasks'}
@@ -308,19 +271,11 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
               <button
                 onClick={handleComplete}
                 disabled={loading}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold btn-lift"
                 style={{
                   background: 'linear-gradient(135deg, rgba(139, 41, 66, 0.3) 0%, rgba(200, 80, 80, 0.25) 100%)',
                   border: '1px solid rgba(200, 80, 80, 0.4)',
                   color: '#c85050'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139, 41, 66, 0.4) 0%, rgba(200, 80, 80, 0.35) 100%)'
-                  e.currentTarget.style.transform = 'translateY(-1px)'
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139, 41, 66, 0.3) 0%, rgba(200, 80, 80, 0.25) 100%)'
-                  e.currentTarget.style.transform = 'translateY(0)'
                 }}
               >
                 <Ghost size={12} /> Done
@@ -333,19 +288,11 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
               <button
                 onClick={handlePause}
                 disabled={loading}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold btn-lift"
                 style={{
                   background: 'linear-gradient(135deg, rgba(255, 165, 2, 0.2) 0%, rgba(255, 99, 72, 0.15) 100%)',
                   border: '1px solid rgba(255, 165, 2, 0.3)',
                   color: '#ffa502'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 165, 2, 0.3) 0%, rgba(255, 99, 72, 0.25) 100%)'
-                  e.currentTarget.style.transform = 'translateY(-1px)'
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 165, 2, 0.2) 0%, rgba(255, 99, 72, 0.15) 100%)'
-                  e.currentTarget.style.transform = 'translateY(0)'
                 }}
               >
                 <Pause size={12} /> Pause
@@ -353,19 +300,11 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
               <button
                 onClick={handleComplete}
                 disabled={loading}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold btn-lift"
                 style={{
                   background: 'linear-gradient(135deg, rgba(139, 41, 66, 0.3) 0%, rgba(200, 80, 80, 0.25) 100%)',
                   border: '1px solid rgba(200, 80, 80, 0.4)',
                   color: '#c85050'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139, 41, 66, 0.4) 0%, rgba(200, 80, 80, 0.35) 100%)'
-                  e.currentTarget.style.transform = 'translateY(-1px)'
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139, 41, 66, 0.3) 0%, rgba(200, 80, 80, 0.25) 100%)'
-                  e.currentTarget.style.transform = 'translateY(0)'
                 }}
               >
                 <Ghost size={12} /> Done
@@ -378,19 +317,11 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
               <button
                 onClick={handleStart}
                 disabled={loading}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold btn-lift"
                 style={{
                   background: 'linear-gradient(135deg, rgba(123, 237, 159, 0.2) 0%, rgba(46, 213, 115, 0.15) 100%)',
                   border: '1px solid rgba(123, 237, 159, 0.3)',
                   color: '#7bed9f'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(123, 237, 159, 0.3) 0%, rgba(46, 213, 115, 0.25) 100%)'
-                  e.currentTarget.style.transform = 'translateY(-1px)'
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(123, 237, 159, 0.2) 0%, rgba(46, 213, 115, 0.15) 100%)'
-                  e.currentTarget.style.transform = 'translateY(0)'
                 }}
               >
                 <Play size={12} fill="currentColor" /> Resume
@@ -398,19 +329,11 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
               <button
                 onClick={handleComplete}
                 disabled={loading}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold btn-lift"
                 style={{
                   background: 'linear-gradient(135deg, rgba(139, 41, 66, 0.3) 0%, rgba(200, 80, 80, 0.25) 100%)',
                   border: '1px solid rgba(200, 80, 80, 0.4)',
                   color: '#c85050'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139, 41, 66, 0.4) 0%, rgba(200, 80, 80, 0.35) 100%)'
-                  e.currentTarget.style.transform = 'translateY(-1px)'
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139, 41, 66, 0.3) 0%, rgba(200, 80, 80, 0.25) 100%)'
-                  e.currentTarget.style.transform = 'translateY(0)'
                 }}
               >
                 <Ghost size={12} /> Done
@@ -448,7 +371,7 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
                 e.stopPropagation()
                 setShowAddSubtaskOption(!showAddSubtaskOption)
               }}
-              className="w-full flex items-center justify-center gap-1 py-2 rounded-lg transition-all duration-200 text-xs"
+              className="w-full flex items-center justify-center gap-1 py-2 rounded-lg btn-lift text-xs"
               style={{
                 background: `${color}10`,
                 border: `1px dashed ${color}30`,
@@ -467,7 +390,7 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
                 setShowQuickAddSubtask(true)
                 setShowAddSubtaskOption(false)
               }}
-              className="w-full flex items-center justify-center gap-1 py-2 rounded-lg transition-all duration-200 text-xs"
+              className="w-full flex items-center justify-center gap-1 py-2 rounded-lg btn-lift text-xs"
               style={{
                 background: `${color}20`,
                 border: `1px solid ${color}40`,
@@ -503,7 +426,7 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
               setShowSubtasks(true)
               setShowQuickAddSubtask(true)
             }}
-            className="w-full flex items-center justify-center gap-1 py-2 rounded-lg transition-all duration-200 text-xs"
+            className="w-full flex items-center justify-center gap-1 py-2 rounded-lg btn-lift text-xs"
             style={{
               background: `${color}10`,
               border: `1px dashed ${color}30`,
@@ -584,23 +507,13 @@ const SubtaskItem = memo(({ subtask, color, onTaskClick, setTasks }) => {
 
   return (
     <div
-      className="rounded-xl px-3 py-2.5 transition-all duration-200 cursor-pointer backdrop-blur-sm"
+      className="subtask-item rounded-xl px-3 py-2.5 cursor-pointer backdrop-blur-sm"
       style={{
         background: 'rgba(30, 12, 15, 0.5)',
         border: '1px solid rgba(200, 80, 80, 0.1)',
         borderLeft: `2px solid ${color}80`,
         boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
         opacity: isCompleted ? 0.6 : 1
-      }}
-      onMouseOver={(e) => {
-        e.currentTarget.style.background = 'rgba(40, 18, 20, 0.6)'
-        e.currentTarget.style.borderLeftColor = color
-        e.currentTarget.style.transform = 'translateX(4px)'
-      }}
-      onMouseOut={(e) => {
-        e.currentTarget.style.background = 'rgba(30, 12, 15, 0.5)'
-        e.currentTarget.style.borderLeftColor = `${color}80`
-        e.currentTarget.style.transform = 'translateX(0)'
       }}
       onClick={(e) => onTaskClick(e, subtask)}
     >
@@ -630,7 +543,7 @@ const SubtaskItem = memo(({ subtask, color, onTaskClick, setTasks }) => {
             <button
               onClick={handleStart}
               disabled={loading}
-              className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
+              className="w-6 h-6 rounded-full flex items-center justify-center btn-lift"
               style={{
                 background: 'rgba(123, 237, 159, 0.2)',
                 border: '1px solid rgba(123, 237, 159, 0.3)',
@@ -644,7 +557,7 @@ const SubtaskItem = memo(({ subtask, color, onTaskClick, setTasks }) => {
             <button
               onClick={handlePause}
               disabled={loading}
-              className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
+              className="w-6 h-6 rounded-full flex items-center justify-center btn-lift"
               style={{
                 background: 'rgba(255, 165, 2, 0.2)',
                 border: '1px solid rgba(255, 165, 2, 0.3)',
@@ -658,7 +571,7 @@ const SubtaskItem = memo(({ subtask, color, onTaskClick, setTasks }) => {
             <button
               onClick={handleStart}
               disabled={loading}
-              className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
+              className="w-6 h-6 rounded-full flex items-center justify-center btn-lift"
               style={{
                 background: 'rgba(123, 237, 159, 0.2)',
                 border: '1px solid rgba(123, 237, 159, 0.3)',
@@ -672,7 +585,7 @@ const SubtaskItem = memo(({ subtask, color, onTaskClick, setTasks }) => {
             <button
               onClick={handleComplete}
               disabled={loading}
-              className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
+              className="w-6 h-6 rounded-full flex items-center justify-center btn-lift"
               style={{
                 background: 'rgba(200, 80, 80, 0.2)',
                 border: '1px solid rgba(200, 80, 80, 0.3)',

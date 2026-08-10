@@ -170,3 +170,105 @@ input[type="number"]:hover::-webkit-outer-spin-button {
 .diary-butterfly:nth-child(5) { left: 90%; bottom: 10%; animation: flutter2 6.5s ease-in-out 0.3s infinite; color: #ff6b81; }
 .diary-butterfly:nth-child(6) { left: 45%; bottom: 2%; animation: flutter3 7.5s ease-in-out 1.8s infinite; color: #d63031; }
 
+
+/* =============================================================================
+   PERFORMANCE OPTIMIZATIONS - Hover utilities to replace inline handlers
+   ============================================================================= */
+
+/* Task card hover effects - replaces inline onMouseOver/onMouseOut */
+.task-card {
+  @apply transition-all duration-300;
+}
+.task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 20px var(--category-color-glow, rgba(200, 80, 80, 0.15));
+  border-left-color: var(--category-color, #c85050);
+}
+
+/* Subtask item hover */
+.subtask-item {
+  @apply transition-all duration-200;
+}
+.subtask-item:hover {
+  background: rgba(40, 18, 20, 0.6) !important;
+  border-left-color: var(--category-color, #c85050) !important;
+  transform: translateX(4px);
+}
+
+/* Button hover lift */
+.btn-lift {
+  @apply transition-all duration-300;
+}
+.btn-lift:hover {
+  transform: translateY(-1px);
+}
+.btn-lift:active {
+  transform: translateY(0);
+}
+
+/* Category column hover */
+.category-column {
+  @apply transition-all duration-300;
+}
+.category-column:hover {
+  background: rgba(45, 20, 25, 0.8) !important;
+}
+
+/* Sidebar menu button hover */
+.sidebar-menu-btn:not(.active):hover {
+  background: rgba(45, 20, 25, 0.8) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(200, 80, 80, 0.3);
+}
+
+/* Profile card hover */
+.profile-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(200, 80, 80, 0.6);
+}
+
+/* History item hover */
+.history-item:hover {
+  background: rgba(200, 80, 80, 0.1);
+}
+
+/* Playlist item hover */
+.playlist-item:hover {
+  opacity: 0.8;
+}
+
+/* Floating player controls hover */
+.floating-control:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(46, 213, 115, 0.5);
+}
+
+/* Icon button hover */
+.icon-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Generic hover lift for cards */
+.hover-lift {
+  @apply transition-all duration-300;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Glow pulse for active elements */
+.glow-pulse {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+/* Ghost float animation */
+.ghost-float {
+  animation: ghostFloat 3s ease-in-out infinite;
+}
+
+/* Blink cursor */
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
