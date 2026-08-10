@@ -26,10 +26,15 @@ export const useTaskActions = (setTasks) => {
       }
       
       const response = await api.put(`/tasks/${taskId}`, updateData)
-      
-      setTasks(prev => 
-        prev.map(task => task.id === taskId ? response.data : task)
-      )
+
+      setTasks(prev => {
+        let updated = prev.map(task => task.id === taskId ? response.data : task)
+        // If a next occurrence was created (recurring task), add it to state
+        if (response.data.next_occurrence) {
+          updated = [...updated, response.data.next_occurrence]
+        }
+        return updated
+      })
       return true
     } catch (error) {
       console.error('Failed to toggle task:', error)
@@ -79,10 +84,15 @@ export const useTaskActions = (setTasks) => {
       }
       
       const response = await api.put(`/tasks/${taskId}`, updateData)
-      
-      setTasks(prev => 
-        prev.map(task => task.id === taskId ? response.data : task)
-      )
+
+      setTasks(prev => {
+        let updated = prev.map(task => task.id === taskId ? response.data : task)
+        // If a next occurrence was created (recurring task), add it to state
+        if (response.data.next_occurrence) {
+          updated = [...updated, response.data.next_occurrence]
+        }
+        return updated
+      })
       return true
     } catch (error) {
       console.error('Failed to complete task:', error)

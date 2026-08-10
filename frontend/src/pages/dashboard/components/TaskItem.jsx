@@ -169,6 +169,21 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
             >
               {task.title}
             </span>
+            {task.recurrence_pattern && task.recurrence_pattern !== 'none' && (
+              <span
+                className="flex-shrink-0 text-xs px-1.5 py-0.5 rounded-full"
+                style={{
+                  background: 'rgba(112, 161, 255, 0.15)',
+                  border: '1px solid rgba(112, 161, 255, 0.3)',
+                  color: '#70a1ff',
+                  fontSize: '10px',
+                  lineHeight: '1.2'
+                }}
+                title={`Repeats ${task.recurrence_pattern}`}
+              >
+                🔄
+              </span>
+            )}
           </div>
           
           {/* Status indicator / Play button */}

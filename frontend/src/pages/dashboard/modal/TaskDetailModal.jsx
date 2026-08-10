@@ -21,7 +21,8 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
     priority: '',
     status: '',
     due_date: '',
-    goal_time_minutes: ''
+    goal_time_minutes: '',
+    recurrence_pattern: ''
   })
 
   useEffect(() => {
@@ -32,7 +33,8 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
         priority: task.priority || 'medium',
         status: task.status || 'pending',
         due_date: task.due_date ? task.due_date.split('T')[0] : '',
-        goal_time_minutes: task.goal_time_minutes || ''
+        goal_time_minutes: task.goal_time_minutes || '',
+        recurrence_pattern: task.recurrence_pattern || 'none'
       })
       setHasUnsavedChanges(false)
       if (!task.parent_task_id) {
@@ -64,7 +66,8 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
         priority: editData.priority,
         status: editData.status,
         due_date: editData.due_date || null,
-        goal_time_minutes: editData.goal_time_minutes ? parseInt(editData.goal_time_minutes) : null
+        goal_time_minutes: editData.goal_time_minutes ? parseInt(editData.goal_time_minutes) : null,
+        recurrence_pattern: editData.recurrence_pattern
       }
 
       const response = await api.put(`/tasks/${task.id}`, updateData)
@@ -96,7 +99,8 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
       priority: task.priority || 'medium',
       status: task.status || 'pending',
       due_date: task.due_date ? task.due_date.split('T')[0] : '',
-      goal_time_minutes: task.goal_time_minutes || ''
+      goal_time_minutes: task.goal_time_minutes || '',
+      recurrence_pattern: task.recurrence_pattern || 'none'
     })
   }
 
@@ -431,6 +435,41 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
                 </span>
               )}
             </div>
+          </div>
+
+          {/* Recurrence Pattern */}
+          <div>
+            <label className="block mb-2 text-sm font-semibold" style={{ color: '#f5e6d3' }}>
+              🔄 Repeat
+            </label>
+            {isEditing ? (
+              <select
+                value={editData.recurrence_pattern}
+                onChange={(e) => {
+                  setEditData(prev => ({ ...prev, recurrence_pattern: e.target.value }))
+                  setHasUnsavedChanges(true)
+                }}
+                className="w-full px-4 py-2 rounded-lg outline-none"
+                style={{
+                  background: 'rgba(0,0,0,0.4)',
+                  border: '1px solid rgba(200, 80, 80, 0.3)',
+                  color: '#f5e6d3'
+                }}
+              >
+                <option value="none">No repeat</option>
+                <option value="daily">📅 Daily</option>
+                <option value="weekly">📆 Weekly</option>
+                <option value="monthly">🗓️ Monthly</option>
+              </select>
+            ) : (
+              <span style={{ color: '#a89080' }}>
+                {task.recurrence_pattern === 'none' && 'No repeat'}
+                {task.recurrence_pattern === 'daily' && '📅 Daily'}
+                {task.recurrence_pattern === 'weekly' && '📆 Weekly'}
+                {task.recurrence_pattern === 'monthly' && '🗓️ Monthly'}
+                {!task.recurrence_pattern && 'No repeat'}
+              </span>
+            )}
           </div>
 
           {/* Time Tracking */}

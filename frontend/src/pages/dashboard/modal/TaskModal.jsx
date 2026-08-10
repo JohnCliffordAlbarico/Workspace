@@ -27,7 +27,8 @@ const TaskModal = ({ isOpen, onClose, categoryId, categories, setTasks, tasks })
       priority: 'medium',
       status: 'pending',
       days_until_due: '',
-      parent_task_id: ''
+      parent_task_id: '',
+      recurrence_pattern: 'none'
     }
   })
 
@@ -56,7 +57,8 @@ const TaskModal = ({ isOpen, onClose, categoryId, categories, setTasks, tasks })
         priority: 'medium',
         status: 'pending',
         days_until_due: '',
-        parent_task_id: ''
+        parent_task_id: '',
+        recurrence_pattern: 'none'
       })
       localStorage.removeItem(STORAGE_KEY)
       localStorage.removeItem(`${STORAGE_KEY}_minimized`)
@@ -106,7 +108,8 @@ const TaskModal = ({ isOpen, onClose, categoryId, categories, setTasks, tasks })
       priority: formData.priority,
       status: formData.status,
       due_date: due_date,
-      parent_task_id: formData.parent_task_id || null
+      parent_task_id: formData.parent_task_id || null,
+      recurrence_pattern: formData.recurrence_pattern
     }
 
     await addTask(taskData)
@@ -335,6 +338,32 @@ const TaskModal = ({ isOpen, onClose, categoryId, categories, setTasks, tasks })
                 }}
               />
             </div>
+
+          {/* Recurrence Pattern */}
+          <div>
+            <label
+              className="block mb-2 text-sm font-semibold"
+              style={{ color: '#f5e6d3' }}
+            >
+              🔄 Repeat
+            </label>
+            <select
+              name="recurrence_pattern"
+              value={formData.recurrence_pattern}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-xl text-base outline-none cursor-pointer"
+              style={{
+                background: 'rgba(0,0,0,0.4)',
+                border: '1px solid rgba(200, 80, 80, 0.3)',
+                color: '#f5e6d3'
+              }}
+            >
+              <option value="none">No repeat</option>
+              <option value="daily">📅 Daily</option>
+              <option value="weekly">📆 Weekly</option>
+              <option value="monthly">🗓️ Monthly</option>
+            </select>
+          </div>
 
           {/* Parent Task (Subtask) */}
           {availableParentTasks.length > 0 && (

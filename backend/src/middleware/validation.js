@@ -113,6 +113,11 @@ export const taskValidation = {
     required: false,
     type: 'number',
     min: 0
+  },
+  recurrence_pattern: {
+    required: false,
+    type: 'string',
+    enum: ['none', 'daily', 'weekly', 'monthly']
   }
 }
 
@@ -147,6 +152,11 @@ export const taskUpdateValidation = {
     required: false,
     type: 'number',
     min: 0
+  },
+  recurrence_pattern: {
+    required: false,
+    type: 'string',
+    enum: ['none', 'daily', 'weekly', 'monthly']
   }
 }
 

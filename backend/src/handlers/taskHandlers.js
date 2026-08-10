@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../config/supabase.js'
 import { encrypt, decrypt } from '../utils/crypto.js'
+import { calculateNextDueDate } from '../utils/recurrence.js'
 
 // Helper function to calculate and create break time entries
 const calculateAndCreateBreakTime = async (userId, taskId, actualTimeMinutes, previousTimeMinutes = 0) => {
@@ -164,7 +165,8 @@ export const createTask = async (req, res) => {
       status,
       position,
       goal_time_minutes,
-      due_date
+      due_date,
+      recurrence_pattern
     } = req.body
 
     if (!category_id || !title) {
@@ -183,7 +185,8 @@ export const createTask = async (req, res) => {
         status,
         position,
         goal_time_minutes,
-        due_date
+        due_date,
+        recurrence_pattern: recurrence_pattern || 'none'
       })
       .select()
       .single()
@@ -214,13 +217,14 @@ export const updateTask = async (req, res) => {
       actual_time_minutes,
       started_at,
       completed_at,
-      due_date
+      due_date,
+      recurrence_pattern
     } = req.body
 
-    // Get the current task to compare actual_time_minutes
+    // Get the current task to compare actual_time_minutes and check recurrence
     const { data: currentTask, error: fetchError } = await supabaseAdmin
       .from('tasks')
-      .select('actual_time_minutes')
+      .select('actual_time_minutes, recurrence_pattern, recurring_series_id, category_id, user_id')
       .eq('id', id)
       .eq('user_id', req.user.id)
       .single()
@@ -238,6 +242,7 @@ export const updateTask = async (req, res) => {
     if (started_at !== undefined) updateData.started_at = started_at
     if (completed_at !== undefined) updateData.completed_at = completed_at
     if (due_date !== undefined) updateData.due_date = due_date
+    if (recurrence_pattern !== undefined) updateData.recurrence_pattern = recurrence_pattern
 
     const { data, error } = await supabaseAdmin
       .from('tasks')
@@ -295,11 +300,79 @@ export const updateTask = async (req, res) => {
       }
     }
 
-    res.json({
+    // ─── Recurring Task Logic ──────────────────────────
+    let nextOccurrence = null
+    const effectiveRecurrence = recurrence_pattern !== undefined ? recurrence_pattern : currentTask.recurrence_pattern
+
+    if (status === 'completed' && effectiveRecurrence && effectiveRecurrence !== 'none') {
+      // Calculate next due date
+      const nextDueDate = calculateNextDueDate(
+        data.due_date || completed_at || new Date().toISOString(),
+        effectiveRecurrence
+      )
+
+      // Determine the series ID: use original's recurring_series_id if set, otherwise use this task's ID
+      const seriesId = currentTask.recurring_series_id || data.id
+
+      // Get the next position value (max position in category + 1)
+      const { data: maxPosTask } = await supabaseAdmin
+        .from('tasks')
+        .select('position')
+        .eq('category_id', currentTask.category_id)
+        .eq('user_id', currentTask.user_id)
+        .order('position', { ascending: false })
+        .limit(1)
+        .single()
+
+      const nextPosition = (maxPosTask?.position ?? -1) + 1
+
+      // Create the next occurrence — title/description are already encrypted from the original
+      const { data: newTask, error: createError } = await supabaseAdmin
+        .from('tasks')
+        .insert({
+          category_id: data.category_id,
+          user_id: data.user_id,
+          parent_task_id: null,  // Recurring tasks don't recurse subtasks
+          title: data.title,     // Already encrypted
+          description: data.description,  // Already encrypted
+          priority: data.priority,
+          status: 'pending',
+          position: nextPosition,
+          goal_time_minutes: data.goal_time_minutes,
+          actual_time_minutes: null,
+          started_at: null,
+          completed_at: null,
+          due_date: nextDueDate,
+          recurrence_pattern: effectiveRecurrence,
+          recurring_series_id: seriesId
+        })
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('Error creating next recurrence:', createError)
+        // Don't fail the whole request — the completion itself succeeded
+      } else {
+        nextOccurrence = {
+          ...newTask,
+          title: decrypt(newTask.title),
+          description: decrypt(newTask.description)
+        }
+      }
+    }
+    // ─── End Recurring Task Logic ──────────────────────
+
+    const response = {
       ...data,
       title: decrypt(data.title),
       description: decrypt(data.description)
-    })
+    }
+
+    if (nextOccurrence) {
+      response.next_occurrence = nextOccurrence
+    }
+
+    res.json(response)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
