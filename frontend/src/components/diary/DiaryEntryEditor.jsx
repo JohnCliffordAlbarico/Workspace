@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { ImagePlus } from 'lucide-react'
 
-const DiaryEntryEditor = ({ entry, onSave, onCancel, onUploadCover, uploading }) => {
+const DiaryEntryEditor = ({ entry, onSave, onCancel, onUploadCover, onSetCoverReference, uploading }) => {
   const [title, setTitle] = useState(entry?.title || '')
   const [content, setContent] = useState(entry?.content || '')
   const [saving, setSaving] = useState(false)
@@ -63,12 +63,18 @@ const DiaryEntryEditor = ({ entry, onSave, onCancel, onUploadCover, uploading })
           }
         } else if (useDefaultCover && preview) {
           try {
-            const response = await fetch(preview)
-            const blob = await response.blob()
-            const file = new File([blob], 'cover.jpg', { type: blob.type })
-            await onUploadCover(saved.id, file)
+            // Reference the existing image by URL instead of re-uploading
+            if (onSetCoverReference) {
+              await onSetCoverReference(saved.id, preview)
+            } else {
+              // Fallback: fetch and re-upload if reference endpoint not available
+              const response = await fetch(preview)
+              const blob = await response.blob()
+              const file = new File([blob], 'cover.jpg', { type: blob.type })
+              await onUploadCover(saved.id, file)
+            }
           } catch (uploadErr) {
-            console.error('Default cover upload failed:', uploadErr)
+            console.error('Default cover assignment failed:', uploadErr)
           }
         }
       }
@@ -81,68 +87,65 @@ const DiaryEntryEditor = ({ entry, onSave, onCancel, onUploadCover, uploading })
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {error && (
-        <div
-          className="mx-4 mt-2 px-3 py-2 rounded-lg text-xs flex-shrink-0"
-          style={{ background: 'rgba(255,71,87,0.2)', border: '1px solid rgba(255,71,87,0.4)', color: '#ff6b6b' }}
-        >
-          {error}
-        </div>
-      )}
-
-      {/* Cover Image Area */}
-      <div className="relative flex-shrink-0" style={{ height: '160px' }}>
+    <div className="flex h-full overflow-hidden">
+      {/* Left panel — Cover image (40%) */}
+      <div
+        className="relative flex-shrink-0 overflow-hidden"
+        style={{ width: '40%', background: 'linear-gradient(135deg, #1a0808 0%, #3d1515 50%, #1a0808 100%)' }}
+      >
         {preview ? (
           <>
-            <img src={preview} alt="Cover preview" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60" />
-            <div className="absolute bottom-2 right-2 flex gap-2">
+            <img src={preview} alt="Cover preview" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, transparent 40%, rgba(26,5,5,0.5) 70%, rgba(26,5,5,0.95) 100%)' }} />
+            {/* Cover controls */}
+            <div className="absolute bottom-3 right-3 flex gap-1.5 z-20">
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="px-2 py-1 rounded text-xs"
-                style={{ background: 'rgba(0,0,0,0.65)', color: '#f5e6d3' }}
+                disabled={uploading}
+                className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all hover:opacity-80 disabled:opacity-50"
+                style={{ background: 'rgba(0,0,0,0.55)', color: '#f5e6d3', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}
               >
-                Change
+                {uploading ? 'Uploading...' : 'Change'}
               </button>
               <button
                 type="button"
                 onClick={handleRemoveCover}
-                className="px-2 py-1 rounded text-xs"
-                style={{ background: 'rgba(255,71,87,0.65)', color: '#f5e6d3' }}
+                disabled={uploading}
+                className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all hover:opacity-80 disabled:opacity-50"
+                style={{ background: 'rgba(0,0,0,0.55)', color: '#ff6b6b', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}
               >
                 Remove
               </button>
             </div>
           </>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-2"
-            style={{ background: 'linear-gradient(135deg, #2d0f0f 0%, #6b2828 100%)', border: 'none' }}
-          >
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="flex flex-col items-center justify-center gap-2"
+              className="flex flex-col items-center justify-center gap-2 transition-all hover:opacity-80"
               aria-label="Add cover image"
             >
-              <ImagePlus size={28} style={{ color: 'rgba(200,80,80,0.6)' }} />
-              <p className="text-xs" style={{ color: 'rgba(245,230,211,0.5)' }}>
-                Add a cover image (optional)
+              <ImagePlus size={32} style={{ color: 'rgba(200,80,80,0.4)' }} />
+              <p className="text-xs" style={{ color: 'rgba(245,230,211,0.4)' }}>
+                Add a cover image
               </p>
             </button>
             {localStorage.getItem('diary_default_cover') && (
               <button
                 type="button"
                 onClick={handleUseDefaultCover}
-                className="text-xs px-3 py-1 rounded"
-                style={{ background: 'rgba(200,80,80,0.3)', color: '#f5e6d3' }}
+                className="text-xs px-3 py-1.5 rounded-full transition-all hover:opacity-80"
+                style={{ background: 'rgba(200,80,80,0.2)', color: 'rgba(245,230,211,0.6)', border: '1px solid rgba(200,80,80,0.2)' }}
               >
                 Use last cover image
               </button>
             )}
+            <span className="text-5xl opacity-10 mt-2">📖</span>
           </div>
         )}
+
         <input
           ref={fileRef}
           type="file"
@@ -152,49 +155,50 @@ const DiaryEntryEditor = ({ entry, onSave, onCancel, onUploadCover, uploading })
         />
       </div>
 
-      {/* Fields */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        <input
-          type="text"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          placeholder="Entry title..."
-          required
-          autoFocus
-          className="w-full bg-transparent border-b text-lg font-bold outline-none pb-1"
-          style={{ color: '#f5e6d3', borderColor: 'rgba(200,80,80,0.4)' }}
-        />
-        <textarea
-          value={content}
-          onChange={e => setContent(e.target.value)}
-          placeholder="Write your thoughts..."
-          rows={8}
-          className="w-full bg-transparent outline-none resize-none text-sm leading-relaxed"
-          style={{ color: '#d4b896' }}
-        />
-      </div>
+      {/* Right panel — Content (60%) */}
+      <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'rgba(26,5,5,0.6)' }}>
+        {error && (
+          <div
+            className="mx-6 mt-4 px-4 py-2.5 rounded-xl text-xs flex-shrink-0"
+            style={{ background: 'rgba(255,71,87,0.12)', border: '1px solid rgba(255,71,87,0.25)', color: '#ff6b6b' }}
+          >
+            {error}
+          </div>
+        )}
 
-      {/* Actions */}
-      <div className="px-4 pb-4 flex gap-2 flex-shrink-0">
-        <button
-          onClick={onCancel}
-          className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-          style={{
-            background: 'rgba(200, 80, 80, 0.2)',
-            border: '1px solid rgba(200, 80, 80, 0.3)',
-            color: '#f5e6d3'
-          }}
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSubmit}
-          disabled={saving || uploading || !title.trim()}
-          className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)', color: '#f5e6d3' }}
-        >
-          {saving ? 'Saving...' : uploading ? 'Uploading...' : 'Save Entry'}
-        </button>
+        <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6">
+          <input
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="Entry title..."
+            required
+            autoFocus
+            className="w-full bg-transparent outline-none pb-3"
+            style={{
+              color: '#f5e6d3',
+              fontFamily: "'Cinzel', serif",
+              fontSize: '1.8rem',
+              fontWeight: 700,
+              borderBottom: '1px solid rgba(200,80,80,0.15)',
+              letterSpacing: '0.01em'
+            }}
+          />
+          <textarea
+            value={content}
+            onChange={e => setContent(e.target.value)}
+            placeholder="Write your thoughts..."
+            className="w-full bg-transparent outline-none resize-none"
+            style={{
+              color: '#c4a882',
+              fontFamily: "'Crimson Text', serif",
+              fontSize: '1.1rem',
+              lineHeight: '2',
+              letterSpacing: '0.005em',
+              minHeight: '300px'
+            }}
+          />
+        </div>
       </div>
     </div>
   )

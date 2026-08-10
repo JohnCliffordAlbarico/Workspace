@@ -10,6 +10,7 @@ import {
   updateDiaryEntry,
   deleteDiaryEntry,
   uploadDiaryCover,
+  setDiaryCoverReference,
   deleteDiaryCover
 } from '../handlers/diaryHandlers.js'
 
@@ -29,6 +30,7 @@ router.post('/', writeLimiter, asyncHandler(createDiaryEntry))
 router.put('/:id', writeLimiter, asyncHandler(updateDiaryEntry))
 router.delete('/:id', writeLimiter, asyncHandler(deleteDiaryEntry))
 router.post('/:id/cover', writeLimiter, upload.single('image'), asyncHandler(uploadDiaryCover))
+router.post('/:id/cover/reference', writeLimiter, asyncHandler(setDiaryCoverReference))
 router.delete('/:id/cover', writeLimiter, asyncHandler(deleteDiaryCover))
 
 export default router

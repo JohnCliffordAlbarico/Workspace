@@ -23,7 +23,7 @@ const DiaryModal = () => {
 
   const {
     entries, loading, error: fetchError, fetchEntries,
-    createEntry, updateEntry, deleteEntry, uploadCover, deleteCover
+    createEntry, updateEntry, deleteEntry, uploadCover, deleteCover, setCoverReference
   } = useDiary()
 
   // Fix #1: Only fetch diary entries when the modal is open (not on dashboard mount)
@@ -117,6 +117,11 @@ const DiaryModal = () => {
   const handleDeleteCover = async (id) => {
     setUploading(true)
     try { await deleteCover(id); fetchEntries() } finally { setUploading(false) }
+  }
+
+  const handleSetCoverReference = async (id, url) => {
+    setUploading(true)
+    try { await setCoverReference(id, url); fetchEntries() } finally { setUploading(false) }
   }
 
   const handleCreateEntry = async ({ title, content }) => {
@@ -276,7 +281,7 @@ const DiaryModal = () => {
                   <h3 className="text-sm font-bold" style={{ color: '#f5e6d3' }}>New Entry</h3>
                   <div style={{ width: 48 }} />
                 </div>
-                <DiaryEntryEditor onSave={handleCreateEntry} onCancel={() => setView('calendar')} onUploadCover={handleUploadCover} uploading={uploading} />
+                <DiaryEntryEditor onSave={handleCreateEntry} onCancel={() => setView('calendar')} onUploadCover={handleUploadCover} onSetCoverReference={handleSetCoverReference} uploading={uploading} />
               </>
             )}
             {/* Floating butterflies */}

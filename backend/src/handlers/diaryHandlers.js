@@ -265,6 +265,61 @@ export const uploadDiaryCover = async (req, res) => {
   }
 }
 
+// Set cover image by reference (reuse existing URL without re-uploading)
+export const setDiaryCoverReference = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { url } = req.body
+
+    if (!url) {
+      return res.status(400).json({ error: 'url is required' })
+    }
+
+    // Verify ownership
+    const { data: entry, error: findError } = await supabaseAdmin
+      .from('diary_entries')
+      .select('id, cover_image')
+      .eq('id', id)
+      .eq('user_id', req.user.id)
+      .single()
+
+    if (findError && findError.code === 'PGRST116') {
+      return res.status(404).json({ error: 'Diary entry not found' })
+    }
+    if (findError) throw findError
+
+    // Delete old cover image from storage if it exists and is different
+    if (entry.cover_image && entry.cover_image !== url) {
+      try {
+        const oldUrl = new URL(entry.cover_image)
+        const pathParts = oldUrl.pathname.split('/')
+        const filePath = pathParts.slice(pathParts.indexOf('images') + 1).join('/')
+        if (filePath) {
+          await supabaseAdmin.storage.from('images').remove([filePath])
+        }
+      } catch (err) {
+        console.error('Error deleting old diary cover:', err)
+      }
+    }
+
+    // Set the new cover URL by reference
+    const { data: updated, error: updateError } = await supabaseAdmin
+      .from('diary_entries')
+      .update({ cover_image: url })
+      .eq('id', id)
+      .eq('user_id', req.user.id)
+      .select()
+      .single()
+
+    if (updateError) throw updateError
+
+    res.json({ url, entry: updated })
+  } catch (error) {
+    console.error('Set diary cover reference error:', error)
+    res.status(500).json({ error: error.message })
+  }
+}
+
 // Delete cover image for a diary entry
 export const deleteDiaryCover = async (req, res) => {
   try {

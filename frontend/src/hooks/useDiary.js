@@ -61,6 +61,13 @@ export const useDiary = () => {
     return data
   }
 
+  const setCoverReference = async (id, url) => {
+    const { data } = await api.post(`/diary/${id}/cover/reference`, { url })
+    // data = { url, entry }
+    setEntries(prev => prev.map(e => (e.id === id ? data.entry : e)))
+    return data
+  }
+
   return {
     entries,
     loading,
@@ -70,6 +77,7 @@ export const useDiary = () => {
     updateEntry,
     deleteEntry,
     uploadCover,
-    deleteCover
+    deleteCover,
+    setCoverReference
   }
 }
