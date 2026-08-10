@@ -88,64 +88,55 @@ const DigitalClock = memo(() => {
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           border: '1px solid rgba(200, 80, 80, 0.15)',
-          minWidth: '200px'
+          minWidth: '260px'
         }}
       >
-        {/* Top row: clock icon + time */}
-        <div className="flex items-center gap-2">
-          <Clock
-            size={13}
-            style={{ color: '#c85050', opacity: 0.8 }}
-          />
-          <div
-            className="text-base font-semibold tabular-nums tracking-wide"
-            style={{ color: '#f5e6d3' }}
-          >
-            {formatTime(time)}
+        {/* Top row: clock icon + time + date */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Clock
+              size={13}
+              style={{ color: '#c85050', opacity: 0.8 }}
+            />
+            <div
+              className="text-base font-semibold tabular-nums tracking-wide"
+              style={{ color: '#f5e6d3' }}
+            >
+              {formatTime(time)}
+            </div>
           </div>
-        </div>
-
-        {/* Divider */}
-        <div
-          className="my-2"
-          style={{
-            height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(200, 80, 80, 0.4), rgba(212, 165, 116, 0.3), transparent)'
-          }}
-        />
-
-        {/* Bottom row: date + countdown */}
-        <div className="flex items-center justify-between gap-3">
           <span
             className="text-[10px]"
             style={{ color: '#a89080' }}
           >
             {formatDate(time)}
           </span>
+        </div>
+
+        {/* Middle row: countdown + progress bar */}
+        <div className="mt-2 flex items-center gap-3">
           <span
-            className="text-[10px] tabular-nums font-medium"
+            className="text-[10px] tabular-nums font-medium whitespace-nowrap"
             style={{ color: '#d4a574' }}
           >
             ⏱ {countdown.text}
           </span>
-        </div>
-
-        {/* Progress bar */}
-        <div
-          className="mt-2 rounded-full overflow-hidden"
-          style={{
-            height: '3px',
-            background: 'rgba(200, 80, 80, 0.15)'
-          }}
-        >
           <div
-            className="h-full rounded-full transition-all duration-1000 ease-linear"
+            className="flex-1 rounded-full overflow-hidden"
             style={{
-              width: `${progress}%`,
-              background: 'linear-gradient(90deg, #c85050, #d4a574)',
-              boxShadow: '0 0 6px rgba(200, 80, 80, 0.5)'
+              height: '3px',
+              background: 'rgba(200, 80, 80, 0.15)'
             }}
-          />
+          >
+            <div
+              className="h-full rounded-full transition-all duration-1000 ease-linear"
+              style={{
+                width: `${progress}%`,
+                background: 'linear-gradient(90deg, #c85050, #d4a574)',
+                boxShadow: '0 0 6px rgba(200, 80, 80, 0.5)'
+              }}
+            />
+          </div>
         </div>
 
         {/* Diary reminder - shows when 2 hours or less until midnight */}
