@@ -58,15 +58,15 @@ export const updateProfile = async (req, res) => {
     if (display_name !== undefined) updateData.display_name = display_name
     if (profile_img !== undefined) updateData.profile_img = profile_img
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('users')
       .update(updateData)
       .eq('id', userId)
       .select()
       .single()
-    
+
     if (error) throw error
-    
+
     res.json(data)
   } catch (error) {
     console.error('Update profile error:', error)
@@ -109,7 +109,7 @@ export const uploadProfileImage = async (req, res) => {
     }
 
     // Get current profile to delete old image
-    const { data: currentUser } = await supabase
+    const { data: currentUser } = await supabaseAdmin
       .from('users')
       .select('profile_img')
       .eq('id', userId)
@@ -149,7 +149,7 @@ export const uploadProfileImage = async (req, res) => {
       .getPublicUrl(fileName)
     
     // Update user profile with new image URL
-    const { data: userData, error: updateError } = await supabase
+    const { data: userData, error: updateError } = await supabaseAdmin
       .from('users')
       .update({ profile_img: publicUrl })
       .eq('id', userId)
@@ -171,7 +171,7 @@ export const deleteProfileImage = async (req, res) => {
     const userId = req.user.id
     
     // Get current profile image
-    const { data: user } = await supabase
+    const { data: user } = await supabaseAdmin
       .from('users')
       .select('profile_img')
       .eq('id', userId)
@@ -192,7 +192,7 @@ export const deleteProfileImage = async (req, res) => {
     }
     
     // Update user profile to remove image URL
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('users')
       .update({ profile_img: null })
       .eq('id', userId)
