@@ -46,6 +46,9 @@ const generateTaskForCategory = async (category) => {
     return null
   }
 
+  // ─── Decrypt category name (stored encrypted in DB) ────────
+  const categoryName = decrypt(category.name)
+
   // ─── Count all non-cancelled tasks in this category for numbering ──
   const { count, error: countError } = await supabaseAdmin
     .from('tasks')
@@ -68,7 +71,7 @@ const generateTaskForCategory = async (category) => {
     year: 'numeric',
     timeZone: 'UTC'
   })
-  const title = `${category.name} #${taskNumber} - ${dateStr}`
+  const title = `${categoryName} #${taskNumber} - ${dateStr}`
 
   // ─── Get next position ────────────────────────────────────────
   const { data: maxPosTask } = await supabaseAdmin
@@ -167,7 +170,7 @@ export const checkRecurringCategories = async () => {
       const task = await generateTaskForCategory(category)
       if (task) {
         generated++
-        console.log(`[Scheduler] Generated task: ${task.title} for category "${category.name}"`)
+        console.log(`[Scheduler] Generated task: ${task.title} for category "${decrypt(category.name)}"`)
       }
     }
 
