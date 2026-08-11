@@ -4,17 +4,18 @@ import { useDraggable } from '@dnd-kit/core'
 import ConfirmationModal from '../modal/ConfirmationModal'
 import WarningModal from '../modal/WarningModal'
 import QuickAddSubtask from './QuickAddSubtask'
-import { Plus, Play, Pause, Ghost, MoreHorizontal } from 'lucide-react'
+import { Plus, Play, Pause, Ghost, MoreHorizontal, SkipForward } from 'lucide-react'
 
 const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refreshStats }) => {
   const [showPauseConfirm, setShowPauseConfirm] = useState(false)
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false)
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false)
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false)
   const [incompleteSubtasks, setIncompleteSubtasks] = useState([])
   const [showSubtasks, setShowSubtasks] = useState(false)
   const [showQuickAddSubtask, setShowQuickAddSubtask] = useState(false)
   const [showAddSubtaskOption, setShowAddSubtaskOption] = useState(false)
-  const { startTask, pauseTask, completeTask, loading } = useTaskActions(setTasks)
+  const { startTask, pauseTask, completeTask, skipTask, loading } = useTaskActions(setTasks)
   
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
@@ -28,6 +29,7 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
   const isCompleted = task.status === 'completed'
   const isPending = task.status === 'pending'
   const isPaused = task.status === 'paused'
+  const isSkipped = task.status === 'skipped'
 
   const hasSubtasks = subtasks.length > 0
   const completedSubtasks = subtasks.filter(t => t.status === 'completed').length
@@ -112,6 +114,16 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
     await completeTask(task.id, task.started_at, task.actual_time_minutes)
     if (refreshStats) refreshStats()
     setShowCompleteConfirm(false)
+  }
+
+  const handleSkip = async (e) => {
+    e.stopPropagation()
+    setShowSkipConfirm(true)
+  }
+
+  const handleConfirmSkip = async () => {
+    await skipTask(task.id)
+    setShowSkipConfirm(false)
   }
 
   const handleCardClick = () => {
@@ -220,6 +232,11 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
               👻 Resting
             </span>
           )}
+          {isSkipped && (
+            <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(112, 161, 255, 0.15)', color: '#70a1ff' }}>
+              ⏭️ Skipped
+            </span>
+          )}
         </div>
 
         {/* Actual Time (completed tasks or parent tasks with subtask time) */}
@@ -253,18 +270,32 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
         {/* Action Buttons */}
         <div className="flex gap-2">
           {isPending && !hasSubtasks && (
-            <button
-              onClick={handleStart}
-              disabled={loading}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold btn-lift"
-              style={{
-                background: 'linear-gradient(135deg, rgba(123, 237, 159, 0.2) 0%, rgba(46, 213, 115, 0.15) 100%)',
-                border: '1px solid rgba(123, 237, 159, 0.3)',
-                color: '#7bed9f'
-              }}
-            >
-              <Play size={12} fill="currentColor" /> Start
-            </button>
+            <>
+              <button
+                onClick={handleStart}
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold btn-lift"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(123, 237, 159, 0.2) 0%, rgba(46, 213, 115, 0.15) 100%)',
+                  border: '1px solid rgba(123, 237, 159, 0.3)',
+                  color: '#7bed9f'
+                }}
+              >
+                <Play size={12} fill="currentColor" /> Start
+              </button>
+              <button
+                onClick={handleSkip}
+                disabled={loading}
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold btn-lift"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(112, 161, 255, 0.2) 0%, rgba(100, 150, 255, 0.15) 100%)',
+                  border: '1px solid rgba(112, 161, 255, 0.3)',
+                  color: '#70a1ff'
+                }}
+              >
+                <SkipForward size={12} /> Skip
+              </button>
+            </>
           )}
           
           {isPending && hasSubtasks && (
@@ -313,6 +344,18 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
                 <Pause size={12} /> Pause
               </button>
               <button
+                onClick={handleSkip}
+                disabled={loading}
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold btn-lift"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(112, 161, 255, 0.2) 0%, rgba(100, 150, 255, 0.15) 100%)',
+                  border: '1px solid rgba(112, 161, 255, 0.3)',
+                  color: '#70a1ff'
+                }}
+              >
+                <SkipForward size={12} /> Skip
+              </button>
+              <button
                 onClick={handleComplete}
                 disabled={loading}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold btn-lift"
@@ -342,6 +385,18 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
                 <Play size={12} fill="currentColor" /> Resume
               </button>
               <button
+                onClick={handleSkip}
+                disabled={loading}
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold btn-lift"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(112, 161, 255, 0.2) 0%, rgba(100, 150, 255, 0.15) 100%)',
+                  border: '1px solid rgba(112, 161, 255, 0.3)',
+                  color: '#70a1ff'
+                }}
+              >
+                <SkipForward size={12} /> Skip
+              </button>
+              <button
                 onClick={handleComplete}
                 disabled={loading}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold btn-lift"
@@ -359,6 +414,12 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
           {isCompleted && (
             <div className="flex-1 text-center text-xs py-2 rounded-lg" style={{ background: 'rgba(123, 237, 159, 0.1)', color: '#7bed9f' }}>
               👻 Resting in peace
+            </div>
+          )}
+
+          {isSkipped && (
+            <div className="flex-1 text-center text-xs py-2 rounded-lg" style={{ background: 'rgba(112, 161, 255, 0.1)', color: '#70a1ff' }}>
+              ⏭️ Skipped for today
             </div>
           )}
         </div>
@@ -473,6 +534,16 @@ const TaskItem = memo(({ task, subtasks = [], color, setTasks, onTaskClick, refr
         message={`Lay "${task.title}"${task.parent_task_id ? ' to rest? Time worked will join the parent spirit' : ' to rest in the afterlife of completed tasks'}?`}
         confirmText="Yes, Rest"
         cancelText="Not Yet"
+      />
+
+      <ConfirmationModal
+        isOpen={showSkipConfirm}
+        onConfirm={handleConfirmSkip}
+        onCancel={() => setShowSkipConfirm(false)}
+        title="⏭️ Skip Task?"
+        message={`Skip "${task.title}" for today? You can come back to it later~`}
+        confirmText="Yes, Skip"
+        cancelText="Keep It"
       />
 
       <WarningModal

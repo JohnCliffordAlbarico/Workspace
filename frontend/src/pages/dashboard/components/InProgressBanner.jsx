@@ -5,10 +5,11 @@ import ConfirmationModal from '../modal/ConfirmationModal'
 import WarningModal from '../modal/WarningModal'
 
 const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks, refreshStats }) => {
-  const { completeTask, pauseTask, cancelTask, startTask, loading } = useTaskActions(setTasks)
+  const { completeTask, pauseTask, cancelTask, skipTask, startTask, loading } = useTaskActions(setTasks)
   const duration = useTaskTimer(task?.started_at, task?.actual_time_minutes)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false)
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false)
   const [showPauseConfirm, setShowPauseConfirm] = useState(false)
   const [showResumeConfirm, setShowResumeConfirm] = useState(false)
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false)
@@ -63,6 +64,15 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks, refreshStats 
   const handleConfirmCancel = async () => {
     await cancelTask(task.id)
     setShowCancelConfirm(false)
+  }
+
+  const handleSkip = () => {
+    setShowSkipConfirm(true)
+  }
+
+  const handleConfirmSkip = async () => {
+    await skipTask(task.id)
+    setShowSkipConfirm(false)
   }
 
   const handleClick = () => {
@@ -197,6 +207,26 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks, refreshStats 
               }}
             >
               👻 Complete
+            </button>
+            <button
+              onClick={handleSkip}
+              disabled={loading}
+              className="px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
+              style={{
+                background: 'rgba(112, 161, 255, 0.2)',
+                border: '1px solid rgba(112, 161, 255, 0.5)',
+                color: '#70a1ff'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)'
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(112, 161, 255, 0.3)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              ⏭️ Skip
             </button>
             {isPaused ? (
               <button
@@ -362,6 +392,17 @@ const InProgressBanner = ({ task, setTasks, onTaskClick, allTasks, refreshStats 
         message={`Banish "${task?.title}"${parentTask ? ` (subtask of "${parentTask.title}")` : ''} to the spirit realm? Time worked will vanish like smoke~`}
         confirmText="Yes, Banish"
         cancelText="Not Yet"
+      />
+
+      {/* Skip Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showSkipConfirm}
+        onConfirm={handleConfirmSkip}
+        onCancel={() => setShowSkipConfirm(false)}
+        title="⏭️ Skip Task?"
+        message={`Skip "${task?.title}" for today? You can come back to it later~`}
+        confirmText="Yes, Skip"
+        cancelText="Keep It"
       />
 
       {/* Complete Confirmation Modal */}

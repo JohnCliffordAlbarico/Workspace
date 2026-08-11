@@ -141,16 +141,34 @@ export const useTaskActions = (setTasks) => {
       const updateData = {
         status: 'cancelled'
       }
-      
+
       const response = await api.put(`/tasks/${taskId}`, updateData)
-      
-      setTasks(prev => 
+
+      setTasks(prev =>
         prev.map(task => task.id === taskId ? response.data : task)
       )
       return true
     } catch (error) {
       console.error('Failed to cancel task:', error)
       alert('Failed to cancel task. Please try again.')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const skipTask = async (taskId) => {
+    setLoading(true)
+    try {
+      const response = await api.patch(`/tasks/${taskId}/skip`)
+
+      setTasks(prev =>
+        prev.map(task => task.id === taskId ? response.data : task)
+      )
+      return true
+    } catch (error) {
+      console.error('Failed to skip task:', error)
+      alert('Failed to skip task. Please try again.')
       return false
     } finally {
       setLoading(false)
@@ -170,5 +188,5 @@ export const useTaskActions = (setTasks) => {
     }
   }
 
-  return { toggleTask, startTask, completeTask, pauseTask, cancelTask, deleteTask, loading }
+  return { toggleTask, startTask, completeTask, pauseTask, cancelTask, skipTask, deleteTask, loading }
 }

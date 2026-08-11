@@ -25,15 +25,26 @@ const generateTaskForCategory = async (category) => {
   const now = new Date()
   const { start: todayStart, end: todayEnd } = getTodayRange()
 
-  // ─── Guard: already has a task for today? → skip ─────────────
+  // ─── Guard: already generated a task today? → skip ─────────────
+  // Primary check: last_generated_at on the category (updated after each creation)
+  // This avoids the bug where due_date is set to the future (+1 day etc.)
+  // but the old guard was checking for due_date = today, which never matched.
+  if (category.last_generated_at) {
+    const lastGen = new Date(category.last_generated_at)
+    if (lastGen >= new Date(todayStart) && lastGen <= new Date(todayEnd)) {
+      return null
+    }
+  }
+
+  // Fallback check: query tasks created today (safety net if last_generated_at is null)
   const { data: existingToday, error: checkError } = await supabaseAdmin
     .from('tasks')
     .select('id')
     .eq('category_id', category.id)
     .eq('user_id', category.user_id)
-    .neq('status', 'cancelled')
-    .gte('due_date', todayStart)
-    .lte('due_date', todayEnd)
+    .not('status', 'in', '("cancelled","skipped")')
+    .gte('created_at', todayStart)
+    .lte('created_at', todayEnd)
     .limit(1)
 
   if (checkError) {
@@ -42,20 +53,19 @@ const generateTaskForCategory = async (category) => {
   }
 
   if (existingToday && existingToday.length > 0) {
-    // Already has a task for today — skip generation
     return null
   }
 
   // ─── Decrypt category name (stored encrypted in DB) ────────
   const categoryName = decrypt(category.name)
 
-  // ─── Count all non-cancelled tasks in this category for numbering ──
+  // ─── Count all non-cancelled/non-skipped tasks in this category for numbering ──
   const { count, error: countError } = await supabaseAdmin
     .from('tasks')
     .select('*', { count: 'exact', head: true })
     .eq('category_id', category.id)
     .eq('user_id', category.user_id)
-    .neq('status', 'cancelled')
+    .not('status', 'in', '("cancelled","skipped")')
 
   if (countError) {
     console.error('[Scheduler] Error counting tasks:', countError)

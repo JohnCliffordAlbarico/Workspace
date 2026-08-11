@@ -112,7 +112,7 @@ export const taskValidation = {
   status: {
     required: false,
     type: 'string',
-    enum: ['pending', 'in_progress', 'paused', 'completed', 'cancelled']
+    enum: ['pending', 'in_progress', 'paused', 'completed', 'cancelled', 'skipped']
   },
   goal_time_minutes: {
     required: false,
@@ -146,7 +146,7 @@ export const taskUpdateValidation = {
   status: {
     required: false,
     type: 'string',
-    enum: ['pending', 'in_progress', 'paused', 'completed', 'cancelled']
+    enum: ['pending', 'in_progress', 'paused', 'completed', 'cancelled', 'skipped']
   },
   goal_time_minutes: {
     required: false,

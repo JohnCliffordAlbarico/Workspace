@@ -7,13 +7,14 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [showSubtaskForm, setShowSubtaskForm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false)
   const [deleteSubtaskId, setDeleteSubtaskId] = useState(null)
   const [showCancelEditConfirm, setShowCancelEditConfirm] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [subtaskTitle, setSubtaskTitle] = useState('')
   const [subtasks, setSubtasks] = useState([])
   const [loadingSubtasks, setLoadingSubtasks] = useState(false)
-  const { toggleTask, deleteTask, loading } = useTaskActions(setTasks)
+  const { toggleTask, deleteTask, skipTask, loading } = useTaskActions(setTasks)
 
   const [editData, setEditData] = useState({
     title: '',
@@ -160,6 +161,16 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
 
   const handleDelete = async () => {
     setShowDeleteConfirm(true)
+  }
+
+  const handleSkip = async () => {
+    setShowSkipConfirm(true)
+  }
+
+  const handleConfirmSkip = async () => {
+    await skipTask(task.id)
+    setShowSkipConfirm(false)
+    onClose()
   }
 
   const handleConfirmDelete = async () => {
@@ -329,6 +340,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
                   <option value="in_progress">🔄 In Progress</option>
                   <option value="paused">⏸️ Paused</option>
                   <option value="completed">✅ Completed</option>
+                  <option value="skipped">⏭️ Skipped</option>
                   <option value="cancelled">❌ Cancelled</option>
                 </select>
               ) : (
@@ -337,6 +349,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
                   {task.status === 'in_progress' && '🔄 In Progress'}
                   {task.status === 'paused' && '⏸️ Paused'}
                   {task.status === 'completed' && '✅ Completed'}
+                  {task.status === 'skipped' && '⏭️ Skipped'}
                   {task.status === 'cancelled' && '❌ Cancelled'}
                 </span>
               )}
@@ -717,6 +730,20 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
                 >
                   ✏️ Edit
                 </button>
+                {['pending', 'in_progress', 'paused'].includes(task.status) && (
+                  <button
+                    onClick={handleSkip}
+                    disabled={loading}
+                    className="flex-1 px-6 py-3 rounded-xl font-semibold"
+                    style={{
+                      background: 'rgba(112, 161, 255, 0.2)',
+                      border: '1px solid rgba(112, 161, 255, 0.3)',
+                      color: '#70a1ff'
+                    }}
+                  >
+                    ⏭️ Skip
+                  </button>
+                )}
                 <button
                   onClick={handleDelete}
                   disabled={loading}
@@ -744,6 +771,17 @@ const TaskDetailModal = ({ isOpen, onClose, task, setTasks, allTasks }) => {
         message={`Are you sure you want to delete "${task?.title}"? This will also delete all subtasks. This action cannot be undone.`}
         confirmText="Yes, Delete"
         cancelText="Cancel"
+      />
+
+      {/* Skip Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showSkipConfirm}
+        onConfirm={handleConfirmSkip}
+        onCancel={() => setShowSkipConfirm(false)}
+        title="⏭️ Skip Task?"
+        message={`Skip "${task?.title}" for today? You can come back to it later~`}
+        confirmText="Yes, Skip"
+        cancelText="Keep It"
       />
 
       {/* Subtask Delete Confirmation Modal */}

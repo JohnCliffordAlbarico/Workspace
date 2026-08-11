@@ -346,12 +346,11 @@ export const completeCategory = async (req, res) => {
     .select('id')
     .eq('category_id', req.params.id)
     .eq('user_id', req.user.id)
-    .not('status', 'eq', 'completed')
-    .not('status', 'eq', 'cancelled')
+    .not('status', 'in', '("completed","cancelled","skipped")')
     .limit(1)
 
   if (incompleteTasks?.length) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: 'Category has incomplete tasks. Complete or cancel them first.',
       incomplete_count: incompleteTasks.length
     })

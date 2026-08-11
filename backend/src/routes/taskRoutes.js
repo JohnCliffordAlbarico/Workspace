@@ -10,6 +10,7 @@ import {
   getSubtasks,
   createTask,
   updateTask,
+  skipTask,
   deleteTask
 } from '../handlers/taskHandlers.js'
 
@@ -29,6 +30,9 @@ router.post('/', writeLimiter, authenticate, validate(taskValidation), auditLog(
 
 // Update task
 router.put('/:id', writeLimiter, authenticate, validate(taskUpdateValidation), auditLog('tasks'), asyncHandler(updateTask))
+
+// Skip task — marks as skipped (user intentionally not doing it today)
+router.patch('/:id/skip', writeLimiter, authenticate, auditLog('tasks'), asyncHandler(skipTask))
 
 // Delete task
 router.delete('/:id', writeLimiter, authenticate, auditLog('tasks'), asyncHandler(deleteTask))

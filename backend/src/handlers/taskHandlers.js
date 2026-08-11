@@ -413,6 +413,52 @@ export const updateTask = async (req, res) => {
   }
 }
 
+// Skip task — marks as skipped (user intentionally not doing it today)
+export const skipTask = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    // Fetch the task and guard status
+    const { data: task, error: fetchError } = await supabaseAdmin
+      .from('tasks')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', req.user.id)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    // Can only skip tasks that are pending, in_progress, or paused
+    if (!['pending', 'in_progress', 'paused'].includes(task.status)) {
+      return res.status(400).json({
+        error: `Cannot skip task with status "${task.status}". Only pending, in_progress, or paused tasks can be skipped.`
+      })
+    }
+
+    // Update status to skipped, clear timer fields
+    const { data, error } = await supabaseAdmin
+      .from('tasks')
+      .update({
+        status: 'skipped',
+        started_at: null
+      })
+      .eq('id', id)
+      .eq('user_id', req.user.id)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    res.json({
+      ...data,
+      title: decrypt(data.title),
+      description: decrypt(data.description)
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
 // Delete task
 export const deleteTask = async (req, res) => {
   try {
