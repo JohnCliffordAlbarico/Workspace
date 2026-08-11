@@ -80,6 +80,11 @@ export const categoryValidation = {
     type: 'number',
     min: 5,
     max: 480
+  },
+  recurrence_pattern: {
+    required: false,
+    type: 'string',
+    enum: ['none', 'daily', 'weekly', 'monthly']
   }
 }
 

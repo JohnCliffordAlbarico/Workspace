@@ -188,7 +188,7 @@ export const getCategoryStats = async (req, res) => {
 
 // POST /api/categories
 export const createCategory = async (req, res) => {
-  const { name, color, daily_allocation_minutes } = req.body
+  const { name, color, daily_allocation_minutes, recurrence_pattern } = req.body
 
   // Check for duplicate name (active categories only) - must compare decrypted names
   const { data: existingCategories } = await supabaseAdmin
@@ -224,7 +224,8 @@ export const createCategory = async (req, res) => {
       color: color || '#6366f1',
       daily_allocation_minutes: daily_allocation_minutes || 60,
       position: newPosition,
-      status: 'active'
+      status: 'active',
+      recurrence_pattern: recurrence_pattern || 'none'
     })
     .select()
     .single()
@@ -238,7 +239,7 @@ export const createCategory = async (req, res) => {
 
 // PUT /api/categories/:id
 export const updateCategory = async (req, res) => {
-  const { name, color, daily_allocation_minutes, position } = req.body
+  const { name, color, daily_allocation_minutes, position, recurrence_pattern } = req.body
 
   // Check for duplicate name if renaming (active categories only) - must compare decrypted names
   if (name !== undefined) {
@@ -271,6 +272,7 @@ export const updateCategory = async (req, res) => {
   if (color !== undefined) updateData.color = color
   if (daily_allocation_minutes !== undefined) updateData.daily_allocation_minutes = daily_allocation_minutes
   if (position !== undefined) updateData.position = position
+  if (recurrence_pattern !== undefined) updateData.recurrence_pattern = recurrence_pattern
 
   const { data, error } = await supabaseAdmin
     .from('focus_categories')
