@@ -2,56 +2,75 @@ import { supabaseAdmin } from '../config/supabase.js'
 import { encrypt, decrypt } from './crypto.js'
 
 /**
+ * Get today's date range boundaries (start and end of day in UTC).
+ * @returns {{ start: string, end: string }} ISO 8601 timestamps
+ */
+const getTodayRange = () => {
+  const now = new Date()
+  const start = new Date(now)
+  start.setUTCHours(0, 0, 0, 0)
+  const end = new Date(now)
+  end.setUTCHours(23, 59, 59, 999)
+  return { start: start.toISOString(), end: end.toISOString() }
+}
+
+/**
  * Check if a category's recurrence is due and generate a task if needed.
+ * Logic: if the category already has at least one task for today, skip.
+ * Otherwise, create a new task with format "Category Name #N - Month DD, YYYY".
  * @param {Object} category - The category row from the database
  * @returns {Object|null} The created task, or null if no task was needed
  */
 const generateTaskForCategory = async (category) => {
   const now = new Date()
-  const lastGenerated = category.last_generated_at ? new Date(category.last_generated_at) : null
+  const { start: todayStart, end: todayEnd } = getTodayRange()
 
-  // Determine if we need to generate based on pattern and last_generated_at
-  if (lastGenerated) {
-    const diffMs = now.getTime() - lastGenerated.getTime()
-    const diffDays = diffMs / (1000 * 60 * 60 * 24)
+  // ─── Guard: already has a task for today? → skip ─────────────
+  const { data: existingToday, error: checkError } = await supabaseAdmin
+    .from('tasks')
+    .select('id')
+    .eq('category_id', category.id)
+    .eq('user_id', category.user_id)
+    .neq('status', 'cancelled')
+    .gte('due_date', todayStart)
+    .lte('due_date', todayEnd)
+    .limit(1)
 
-    switch (category.recurrence_pattern) {
-      case 'daily':
-        // Only generate if at least 1 day has passed
-        if (diffDays < 0.95) return null
-        break
-      case 'weekly':
-        // Only generate if at least 7 days have passed
-        if (diffDays < 6.95) return null
-        break
-      case 'monthly':
-        // Only generate if at least 28 days have passed (handle variable month lengths)
-        if (diffDays < 27.95) return null
-        break
-      default:
-        return null
-    }
+  if (checkError) {
+    console.error('[Scheduler] Error checking today\'s tasks:', checkError)
+    return null
   }
 
-  // Count existing tasks for this category to determine the next number
+  if (existingToday && existingToday.length > 0) {
+    // Already has a task for today — skip generation
+    return null
+  }
+
+  // ─── Count all non-cancelled tasks in this category for numbering ──
   const { count, error: countError } = await supabaseAdmin
     .from('tasks')
     .select('*', { count: 'exact', head: true })
     .eq('category_id', category.id)
     .eq('user_id', category.user_id)
+    .neq('status', 'cancelled')
 
   if (countError) {
-    console.error('Error counting tasks for category:', countError)
+    console.error('[Scheduler] Error counting tasks:', countError)
     return null
   }
 
   const taskNumber = (count || 0) + 1
 
-  // Format the date for the title
-  const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  // ─── Format title: "Category Name #N - Mon DD, YYYY" ──────────
+  const dateStr = now.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC'
+  })
   const title = `${category.name} #${taskNumber} - ${dateStr}`
 
-  // Get the next position value
+  // ─── Get next position ────────────────────────────────────────
   const { data: maxPosTask } = await supabaseAdmin
     .from('tasks')
     .select('position')
@@ -63,7 +82,7 @@ const generateTaskForCategory = async (category) => {
 
   const nextPosition = (maxPosTask?.position ?? -1) + 1
 
-  // Calculate due date based on pattern
+  // ─── Calculate due date based on pattern ──────────────────────
   let dueDate = null
   switch (category.recurrence_pattern) {
     case 'daily':
@@ -87,7 +106,7 @@ const generateTaskForCategory = async (category) => {
     }
   }
 
-  // Create the task
+  // ─── Create the task ──────────────────────────────────────────
   const { data: task, error: createError } = await supabaseAdmin
     .from('tasks')
     .insert({
@@ -106,7 +125,7 @@ const generateTaskForCategory = async (category) => {
     .single()
 
   if (createError) {
-    console.error('Error creating recurring task:', createError)
+    console.error('[Scheduler] Error creating recurring task:', createError)
     return null
   }
 

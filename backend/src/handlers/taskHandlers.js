@@ -311,60 +311,87 @@ export const updateTask = async (req, res) => {
         effectiveRecurrence
       )
 
-      // Determine the series ID: use original's recurring_series_id if set, otherwise use this task's ID
-      const seriesId = currentTask.recurring_series_id || data.id
+      // ─── Guard: check if the category already has a task for today ──
+      const now = new Date()
+      const todayStart = new Date(now)
+      todayStart.setUTCHours(0, 0, 0, 0)
+      const todayEnd = new Date(now)
+      todayEnd.setUTCHours(23, 59, 59, 999)
 
-      // Get the next position value (max position in category + 1)
-      const { data: maxPosTask } = await supabaseAdmin
+      const { data: existingToday } = await supabaseAdmin
         .from('tasks')
-        .select('position')
-        .eq('category_id', currentTask.category_id)
-        .eq('user_id', currentTask.user_id)
-        .order('position', { ascending: false })
+        .select('id')
+        .eq('category_id', data.category_id)
+        .eq('user_id', data.user_id)
+        .neq('status', 'cancelled')
+        .gte('due_date', todayStart.toISOString())
+        .lte('due_date', todayEnd.toISOString())
         .limit(1)
-        .single()
 
-      const nextPosition = (maxPosTask?.position ?? -1) + 1
+      // Only skip if there's already a task for today that is NOT the task being completed
+      const hasOtherTaskToday = existingToday && existingToday.length > 0 &&
+        existingToday.some(t => t.id !== data.id)
 
-      // Format the next due date for the title suffix
-      const nextDate = new Date(nextDueDate)
-      const dateSuffix = nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-
-      // Decrypt the original title, append the date, and re-encrypt
-      const originalTitle = decrypt(data.title)
-      const nextTitle = `${originalTitle} - ${dateSuffix}`
-
-      // Create the next occurrence
-      const { data: newTask, error: createError } = await supabaseAdmin
-        .from('tasks')
-        .insert({
-          category_id: data.category_id,
-          user_id: data.user_id,
-          parent_task_id: null,  // Recurring tasks don't recurse subtasks
-          title: encrypt(nextTitle),  // Encrypted with date appended
-          description: data.description,  // Already encrypted
-          priority: data.priority,
-          status: 'pending',
-          position: nextPosition,
-          goal_time_minutes: data.goal_time_minutes,
-          actual_time_minutes: null,
-          started_at: null,
-          completed_at: null,
-          due_date: nextDueDate,
-          recurrence_pattern: effectiveRecurrence,
-          recurring_series_id: seriesId
-        })
-        .select()
-        .single()
-
-      if (createError) {
-        console.error('Error creating next recurrence:', createError)
-        // Don't fail the whole request — the completion itself succeeded
+      if (hasOtherTaskToday) {
+        // Category already has another task for today — skip next occurrence creation
       } else {
-        nextOccurrence = {
-          ...newTask,
-          title: decrypt(newTask.title),
-          description: decrypt(newTask.description)
+        // Determine the series ID: use original's recurring_series_id if set, otherwise use this task's ID
+        const seriesId = currentTask.recurring_series_id || data.id
+
+        // Get the next position value (max position in category + 1)
+        const { data: maxPosTask } = await supabaseAdmin
+          .from('tasks')
+          .select('position')
+          .eq('category_id', currentTask.category_id)
+          .eq('user_id', currentTask.user_id)
+          .order('position', { ascending: false })
+          .limit(1)
+          .single()
+
+        const nextPosition = (maxPosTask?.position ?? -1) + 1
+
+        // Format the next due date for the title suffix
+        const nextDate = new Date(nextDueDate)
+        const dateSuffix = nextDate.toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'
+        })
+
+        // Decrypt the original title, append the date, and re-encrypt
+        const originalTitle = decrypt(data.title)
+        const nextTitle = `${originalTitle} - ${dateSuffix}`
+
+        // Create the next occurrence
+        const { data: newTask, error: createError } = await supabaseAdmin
+          .from('tasks')
+          .insert({
+            category_id: data.category_id,
+            user_id: data.user_id,
+            parent_task_id: null,  // Recurring tasks don't recurse subtasks
+            title: encrypt(nextTitle),  // Encrypted with date appended
+            description: data.description,  // Already encrypted
+            priority: data.priority,
+            status: 'pending',
+            position: nextPosition,
+            goal_time_minutes: data.goal_time_minutes,
+            actual_time_minutes: null,
+            started_at: null,
+            completed_at: null,
+            due_date: nextDueDate,
+            recurrence_pattern: effectiveRecurrence,
+            recurring_series_id: seriesId
+          })
+          .select()
+          .single()
+
+        if (createError) {
+          console.error('Error creating next recurrence:', createError)
+          // Don't fail the whole request — the completion itself succeeded
+        } else {
+          nextOccurrence = {
+            ...newTask,
+            title: decrypt(newTask.title),
+            description: decrypt(newTask.description)
+          }
         }
       }
     }
