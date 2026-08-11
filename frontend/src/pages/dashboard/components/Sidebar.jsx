@@ -83,12 +83,13 @@ const Sidebar = memo(({ categories, getCategoryProgress, totalAllocated, totalAc
       </button>
 
       {/* Profile Card */}
-      <div 
-        className="rounded-2xl p-6 mb-6 cursor-pointer transition-all duration-300"
+      <div
+        className="rounded-2xl p-6 mb-6 cursor-pointer"
         style={{
           background: 'linear-gradient(145deg, #2d1418 0%, #1a0d0d 100%)',
           border: '1px solid rgba(200, 80, 80, 0.3)',
-          animation: 'pulseGlow 4s ease-in-out infinite'
+          transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+          position: 'relative'
         }}
         onClick={() => setShowProfileModal(true)}
         onMouseOver={(e) => {
@@ -112,10 +113,13 @@ const Sidebar = memo(({ categories, getCategoryProgress, totalAllocated, totalAc
             }}
           >
             {user?.profile_img ? (
-              <img 
-                src={user.profile_img} 
-                alt="Profile" 
+              <img
+                src={user.profile_img}
+                alt="Profile"
+                width="56"
+                height="56"
                 className="w-full h-full object-cover"
+                loading="eager"
               />
             ) : (
               <span style={{ animation: 'ghostFloat 3s ease-in-out infinite' }}>👻</span>

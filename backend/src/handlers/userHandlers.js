@@ -1,4 +1,5 @@
 import { supabasePublic as supabase, supabaseAdmin } from '../config/supabase.js'
+import sharp from 'sharp'
 
 // Get current user profile
 export const getProfile = async (req, res) => {
@@ -93,21 +94,34 @@ export const uploadProfileImage = async (req, res) => {
     if (file.size > 5 * 1024 * 1024) {
       return res.status(400).json({ error: 'File too large. Maximum size is 5MB' })
     }
-    
+
+    // Resize and optimize image using sharp
+    let processedBuffer
+    try {
+      processedBuffer = await sharp(file.buffer)
+        .resize(512, 512, { fit: 'cover' })
+        .jpeg({ quality: 85 })
+        .toBuffer()
+    } catch (sharpError) {
+      console.error('Image processing error:', sharpError)
+      // Fallback to original buffer if sharp fails
+      processedBuffer = file.buffer
+    }
+
     // Get current profile to delete old image
     const { data: currentUser } = await supabase
       .from('users')
       .select('profile_img')
       .eq('id', userId)
       .single()
-    
+
     // Delete old image if exists
     if (currentUser?.profile_img) {
       try {
         const url = new URL(currentUser.profile_img)
         const pathParts = url.pathname.split('/')
         const filePath = pathParts.slice(pathParts.indexOf('images') + 1).join('/')
-        
+
         if (filePath) {
           await supabaseAdmin.storage.from('images').remove([filePath])
         }
@@ -115,15 +129,15 @@ export const uploadProfileImage = async (req, res) => {
         console.error('Error deleting old image:', err)
       }
     }
-    
-    const fileExt = file.originalname.split('.').pop()
+
+    const fileExt = 'jpg'
     const fileName = `profiles/${userId}/avatar-${Date.now()}.${fileExt}`
-    
+
     // Upload to Supabase Storage using admin client (bypasses RLS)
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from('images')
-      .upload(fileName, file.buffer, {
-        contentType: file.mimetype,
+      .upload(fileName, processedBuffer, {
+        contentType: 'image/jpeg',
         upsert: false
       })
     
