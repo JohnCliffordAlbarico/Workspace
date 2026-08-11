@@ -166,6 +166,11 @@ export const taskUpdateValidation = {
 }
 
 export const userUpdateValidation = {
+  display_name: {
+    required: false,
+    type: 'string',
+    maxLength: 100
+  },
   email: {
     required: false,
     type: 'string',

@@ -33,9 +33,11 @@ export const getActivePlatformPlaylist = async (req, res) => {
       .eq('user_id', userId)
       .eq('platform', platform)
       .eq('is_active', true)
-      .single()
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
     
-    if (error && error.code !== 'PGRST116') throw error // PGRST116 = no rows
+    if (error) throw error
     
     res.json(data || null)
   } catch (error) {
@@ -61,6 +63,7 @@ export const createMusicPreference = async (req, res) => {
         .update({ is_active: false })
         .eq('user_id', userId)
         .eq('platform', platform)
+        .eq('is_active', true)
     }
     
     const { data, error } = await supabaseAdmin
