@@ -84,6 +84,7 @@ const DiaryEntryEditor = ({ entry, onSave, onCancel, onUploadCover, onSetCoverRe
       return
     }
     setSaving(false)
+    onCancel?.()
   }
 
   return (
@@ -156,7 +157,7 @@ const DiaryEntryEditor = ({ entry, onSave, onCancel, onUploadCover, onSetCoverRe
       </div>
 
       {/* Right panel — Content (60%) */}
-      <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'rgba(26,5,5,0.6)' }}>
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden" style={{ background: 'rgba(26,5,5,0.6)' }}>
         {error && (
           <div
             className="mx-6 mt-4 px-4 py-2.5 rounded-xl text-xs flex-shrink-0"
@@ -199,7 +200,36 @@ const DiaryEntryEditor = ({ entry, onSave, onCancel, onUploadCover, onSetCoverRe
             }}
           />
         </div>
-      </div>
+
+        {/* Save / Cancel bar */}
+        <div
+          className="flex items-center justify-end gap-3 px-6 py-4 flex-shrink-0"
+          style={{ borderTop: '1px solid rgba(200,80,80,0.2)' }}
+        >
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-80"
+            style={{
+              color: '#a89080',
+              border: '1px solid rgba(200,80,80,0.2)'
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving || !title.trim()}
+            className="px-5 py-2 rounded-lg text-sm font-bold transition-all hover:opacity-90 disabled:opacity-40"
+            style={{
+              background: 'linear-gradient(135deg, #8b2942 0%, #c85050 100%)',
+              color: '#f5e6d3'
+            }}
+          >
+            {saving ? 'Saving…' : 'Save Entry'}
+          </button>
+        </div>
+      </form>
     </div>
   )
 }

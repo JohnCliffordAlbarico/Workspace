@@ -126,7 +126,6 @@ const DiaryModal = () => {
 
   const handleCreateEntry = async ({ title, content }) => {
     const entry = await createEntry({ title, content })
-    setView('calendar')
     return entry
   }
 
